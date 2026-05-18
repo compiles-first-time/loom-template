@@ -112,9 +112,9 @@ Use `Bash` with a single-line `echo` redirect (POSIX) or `Add-Content` (PowerShe
 
 *(list ADRs in `Proposed` status; once `Accepted` they fall off this list)*
 
-- *(none yet)*
+- **ADR-0002** — Orchestration framework (LangGraph.js as v1 default). Confirm or override at bootstrap.
 
-**Recent ADRs (Accepted):** 0003–0010 from Loom Enhancement Batch 01 (retrieval + context engineering, Phase 1 research) · 0011 Claude Code enforcement runtime (v0.2 PR-1 / A) · 0012 base subagents (v0.2 PR-2 / B) · 0013 bootstrap unification (v0.2 PR-3 / D) · 0014 lessons-learned auto-suggest (v0.2 PR-4 / E). PRs C, F land next.
+**Recent ADRs (Accepted):** 0003–0010 from Loom Enhancement Batch 01 (retrieval + context engineering, Phase 1 research) · 0011 Claude Code enforcement runtime (v0.2 PR-1 / A) · 0012 base subagents (v0.2 PR-2 / B) · 0013 bootstrap unification (v0.2 PR-3 / D) · 0014 lessons-learned auto-suggest (v0.2 PR-4 / E) · 0015 loom doctor (v0.2 PR-5 / C). PR F (Update Bus stub) lands next.
 
 ---
 
