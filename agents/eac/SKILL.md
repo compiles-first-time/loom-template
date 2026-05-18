@@ -62,3 +62,9 @@ When delivering a specialist, report:
 
 - A request to research a topic outside the project's data tier → escalate
 - A request that would require credentials the EAC doesn't have → escalate, don't fake
+
+---
+
+## Runtime counterpart
+
+This is the **design source**. The runtime contract lives at [`../../.claude/agents/eac.md`](../../.claude/agents/eac.md) (Claude Code subagent, per [ADR-0012](../../adr/0012-base-subagents.md)).

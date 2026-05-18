@@ -53,3 +53,9 @@ When proposing a new specialist, must report:
 - A specialist request that duplicates an existing agent → escalate, not auto-create
 - A retire request for an agent with unresolved tasks → escalate
 - Cross-project specialist sharing requests → escalate (cross-project policy lives in L7)
+
+---
+
+## Runtime counterpart
+
+This is the **design source**. The runtime contract lives at [`../../.claude/agents/hr.md`](../../.claude/agents/hr.md) (Claude Code subagent, per [ADR-0012](../../adr/0012-base-subagents.md)).

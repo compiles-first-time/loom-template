@@ -16,14 +16,16 @@
 
 ## Base agents (the warp — present in every Loom project)
 
-| Agent | Directory | Role |
+> **Design source ⇄ runtime contract (v0.2):** Each base agent has a **design** file at `agents/<name>/SKILL.md` (full rationale, kernel posture, alternatives) and a **runtime** file at `.claude/agents/<name>.md` (Claude Code subagent — tools, prompt, decline triggers). Per [ADR-0012](./adr/0012-base-subagents.md).
+
+| Agent | Design | Runtime |
 |---|---|---|
-| **HR-Agent** | [`agents/hr/`](./agents/hr/) | Maintains the roster; creates/retires agents; assigns names |
-| **Expert Agent Creator (EAC)** | [`agents/eac/`](./agents/eac/) | Researches APIs/tools by trial-and-error; spawns specialists |
-| **Human Replica** | [`agents/human-replica/`](./agents/human-replica/) | User proxy; subscribes to user comms; answers "what would the user do?" |
-| **Critic / Auditor** | [`agents/critic/`](./agents/critic/) | Quality gate; reviews outputs; enforces confidence calibration |
-| **Memory-Keeper** | [`agents/memory-keeper/`](./agents/memory-keeper/) | Manages all memory subsystems; RAG retrieval; lesson propagation |
-| **Constitution Service** | [`agents/constitution-service/`](./agents/constitution-service/) | Validates every action against Kernel V6 |
+| **HR-Agent** | [`agents/hr/`](./agents/hr/) | [`.claude/agents/hr.md`](./.claude/agents/hr.md) |
+| **Expert Agent Creator (EAC)** | [`agents/eac/`](./agents/eac/) | [`.claude/agents/eac.md`](./.claude/agents/eac.md) |
+| **Human Replica** | [`agents/human-replica/`](./agents/human-replica/) | [`.claude/agents/human-replica.md`](./.claude/agents/human-replica.md) |
+| **Critic / Auditor** | [`agents/critic/`](./agents/critic/) | [`.claude/agents/critic.md`](./.claude/agents/critic.md) — **read-only** |
+| **Memory-Keeper** | [`agents/memory-keeper/`](./agents/memory-keeper/) | [`.claude/agents/memory-keeper.md`](./.claude/agents/memory-keeper.md) |
+| **Constitution Service** | [`agents/constitution-service/`](./agents/constitution-service/) | [`.claude/agents/constitution-service.md`](./.claude/agents/constitution-service.md) — **read-only** |
 
 For the **minimal-3** mode (per §E.2): HR-Agent + Critic + Memory-Keeper. Trim the others if your project doesn't need them.
 

@@ -53,3 +53,9 @@
 - Any irreversible action (file deletion, agent termination, external comms) → escalate per Kernel Rule 20
 - Cross-project decisions → escalate
 - Decisions outside the user's pre-approved scope → escalate
+
+---
+
+## Runtime counterpart
+
+This is the **design source**. The runtime contract lives at [`../../.claude/agents/human-replica.md`](../../.claude/agents/human-replica.md) (Claude Code subagent, per [ADR-0012](../../adr/0012-base-subagents.md)).

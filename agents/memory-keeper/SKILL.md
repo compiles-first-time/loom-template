@@ -55,3 +55,9 @@
 - Memory delete requests without confirmation → escalate
 - Cross-project memory reads/writes → escalate unless share flag present
 - Vector-index corruption suspected → escalate, do not silently rebuild
+
+---
+
+## Runtime counterpart
+
+This is the **design source**. The runtime contract lives at [`../../.claude/agents/memory-keeper.md`](../../.claude/agents/memory-keeper.md) (Claude Code subagent, per [ADR-0012](../../adr/0012-base-subagents.md)).

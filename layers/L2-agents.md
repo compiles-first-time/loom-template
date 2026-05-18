@@ -22,14 +22,18 @@ The supervisor **does not execute tasks**. It delegates to base agents or dynami
 
 ## Base agent set (6 — present in every Loom project)
 
-| # | Agent | Directory | Origin |
-|---|---|---|---|
-| 1 | HR-Agent | [`../agents/hr/`](../agents/hr/) | Pablo `[transcript][H]` |
-| 2 | Expert Agent Creator | [`../agents/eac/`](../agents/eac/) | Pablo `[transcript][H]` |
-| 3 | Human Replica | [`../agents/human-replica/`](../agents/human-replica/) | Pablo `[transcript][H]` |
-| 4 | Critic / Auditor | [`../agents/critic/`](../agents/critic/) | Base `[base][M]` |
-| 5 | Memory-Keeper | [`../agents/memory-keeper/`](../agents/memory-keeper/) | Centralized in Loom |
-| 6 | Constitution Service | [`../agents/constitution-service/`](../agents/constitution-service/) | Base `[base][M]` |
+> **v0.2 runtime/design split per [ADR-0012](../adr/0012-base-subagents.md).** Each base agent has a **design** file at `../agents/<name>/SKILL.md` (full rationale) and a **runtime contract** at `../.claude/agents/<name>.md` (Claude Code subagent — tools, prompt, decline triggers).
+
+| # | Agent | Design | Runtime | Tool scope |
+|---|---|---|---|---|
+| 1 | HR-Agent | [`../agents/hr/`](../agents/hr/) | [`../.claude/agents/hr.md`](../.claude/agents/hr.md) | Read/Edit/Write on `AGENTS.md` + `agents/specialists/**` |
+| 2 | Expert Agent Creator | [`../agents/eac/`](../agents/eac/) | [`../.claude/agents/eac.md`](../.claude/agents/eac.md) | Read/Web/Edit/Write on `agents/specialists/**` + `lessons-learned/**` |
+| 3 | Human Replica | [`../agents/human-replica/`](../agents/human-replica/) | [`../.claude/agents/human-replica.md`](../.claude/agents/human-replica.md) | Read/Edit on `agents/human-replica/` + `update-bus/inbox/**` |
+| 4 | Critic / Auditor | [`../agents/critic/`](../agents/critic/) | [`../.claude/agents/critic.md`](../.claude/agents/critic.md) | **Read-only on every path** (independence) |
+| 5 | Memory-Keeper | [`../agents/memory-keeper/`](../agents/memory-keeper/) | [`../.claude/agents/memory-keeper.md`](../.claude/agents/memory-keeper.md) | Read/Edit/Write on `memory/**` + `update-bus/inbox/` |
+| 6 | Constitution Service | [`../agents/constitution-service/`](../agents/constitution-service/) | [`../.claude/agents/constitution-service.md`](../.claude/agents/constitution-service.md) | **Read-only on every path** (no edit path into the constitution) |
+
+Origin: HR / EAC / Human-Replica from Pablo `[transcript][H]`; Critic / Constitution Service from base PRISM spec `[base][M]`; Memory-Keeper centralized in Loom. Claude Code subagent `tools:` frontmatter takes tool names only; path scoping is enforced in each subagent's system prompt.
 
 ## Choosing a smaller set
 
@@ -92,4 +96,5 @@ Every agent reports confidence on every claim — see thresholds in [`../CLAUDE.
 - [ ] Fill in each agent's `SKILL.md` with project-specific scope
 - [ ] Test the supervisor's two-ledger workflow with a no-op task
 - [ ] Confirm each agent's `context-budget:` field is appropriate for this project's models
-- [ ] Wire the Critic's pre-dispatch context admission check per [ADR-0008](../adr/0008-context-admission-check.md)
+- [x] Ship runtime subagents at [`../.claude/agents/`](../.claude/agents/) per [ADR-0012](../adr/0012-base-subagents.md)
+- [ ] Wire the Critic's pre-dispatch context admission check per [ADR-0008](../adr/0008-context-admission-check.md) — the Critic subagent declares it as a responsibility; orchestration glue lands in PR-5 (loom doctor) or a later observability PR
