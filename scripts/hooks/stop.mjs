@@ -8,8 +8,9 @@
 //   2. A row to orchestration/progress-ledger.md "Session log" table —
 //      the "closing the books" checkpoint from L5.
 //
-// Lessons-learned auto-suggestion lives in PR-4 (E). This hook intentionally
-// leaves an extension point at the bottom but does not yet write drafts.
+// Lessons-learned auto-suggestion (PR-4 / E, per ADR-0014) is wired at the
+// bottom: today's failures are grouped by error signature, novel signatures
+// produce `lessons-learned/draft-*.md` files. Drafts are never auto-promoted.
 
 import {
   appendEvent,
@@ -103,9 +104,31 @@ await appendSessionRow({
       : "—",
 });
 
-// PR-4 extension point — auto-suggested lessons-learned drafts:
-//   const stopLessons = await import("./stop-lessons.mjs").catch(() => null);
-//   if (stopLessons) await stopLessons.default({ summary, sessionId });
+// Auto-suggest lessons-learned drafts (PR-4 / E, per ADR-0014).
+// Lazy-loaded so removing stop-lessons.mjs is a non-fatal disable.
+try {
+  const stopLessons = await import("./stop-lessons.mjs");
+  if (stopLessons && typeof stopLessons.default === "function") {
+    const result = await stopLessons.default({ sessionId });
+    if (result && (result.suggested || result.skipped)) {
+      appendEvent(
+        mechanicalRecord("lessons_autosuggest", {
+          session_id: sessionId,
+          suggested: result.suggested,
+          skipped: result.skipped,
+        })
+      );
+    }
+  }
+} catch (err) {
+  // Auto-suggest is best-effort. Never fail the Stop hook over it.
+  appendEvent(
+    mechanicalRecord("lessons_autosuggest_error", {
+      session_id: sessionId,
+      error: String(err && err.message ? err.message : err).slice(0, 240),
+    })
+  );
+}
 
 process.exit(0);
 
