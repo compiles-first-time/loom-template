@@ -104,14 +104,48 @@ fi
 
 echo "  All smoke checks passed."
 
-# --- 3. Next steps -----------------------------------------------------------
+# --- 3. v0.2 runtime stamping ------------------------------------------------
 echo ""
-echo "Bootstrap complete. Next steps:"
+echo "Generating v0.2 runtime artifacts..."
+
+# Touch today's JSONL so hooks have somewhere to write
+DATE_LOG="$ROOT/memory/event-log/$(date -u +%Y-%m-%d).jsonl"
+if [ ! -f "$DATE_LOG" ]; then
+    : > "$DATE_LOG"
+    echo "  created: memory/event-log/$(basename "$DATE_LOG")"
+else
+    echo "  exists:  memory/event-log/$(basename "$DATE_LOG")"
+fi
+
+# Regenerate .claude/settings.json mcpServers block from the YAML
+if [ -f "$ROOT/scripts/lib/mcp-yaml-to-settings.mjs" ] && command -v node >/dev/null 2>&1; then
+    if node "$ROOT/scripts/lib/mcp-yaml-to-settings.mjs" 2>&1 | sed 's/^/  /'; then
+        :
+    else
+        echo "  warn: mcp settings generation failed (continuing)"
+    fi
+else
+    echo "  skip: node or generator not available; .claude/settings.json mcpServers not regenerated"
+fi
+
+# --- 4. Summary --------------------------------------------------------------
+echo ""
+echo "============================================================"
+echo "Bootstrap complete — Loom v0.2.0 | Kernel v6"
+echo "============================================================"
+echo "  Project:     $PROJECT_NAME"
+echo "  Root:        $ROOT"
+echo "  Stamped:     ${#PLACEHOLDER_FILES[@]} files"
+echo "  Event log:   memory/event-log/$(basename "$DATE_LOG")"
+echo "  Subagents:   $(ls "$ROOT/.claude/agents" 2>/dev/null | wc -l) at .claude/agents/"
+echo "  Hooks:       $(ls "$ROOT/scripts/hooks" 2>/dev/null | grep -c '\.mjs$') at scripts/hooks/"
+echo ""
+echo "Next steps:"
 echo "  1. Install your canonical Trajectory Kernel V6 text into constitution/kernel-v6.md"
 echo "  2. Edit CLAUDE.md to describe this project's specific goals"
 echo "  3. Decide full-6 vs minimal-3 agent set (see layers/L2-agents.md)"
 echo "  4. Copy .env.example to .env and fill in API keys"
 echo "  5. Confirm or override ADR-0002 (orchestration framework)"
-echo "  6. git init && git add . && git commit -m 'Loom v0.1 scaffold'"
+echo "  6. git init && git add . && git commit -m 'Loom v0.2 scaffold'"
 echo ""
-echo "Loom version: 0.1.0 | Kernel version: v6"
+echo "Run \`scripts/doctor.sh\` (PR-5) to validate the project at any time."
