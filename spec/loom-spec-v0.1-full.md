@@ -372,7 +372,7 @@ A single 1,600-line architecture document is the **wrong shape** for LLM-mediate
 | `CLAUDE.md` | Routes Claude (chat) and Claude Code to the right layer specs. Contains: project identity, current goals, agent roster, open questions, current ADRs in flight | Hard cap ~10KB; if it grows beyond, refactor |
 | `AGENTS.md` | Quick-reference agent topology. Each agent's role, scope, owner, and current state | Hard cap ~5KB |
 
-The size discipline matters: Liu et al. (2024) showed degradation begins around ~32K tokens in context-window. CLAUDE.md is read **every session**, so it must stay small. Larger detail lives in `layers/L*.md` and is loaded on demand.
+The size discipline matters: Liu et al. (2024) "Lost in the Middle" describes a **positional U-shaped recall curve at any context length** — recall is strongest at the start and end of the input, weakest in the middle, regardless of total length. There is no specific token cliff (an earlier draft said "around ~32K"; that wording was imprecise and is corrected here per Loom Enhancement Batch 01 E9). CLAUDE.md is read **every session**, so it must stay small. Larger detail lives in `layers/L*.md` and is loaded on demand.
 
 `[LLM-A][M]` — *Side note: in the original PRISM spec there was a "CLAUDE.md size limit error" caught during validation. This discipline addresses that.*
 
@@ -439,7 +439,7 @@ The supervisor does NOT execute tasks directly. It delegates to base agents or d
 | # | Agent | Role | Project-agnostic? | Origin |
 |---|---|---|---|---|
 | 1 | **HR-Agent** | Team manager; creates and retires agents; maintains roster; names new agents | Yes | Pablo's "non-human resource agent" `[transcript][H]` |
-| 2 | **Expert Agent Creator (EAC)** | Specialist factory; researches tools/APIs by trial-and-error; creates domain-expert agents on demand | Yes | Pablo's system `[transcript][H]` |
+| 2 | **Expert Agent Creator (EAC)** | Specialist factory; researches tools/APIs by trial-and-error **under the source-tier research discipline (§B.8 / ADR-0009)**; creates domain-expert agents on demand | Yes | Pablo's system `[transcript][H]`; research standards added per ADR-0009 `[research-p1][M]` |
 | 3 | **Human Replica** | User proxy; subscribes to all user communications; answers "what would the user do?" | Yes — but each project's replica has project-scoped memory | Pablo `[transcript][H]` |
 | 4 | **Critic/Auditor** | Quality gate; reviews outputs before commitment; enforces confidence calibration | Yes | `[base][M]` |
 | 5 | **Memory-Keeper** | Manages all memory subsystems; RAG retrieval; lesson propagation | Yes | `[transcript][H]` partial — memory is distributed in 10x; Loom centralizes |
@@ -473,6 +473,19 @@ sequenceDiagram
 
 Specialists are **terminated at end of project lifecycle**, but their lessons-learned persist in the project's lessons-learned log and (if explicitly promoted) into Loom's shared lessons-learned bus.
 
+### Context budget (per-agent, orchestrator-enforced)
+
+`[research-p1][H]` — added per ADR-0004 (Loom Enhancement Batch 01)
+
+Loom v0.1 operationalized context discipline only as L1 file size caps. There was no per-agent budget, no just-in-time policy, no compaction discipline. The Phase 1 research surfaces the missing concept: the binding constraint on agent quality is *allocation* of useful context, not window size — effective context length runs 1–2 orders of magnitude below the advertised window (NoLiMa, Modarressi et al., ICML 2025). Loom now requires:
+
+- Every agent declares a **`context-budget:`** in its `SKILL.md` — a target maximum of *useful* tokens, distinct from the model's advertised window.
+- The L5 supervisor enforces this budget at dispatch time (see §B.6) and assembles context just-in-time, not preloaded.
+- The L3 retrieval pipeline returns assembled sets that respect the requesting agent's budget.
+- Long-running tasks compact via the "closing the books" checkpoint pattern: structured notes replace raw history at each checkpoint.
+
+Together with §B.4 (retrieval pipeline) and §B.5 routing (ADR-0005), this gives Loom an explicit *context engineering* discipline that the v0.1 spec lacked.
+
 ### Hallucination firewall via hierarchy
 
 `[transcript][H]`
@@ -491,6 +504,20 @@ Loom exploits this:
 
 **Synthesizer resolution `[synth][S]`:**
 The hallucination-firewall argument and the O(N²) overhead argument both have merit. Loom's stance: prefer the smallest agent set that handles the task. Six base agents is already a lot for a solo developer — we explicitly flag in §H Open Questions whether all 6 are necessary for v1.
+
+### Pre-dispatch context admission check (chaperone gate)
+
+`[research-p1][M]` — added per ADR-0008 (Loom Enhancement Batch 01)
+
+The Critic is the post-hoc *output* gate. ADR-0008 adds its complementary pre-dispatch *input* gate. Biology analogy: proteasomes destroy spent proteins (Loom has this as task termination + Critic output review); chaperones protect a protein *while* it folds (Loom lacked this until now). Given the distractor caveat in §B.4 and the trust-boundary caveat there too, the assembled context at dispatch is exactly where misfolding starts.
+
+Before an agent runs, its assembled context passes three checks performed by the Critic:
+
+1. **Budget compliance** — fits the agent's declared `context-budget:` (§B.3 above / ADR-0004).
+2. **Source-tier compliance** — retrieved items come from acceptable source tiers (§B.4 / ADR-0007; tier definitions in §B.8 / ADR-0009).
+3. **Obvious-pattern check** — obvious prompt-injection and distractor characteristics are screened.
+
+Failures escalate; they do not silently run. This is a sound architectural inference from Phase 1 evidence rather than a citable named component — hence `[M]`.
 
 ### Confidence calibration (mandatory)
 
@@ -559,6 +586,30 @@ Useful analogies for how the audit-log-as-non-primitive pattern is validated els
 | **Financial** | Mettle Bank's WODE (Write Once Double Entry); accounting "closing the books" pattern | Periodic summarization + checkpointing addresses storage growth |
 | **Healthcare** | HIPAA: minimum 6-year retention; Write-Once-Read-Many (WORM) | Audit logs must be tamper-evident |
 | **Aerospace** | Flight Data Recorders: circular buffer with **25-hour retention**, up to 3,500 parameters | Bounded retention beats infinite retention — Loom event logs should rotate, not grow forever |
+
+### Retrieval pipeline
+
+`[research-p1][H]` — added per ADR-0003 (Loom Enhancement Batch 01, Phase 1 research synthesis)
+
+The base v0.1 spec named five storage subsystems but did not specify a retrieval pipeline. "Retrieve from the vector index" is a placeholder, not a design. Every project would re-improvise. Loom now ships an explicit `retrieve → rerank → assemble` default.
+
+| Stage | What happens | Evidence |
+|---|---|---|
+| **Retrieve** | Hybrid: dense vector + sparse BM25, fused with **Reciprocal Rank Fusion**. Pure vector search is not the default | Cormack et al. SIGIR 2009 (RRF). `[research-p1][H]` |
+| **Rerank** | Cross-encoder reranker over the top-k fused candidates | Single highest-impact component in benchmarks; Santhanam et al., ColBERTv2 NAACL 2022. Mitigates the distractor risk identified below. `[research-p1][H]` |
+| **Assemble** | Highest-ranked items at the **start and end** of context, never buried in the middle; result must fit the requesting agent's context budget (§B.3 / §B.6) | Lost-in-the-middle is a positional U-shape at any context length; see §B.2 |
+
+**Non-negotiables baked into the pipeline:**
+
+- **Dense retrieval is not deployed without a reranker.** A stronger semantic retriever is *not* strictly better: semantically-similar-but-irrelevant passages hurt accuracy more than random text. The reranker is the mitigation. `[research-p1][H]` Cuconasu et al., SIGIR 2024 ("Power of Noise").
+- **Chunking:** recursive split, target **200–400 tokens**, small overlap. The common ~800-token default measurably underperforms; chunk *size* dominates chunk *strategy*. `[research-p1][H]` Chroma chunking evaluation, 2024.
+- **Embedding model:** commit to **one** model per project. Changing it forces a full re-embed of the corpus. Prefer a Matryoshka-trained model for dimension flexibility without re-embed. `[research-p1][H]` Kusupati et al., NeurIPS 2022.
+
+### Trust boundary on retrieved / externally-ingested content
+
+`[research-p1][H]` — added per ADR-0007 (Loom Enhancement Batch 01)
+
+Retrieved or external content is **untrusted** until validated. Content entering the vector index or knowledge graph from external sources (web search, tool output, third-party feeds) is **quarantined / flagged** until it passes the validation gate; tier metadata is recorded on each record. Memory poisoning is cheap and effective: PoisonedRAG (Zou et al., USENIX Security 2025) reached ~90% attack success by injecting ~5 malicious documents into a million-document store; MEXTRA (Wang et al., ACL 2025) extracted ~25% of a memory store via black-box queries; OWASP LLM Top 10 2025 codifies this as LLM08 (Vector & Embedding Weaknesses). The user's deferred *agent-sovereignty* security (§E.6) is an access-control axis; *data-integrity* security is **not** deferred. The project-wide implementation lives in §B.8 (Update Bus source tiering).
 
 ### Persistence guarantees
 
@@ -684,16 +735,22 @@ The decision is itself an ADR (see §B.2). It can be revised when better evidenc
 
 ### LLM provider routing
 
-`[base][H] + [synth]`
+`[base][H] + [synth] + [research-p1][H]` — updated per ADR-0005 and the E9 model-identifier correction (Loom Enhancement Batch 01)
 
-| Provider | Models | Use case | Routing rule |
+Roles are described by capability, not by version string. Concrete model identifiers (e.g., `claude-...`, `gpt-...`, `gemini-...`) are validated at `loom init` time against current vendor catalogs and are **not** hardcoded here, because they age within months — the same staleness reason that caused the cost-figures table to be cut in §F.
+
+| Role | Provider | Use case | Routing rule |
 |---|---|---|---|
-| Anthropic (Claude) | Claude 4.6/4.7 Sonnet, Opus, Code | Primary reasoning, coding, document synthesis | Default for all complex tasks |
-| OpenAI | GPT-4o, o3-mini | Fallback reasoning | When Claude is rate-limited or down |
-| Google | Gemini 1.5/2.0 Pro | Long-context tasks (1M tokens, with caveats) | When context exceeds Claude's window — but note Gemini degrades at ~800K tokens `[transcript][H]` |
-| Local (consumer GPU) | Llama 3 13B, Qwen 14B+ | Embeddings, guardrails, sensitive data | When privacy or cost demands it |
+| Frontier reasoning model | Anthropic (Claude family) | Primary reasoning, coding, document synthesis | Default for all complex tasks |
+| Fallback reasoning model | OpenAI | Fallback reasoning | When the primary provider is rate-limited or down |
+| Long-context model | Google (Gemini family) | Long-context tasks — **but see effective-context caveat** | When the task's *effective* context budget cannot be served by the primary |
+| Local model | Open-weights on consumer GPU (Llama / Qwen family) | Embeddings, guardrails, sensitive data | When privacy or cost demands it |
 
-**Critical principle `[LLM-A][H]` + `[synth]`:** All routing decisions are logged. No model is allowed to recursively grade its own output (avoids the information-theoretic collapse problem documented in LLM-B's Sakana AI / Darwin Gödel Machine reference and reinforced by ICLR 2025 model-collapse research).
+**Effective-context caveat `[research-p1][H]` (per ADR-0005):** advertised context windows are not effective windows. Effective length can be 1–2 orders of magnitude smaller on hard retrieval (NoLiMa, Modarressi et al., ICML 2025 — Gemini 1.5 Pro's effective length lands near ~2K tokens, not 800K; a 200K-window model retains reliable retrieval only to ~4K). The earlier "Gemini degrades ~800K tokens `[transcript][H]`" claim in the v0.1 spec was imprecise and is superseded.
+
+**Routing rule (oversized context):** if a task's required context exceeds the effective budget for any chosen model, route it through the L3 retrieval pipeline (§B.4 / ADR-0003): chunk → retrieve → rerank → assemble. **Do not** "solve" the problem by selecting a model with a larger advertised window — that is silent failure.
+
+**Critical principle `[LLM-A][H]` + `[synth]`:** All routing decisions are logged. No model is allowed to recursively grade its own output (information-theoretic collapse).
 
 ### Real-world analogy
 
@@ -738,6 +795,20 @@ LLM-B documents three patterns:
 | **Progress Ledger** | Where each task currently is | `{task_id, current_step, last_action, next_action, blockers, confidence, valid_from, valid_to}` |
 
 Both are persisted to the project DB and replayable from the episodic event log.
+
+### Context engineering (just-in-time assembly + compaction)
+
+`[research-p1][H]` — added per ADR-0004 (Loom Enhancement Batch 01)
+
+The supervisor practices just-in-time context assembly:
+
+1. **Assemble just-in-time.** Pull only the slices relevant to the current task from L3 memory via the retrieval pipeline (§B.4 / ADR-0003); do not preload the agent's full possible context.
+2. **Enforce the declared `context-budget:`.** Before dispatch, validate that the assembled context fits the budget recorded in the agent's `SKILL.md` (§B.3 / ADR-0004). If it exceeds, compact or re-retrieve — do not dispatch overflowing context.
+3. **Compact long-running tasks.** The existing "closing the books" checkpoint pattern is the compaction hook: transient working context is summarized into a structured note, and the next chunk of work starts from the note rather than the raw history.
+
+Anthropic's "Effective context engineering for AI agents" (2025) names just-in-time retrieval, compaction, and structured note-taking as the core techniques. Loom adopts all three.
+
+The Critic performs a pre-dispatch **context admission check** on the assembled context (§B.3 / ADR-0008).
 
 ### Long-running task support
 
@@ -796,7 +867,8 @@ The OpenTelemetry GenAI alignment matters: `[base][M]` notes Rules 22–23 of th
 | Task latency | Pending → complete | > 4h | Escalate |
 | Error rate | Failed/total tasks | > 10% | Review + alert |
 | Memory growth | Markdown file size | > 100KB per project | Archive + compress |
-| Confidence drift | Average confidence over time | Declining trend | Investigate (potential collapse signal) |
+| Faithfulness drift (primary) | RAGAS-style faithfulness/groundedness against a fixed golden set | Declining trend | Investigate; pause Update Bus auto-merges until cleared. `[research-p1][H]` per ADR-0006 |
+| Confidence drift (secondary) | Average self-reported confidence over time | Declining trend | Weak signal — investigate only if corroborated by faithfulness drift; self-reported confidence is unreliable (Kadavath et al.) `[research-p1][H]` |
 
 ### Epistemic transparency records (Kernel Rule 22)
 
@@ -831,8 +903,9 @@ Loom requires an external eval harness for every project:
 |---|---|---|
 | **Smoke evals** | Catches catastrophic regressions (agent can still start, follow basic instructions, respect kernel) | Every commit |
 | **Capability evals** | Measures task-specific performance vs. baseline | Nightly |
-| **Drift evals** | Detects confidence drift, hallucination rate increase, response distribution shift | Weekly |
+| **Drift evals** | Faithfulness drift (primary) against the golden set; confidence drift (secondary); hallucination rate; response distribution shift | Weekly |
 | **Adversarial evals** | Red-team tests including prompt injection, jailbreak attempts, kernel-violation provocations | Pre-release |
+| **Retrieval evals** `[research-p1][H]` per ADR-0006 | Faithfulness / groundedness, retrieval recall, retrieval precision against a fixed golden set (RAGAS / ARES style) | Nightly |
 
 The eval harness lives in `~/<project>/observability/eval-suite/`. Loom ships with a starter set; projects add their own.
 
@@ -855,6 +928,23 @@ This is the layer that makes Loom **living software**. It is also the layer most
 From the conversation override: *"I want this environment to be a living software where over time as I build new software with it, it improves or gets updated per new research and information."*
 
 From the user's clarifying answer: **semi-automatic — system flags candidate updates, user approves**.
+
+### Source tiering and the data-integrity trust boundary
+
+`[research-p1][H]` — added per ADR-0007 and ADR-0009 (Loom Enhancement Batch 01)
+
+Retrieved and external content is **untrusted** until validated. The user's deferral of agent-sovereignty security in §E.6 is an access-control axis; data-integrity security is a different axis and is **not** deferred — PoisonedRAG (Zou et al., USENIX Security 2025) reached ~90% attack success injecting ~5 malicious documents into a million-document store; OWASP LLM Top 10 (2025) codifies this as LLM08.
+
+The Update Bus admits incoming feeds through a **source-tiering filter** as the first pipeline stage, before the Critic. Tier definitions:
+
+| Tier | What qualifies | Filter verdict |
+|---|---|---|
+| Tier 1 | Peer-reviewed papers, official standards / vendor docs, primary sources | Admitted |
+| Tier 2 | Established institutional / analyst reports with named editorial standards | Admitted |
+| Tier 3 | Reputable secondary press with editorial oversight | Admitted |
+| Rejected | Forums, user-generated content, social media, undated / anonymous sources, AI-generated content without primary citations | Dropped |
+
+Lessons-learned and internal audits bypass the tier filter (internally sourced) but still pass through Critic review. The EAC absorbs the same standards in its own research discipline (§B.5 / ADR-0009).
 
 ### The three update sources
 
@@ -1082,7 +1172,16 @@ Where two sources disagreed and the synthesizer's resolution should be checked b
 | **Pro full 6** | Each agent has a distinct role from Pablo's system and the base spec | `[base][H] + [transcript][H]` |
 | **Pro minimal 3** | O(N²) coordination overhead; Xu et al. observe deployed multi-agent systems are often homogeneous enough that single-model matches multi-agent performance | `[LLM-A][H]` |
 
-**Synthesizer resolution:** offer both at init (`full-6` and `minimal-3`); recommend `full-6` for projects with strong governance needs, `minimal-3` for everything else. **Recommended escalation:** user picks default for *their* style.
+**Synthesizer resolution (original):** offer both at init (`full-6` and `minimal-3`); recommend `full-6` for projects with strong governance needs, `minimal-3` for everything else. **Recommended escalation:** user picks default for *their* style.
+
+**Resolution updated per [ADR-0010](../adr/0010-agent-count-by-topology.md) `[research-p1][M]` (Loom Enhancement Batch 01).** The framing above conflated two orthogonal axes. The real axis is **task topology**, not governance need (the Critic + Constitution Service are present in both modes, so governance is covered either way):
+
+- `full-6` — recommended when the project's work is **breadth-first / parallelizable** (heavy research, multi-source aggregation, exploring many branches in parallel).
+- `minimal-3` — recommended when the project's work is **depth-first / sequential** (most coding work, single linear product builds). Coordination overhead exceeds parallelism benefit on deep-narrow tasks (Cognition "Don't Build Multi-Agents", 2025).
+
+**Equal-budget caveat:** Anthropic's frequently-quoted +90.2% multi-agent research result (June 2025) was reported **without an equal-token-budget control**. The multi-agent advantage is softer than it looks; some of the gain may be from having more tokens, not more agents. Where this claim is cited, the caveat goes with it.
+
+This disputed-claim history is preserved (rather than deleted) per the spec's standing convention.
 
 ## §E.3 — Should A2A and ACP be adopted at v1 or deferred to v2?
 
@@ -1262,6 +1361,10 @@ Numbered references. Source-type tags and independence flags per synthesis promp
 [20] LLM-A: "Eight-area deep research on agent memory architectures, event sourcing, multi-agent isolation, computer architecture metaphors." File: `compass_artifact_wf-433fdeec-56ff-4fb2-b077-1d946876c17d_text_markdown.md`. — **source-type:** research-mode LLM output with arXiv / institutional / industry citations — **independence:** moderate (LLM-mediated synthesis) — **confidence:** `[M]` to `[H]` per cited evidence quality
 
 [21] LLM-B: "Six-layer agentic platform architecture research with protocol stack analysis." File: `Agentic Platform Architecture Research.docx`. — **source-type:** research-mode LLM output with blog / vendor / institutional citations — **independence:** lower (heavy blog content; vendor exposure) — **confidence:** `[M]` overall; `[V]` for vendor-pattern claims
+
+### Phase 1 research synthesis (post-v0.1, source of `[research-p1]` claims)
+
+[P1] Phase 1 retrieval & context-engineering research synthesis (2026). Source of `[research-p1]` provenance tags across the spec. Drives Loom Enhancement Batch 01 (ADR-0003 through ADR-0010, plus the E9 corrections). Expected location: `spec/research/phase1-retrieval-context-engineering.md`. **Source-type:** synthesizer-produced research document drawing on peer-reviewed papers (Liu et al. 2024; Asai et al. 2023; Cormack et al. 2009; Santhanam et al. 2022; Cuconasu et al. 2024; Kusupati et al. 2022; Modarressi et al. 2025; Es et al. 2024; Saad-Falcon et al. 2024; Zou et al. 2025; Wang et al. 2025; Kadavath et al.) and industry references (Anthropic effective-context-engineering 2025; Cognition "Don't Build Multi-Agents" 2025; Chroma chunking evaluation 2024; OWASP LLM Top 10 2025) — **independence:** moderate (synthesizer-assembled; underlying papers are independent) — **confidence:** `[H]` for individual peer-reviewed citations; `[M]` overall for the synthesis-level inferences (multi-agent topology framing, chaperone-gate inference).
 
 ### Other
 

@@ -102,6 +102,8 @@ Always be ready to answer: **"What would raise confidence to 95%?"**
 
 - *(none yet)*
 
+**Recent ADRs (Accepted):** 0003 retrieval pipeline · 0004 context budget · 0005 effective-context routing · 0006 retrieval evaluation · 0007 content trust boundary · 0008 context admission check · 0009 research standards · 0010 agent count by topology — all from Loom Enhancement Batch 01 (Phase 1 research).
+
 ---
 
 *Edit this file as the project evolves. It is the single source of "where to look next" for any agent or human entering this project.*

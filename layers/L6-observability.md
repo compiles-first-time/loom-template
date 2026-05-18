@@ -26,7 +26,8 @@ OTel GenAI alignment satisfies Kernel Rules 22–23 simultaneously.
 | Task latency | > 4h pending | Escalate |
 | Error rate | > 10% failed/total | Review + alert |
 | Memory growth | > 100 KB per markdown file | Archive + compress |
-| Confidence drift | Declining trend | Investigate (potential collapse signal) |
+| Faithfulness drift (primary) | Declining trend against the fixed golden set (RAGAS-style faithfulness/groundedness) | Investigate; pause auto-merges via the Update Bus until cleared `[research-p1][H]` (per [ADR-0006](../adr/0006-retrieval-evaluation.md)) |
+| Confidence drift (secondary) | Declining average self-reported confidence | Weak signal; investigate if corroborated by faithfulness drift — self-reported confidence is unreliable on its own (Kadavath et al.) `[research-p1][H]` |
 
 ## Epistemic transparency record (Kernel Rule 22)
 
@@ -59,6 +60,7 @@ Lives in [`../observability/eval-suite/`](../observability/eval-suite/). Require
 | Capability evals | Nightly |
 | Drift evals | Weekly |
 | Adversarial evals (prompt injection, jailbreak, kernel-violation provocations) | Pre-release |
+| **Retrieval evals** (faithfulness / groundedness, retrieval recall, retrieval precision against a fixed golden set) `[research-p1][H]` per [ADR-0006](../adr/0006-retrieval-evaluation.md) | Nightly |
 
 Loom ships a starter set; projects extend.
 
@@ -70,3 +72,5 @@ Loom ships a starter set; projects extend.
 - [ ] Wire OTel GenAI exporter on all agents
 - [ ] Implement smoke eval suite (must pass before `loom run`)
 - [ ] Define alert routing (email? ntfy? Slack?)
+- [ ] Author the retrieval golden set + nightly RAGAS-style runner per [ADR-0006](../adr/0006-retrieval-evaluation.md)
+- [ ] Wire faithfulness drift as the primary drift signal on the dashboard
