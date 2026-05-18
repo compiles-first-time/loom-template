@@ -13,11 +13,13 @@ Make Loom **living software** without enabling silent self-modification. Every u
 
 ```
 [External research feed]──┐
-[Project lessons-learned]─┼──▶ inbox/ ──▶ Critic review ──▶ Human Replica preview ──▶ User approval
-[Internal pattern audit] ─┘                                                                  │
-                                                                                              ├── Approve ──▶ ADR + spec update ──▶ optional propagation to other projects
-                                                                                              └── Reject  ──▶ archive/ with reason
+[Project lessons-learned]─┼──▶ inbox/ ──▶ Source-tiering filter ──▶ Critic review ──▶ Human Replica preview ──▶ User approval
+[Internal pattern audit] ─┘             (Tier 1-3 admitted; Rejected dropped)                                       │
+                                                                                                                     ├── Approve ──▶ ADR + spec update ──▶ optional propagation to other projects
+                                                                                                                     └── Reject  ──▶ archive/ with reason
 ```
+
+The **source-tiering filter** is the first pipeline stage on incoming external feeds, per [ADR-0007](../adr/0007-content-trust-boundary.md) (data-integrity security is not deferred even while agent-sovereignty security is). Lessons-learned and internal audits, being internally sourced, are not subject to the tier filter but still pass through Critic review. Tier definitions: [Source tiering](#source-tiering) below.
 
 ## The three update sources
 
@@ -48,6 +50,19 @@ Locations:
 - A new agent capability cannot be deployed without passing the existing eval suite
 - The kernel cannot grade itself
 
+## Source tiering
+
+> **Canonical default per [ADR-0007](../adr/0007-content-trust-boundary.md) and [ADR-0009](../adr/0009-research-standards.md).** Tiers are defined here once; L3 quarantine, the Update Bus filter, and the EAC's research discipline all reference these definitions.
+
+| Tier | What qualifies | Filter verdict |
+|---|---|---|
+| **Tier 1** | Peer-reviewed papers, official standards / official vendor docs, primary sources | Admitted |
+| **Tier 2** | Established institutional or analyst reports with named editorial standards | Admitted |
+| **Tier 3** | Reputable secondary press with editorial oversight | Admitted |
+| **Rejected** | Forums, user-generated content, social media, undated / anonymous sources, AI-generated content without primary citations | Dropped at the filter |
+
+The Update Bus tier filter admits **Tier 1–3 only**. Internal sources (project lessons-learned, internal audits) bypass the tier filter but still pass through Critic review.
+
 ## Apply flow
 
 When the user accepts an update:
@@ -61,6 +76,8 @@ When the user accepts an update:
 
 ## Open work for this layer
 
-- [ ] Configure research feed sources (RSS / arXiv / GitHub releases)
+- [ ] Configure research feed sources (RSS / arXiv / GitHub releases) — tag each feed with its expected tier
 - [ ] Define monthly internal-audit cadence for the Critic
 - [ ] Decide cross-project propagation policy for this project
+- [ ] Implement the source-tiering filter as the first Update Bus pipeline stage per [ADR-0007](../adr/0007-content-trust-boundary.md)
+- [ ] Confirm the EAC's research discipline aligns with [Source tiering](#source-tiering) per [ADR-0009](../adr/0009-research-standards.md)

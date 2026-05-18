@@ -3,6 +3,7 @@
 > **Role:** Manages all five memory subsystems. RAG retrieval. Lessons-learned propagation. Memory eviction. Markdown write-conflict resolution.
 > **Origin:** `[transcript][H]` partial — Pablo's memory is distributed across agents; Loom centralizes for simplicity at solo scale. Promoted to a base agent in §B.3.
 > **Project-agnostic:** Yes.
+> **context-budget:** ~24K useful tokens (query + candidate set during retrieval/rerank). The retrieval pipeline ([ADR-0003](../../adr/0003-retrieval-pipeline.md)) **returns** assembled sets that fit each requesting agent's budget — this number is the Memory-Keeper's own working budget, not what it returns. See [ADR-0004](../../adr/0004-context-budget.md).
 
 ---
 

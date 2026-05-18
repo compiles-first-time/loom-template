@@ -10,8 +10,11 @@
 |---|---|---|---|
 | **Smoke** | Catches catastrophic regressions (agent starts, follows basic instructions, respects kernel) | Every commit | `smoke/` |
 | **Capability** | Task-specific performance vs. baseline | Nightly | `capability/` |
-| **Drift** | Confidence drift, hallucination rate, response distribution shift | Weekly | `drift/` |
+| **Drift** | Confidence drift (secondary), faithfulness drift against the golden set (primary), hallucination rate, response distribution shift | Weekly | `drift/` |
 | **Adversarial** | Prompt injection, jailbreak attempts, kernel-violation provocations | Pre-release | `adversarial/` |
+| **Retrieval** | Faithfulness / groundedness, retrieval recall, retrieval precision against a fixed golden set | Nightly | `retrieval/` |
+
+The **Retrieval** category was added per [ADR-0006](../../adr/0006-retrieval-evaluation.md). Self-reported confidence is unreliable as a drift signal (Kadavath et al.); RAGAS-style faithfulness against a fixed golden set is the primary drift detector. `[research-p1][H]`
 
 ## Starter checks (smoke)
 

@@ -41,12 +41,18 @@ This decision is itself an ADR. Revisable; see [`../adr/0002-orchestration-frame
 
 ## LLM provider routing
 
-| Provider | Use case |
-|---|---|
-| Anthropic (Claude 4.6/4.7 Sonnet, Opus) | Default — complex tasks |
-| OpenAI (GPT-4o, o3-mini) | Fallback when Claude unavailable |
-| Google (Gemini 1.5/2.0 Pro) | Long-context (note: Gemini degrades ~800K tokens `[transcript][H]`) |
-| Local (Llama 3, Qwen 14B+) | Embeddings, guardrails, sensitive data |
+> Model identifiers below are **role-based**, not version-pinned. Concrete model strings (`claude-...`, `gpt-...`, `gemini-...`) are stale within months and must be validated at `loom init` time, not hardcoded in the spec.
+
+| Role | Provider | Use case |
+|---|---|---|
+| Frontier reasoning model | Anthropic (Claude family) | Default — complex tasks, coding, document synthesis |
+| Fallback reasoning model | OpenAI | When the primary provider is rate-limited or unavailable |
+| Long-context model | Google (Gemini family) | Long-context — **but see the effective-context caveat below** |
+| Local model | Open-weights, consumer GPU (Llama / Qwen family) | Embeddings, guardrails, sensitive data |
+
+**Effective-context caveat `[research-p1][H]` (per [ADR-0005](../adr/0005-effective-context-routing.md)):** advertised context windows are **not** effective windows. Effective length can be 1–2 orders of magnitude smaller on hard retrieval (NoLiMa, Modarressi et al., ICML 2025 — e.g., a 200K-window model reliably retrieves only ~4K tokens on lexical-overlap-free tasks; a 2M-window model only ~2K). The earlier "Gemini degrades ~800K" claim from a podcast was imprecise and is superseded by this finding.
+
+**Routing rule:** if a task's required context exceeds the effective budget for the chosen model, route it through the L3 retrieval pipeline (chunk → retrieve → rerank → assemble, [ADR-0003](../adr/0003-retrieval-pipeline.md)). **Do not** "solve" oversized context by selecting a larger-window model — that is the silent-failure path.
 
 **Critical:** All routing decisions logged. No model grades its own output (information-theoretic collapse — `[LLM-A][H]`).
 
@@ -57,3 +63,5 @@ This decision is itself an ADR. Revisable; see [`../adr/0002-orchestration-frame
 - [ ] Populate [`../tools/mcp-servers/config.yaml`](../tools/mcp-servers/config.yaml) for this project
 - [ ] Confirm orchestration framework choice in [`../adr/0002-orchestration-framework.md`](../adr/0002-orchestration-framework.md)
 - [ ] Set provider API keys via env vars (never commit secrets)
+- [ ] Validate concrete model identifiers (Claude / GPT / Gemini / local) against current vendor catalogs at `loom init`; do not rely on the role-based names above as version strings
+- [ ] Record per-model effective-context multipliers used by the router (per [ADR-0005](../adr/0005-effective-context-routing.md))
