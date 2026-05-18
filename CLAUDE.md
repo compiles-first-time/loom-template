@@ -114,7 +114,7 @@ Use `Bash` with a single-line `echo` redirect (POSIX) or `Add-Content` (PowerShe
 
 - *(none yet)*
 
-**Recent ADRs (Accepted):** 0003–0010 from Loom Enhancement Batch 01 (retrieval + context engineering, Phase 1 research) · 0011 Claude Code enforcement runtime (v0.2 PR-1 / A) · 0012 base subagents (v0.2 PR-2 / B). PRs C–F land sequentially.
+**Recent ADRs (Accepted):** 0003–0010 from Loom Enhancement Batch 01 (retrieval + context engineering, Phase 1 research) · 0011 Claude Code enforcement runtime (v0.2 PR-1 / A) · 0012 base subagents (v0.2 PR-2 / B) · 0013 bootstrap unification (v0.2 PR-3 / D) · 0014 lessons-learned auto-suggest (v0.2 PR-4 / E). PRs C, F land next.
 
 ---
 
