@@ -1,0 +1,94 @@
+#!/usr/bin/env node
+// Loom SessionStart hook.
+//
+// Fired when a Claude Code session begins. Writes a session header to
+// today's JSONL event log and — if placeholders like <PROJECT_NAME> are
+// still present in stamped files — runs the bootstrap script idempotently
+// with derived defaults.
+
+import {
+  appendEvent,
+  mechanicalRecord,
+  readStdinJson,
+  findPlaceholders,
+  deriveProjectName,
+  deriveUserName,
+  warn,
+  PROJECT_ROOT,
+} from "./_lib.mjs";
+import { spawnSync } from "node:child_process";
+import path from "node:path";
+import { existsSync } from "node:fs";
+
+const event = await readStdinJson();
+
+appendEvent(
+  mechanicalRecord("session_start", {
+    session_id: event.session_id || process.env.CLAUDE_SESSION_ID || `local-${Date.now()}`,
+    source: event.source || "claude-code",
+    transcript_path: event.transcript_path || null,
+  })
+);
+
+// Idempotent bootstrap: only runs if placeholders remain.
+const placeholders = await findPlaceholders();
+if (placeholders.length > 0) {
+  const projectName = deriveProjectName();
+  const userName = deriveUserName();
+
+  appendEvent(
+    mechanicalRecord("auto_bootstrap_attempted", {
+      placeholders_found: placeholders,
+      derived_project_name: projectName,
+      derived_user_name: userName,
+    })
+  );
+
+  // Pick a runner. POSIX: prefer the .sh; Windows: prefer the .ps1.
+  const isWindows = process.platform === "win32";
+  const shScript = path.join(PROJECT_ROOT, "scripts", "bootstrap.sh");
+  const ps1Script = path.join(PROJECT_ROOT, "scripts", "bootstrap.ps1");
+
+  let result;
+  if (isWindows && existsSync(ps1Script)) {
+    result = spawnSync(
+      "powershell.exe",
+      [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        ps1Script,
+        "-ProjectName",
+        projectName,
+        "-UserName",
+        userName,
+      ],
+      { cwd: PROJECT_ROOT, encoding: "utf8" }
+    );
+  } else if (existsSync(shScript)) {
+    result = spawnSync("bash", [shScript, projectName, "", userName], {
+      cwd: PROJECT_ROOT,
+      encoding: "utf8",
+    });
+  } else {
+    warn("placeholders present but no bootstrap script found; skipping auto-bootstrap");
+  }
+
+  if (result) {
+    appendEvent(
+      mechanicalRecord("auto_bootstrap_result", {
+        exit_code: result.status,
+        stdout_preview: (result.stdout || "").slice(0, 500),
+        stderr_preview: (result.stderr || "").slice(0, 500),
+      })
+    );
+    if (result.status !== 0) {
+      warn(
+        `auto-bootstrap exited ${result.status}; placeholders may still be present. Run scripts/bootstrap.{sh,ps1} manually with the right project name.`
+      );
+    } else {
+      warn(`auto-bootstrap stamped project as "${projectName}" (user="${userName}")`);
+    }
+  }
+}

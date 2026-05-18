@@ -1,7 +1,7 @@
 # LOOM — The Reusable AI-Augmented Development Ecosystem
 
 **Document type:** Phase 1 synthesis output (single canonical specification)
-**Document status:** Draft v0.1 — synthesized 2026-05-12 from project files
+**Document status:** Draft v0.1 — synthesized 2026-05-12 from project files; v0.2 amendments tracked in Part J of [`spec/loom-spec-v0.1-full.md`](./spec/loom-spec-v0.1-full.md) (template ships v0.2.0)
 **Successor to:** PRISM-Architecture-Spec-For-LLM-Review (which Loom now subsumes as project-agnostic substrate)
 **Companion to:** Trajectory Kernel V6 (constitutional substrate)
 **Author:** Synthesizer (Claude Opus 4.7) on behalf of Nick

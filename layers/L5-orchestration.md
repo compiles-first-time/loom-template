@@ -12,14 +12,18 @@
 | Mesh / Swarm | v3 escape hatch — hard to debug; hard for Constitution Service to intercept |
 | Hybrid | v2 evolution path |
 
+## Who is the supervisor in v0.2?
+
+> **Honest reframe per [ADR-0011](../adr/0011-claude-code-enforcement-runtime.md).** v0.1 referred to a Magentic-One "supervisor" as if it were a separate process. In practice, **the Claude Code session is the supervisor**: it reads the ledgers, dispatches to subagents (`.claude/agents/*.md` from PR-2 of v0.2), and operates the two-ledger pattern through hooks and tool calls. Magentic-One remains the cited *pattern* (Fourney et al. 2024); the *implementation* is the session + hooks + subagents.
+
 ## The two ledgers
 
-| Ledger | File | Schema |
-|---|---|---|
-| Task Ledger | [`../orchestration/task-ledger.md`](../orchestration/task-ledger.md) | `{task_id, project, agent_assigned, status, dependencies, deadline, created_at, updated_at}` |
-| Progress Ledger | [`../orchestration/progress-ledger.md`](../orchestration/progress-ledger.md) | `{task_id, current_step, last_action, next_action, blockers, confidence, valid_from, valid_to}` |
+| Ledger | File | Schema | Who writes |
+|---|---|---|---|
+| Task Ledger | [`../orchestration/task-ledger.md`](../orchestration/task-ledger.md) | `{task_id, project, agent_assigned, status, dependencies, deadline, created_at, updated_at}` | Session, on task creation; subagents on status change |
+| Progress Ledger | [`../orchestration/progress-ledger.md`](../orchestration/progress-ledger.md) | `{task_id, current_step, last_action, next_action, blockers, confidence, valid_from, valid_to}` plus a v0.2 **Session log** section (`{session_id, started, ended, tool_calls, errors, note}`) written by the Stop hook | Session + Stop hook |
 
-Both are persisted to the project DB and replayable from the [episodic event log](../memory/event-log/).
+Both are persisted to git and replayable from the [episodic event log](../memory/event-log/), which the v0.2 hooks now populate automatically.
 
 ## Long-running task support
 
@@ -27,8 +31,8 @@ The system must support 35-hour autonomous task chains `[transcript][H]`:
 
 - Heartbeat that doesn't timeout on long tasks
 - User can interrupt and redirect at any time (Kernel Rule 1)
-- All intermediate state recoverable from event log
-- Periodic checkpoints summarized to markdown — the "closing the books" pattern from `[LLM-A][H]`
+- All intermediate state recoverable from event log — v0.2 hooks populate this automatically
+- Periodic checkpoints summarized to markdown — the "closing the books" pattern from `[LLM-A][H]`. In v0.2, the **Stop hook** writes one Session-log row per session as the closing-the-books artifact ([ADR-0011](../adr/0011-claude-code-enforcement-runtime.md))
 
 ## Context engineering
 
@@ -53,8 +57,9 @@ The Critic also performs a pre-dispatch **context admission check** ([ADR-0008](
 
 ## Open work for this layer
 
-- [ ] Wire supervisor to read/write both ledgers
+- [x] Wire the session-as-supervisor to populate the progress ledger via the Stop hook (v0.2, [ADR-0011](../adr/0011-claude-code-enforcement-runtime.md))
+- [ ] Wire subagents to update the Task Ledger on dispatch / completion (PR-2 of v0.2)
 - [ ] Implement long-running task heartbeat
-- [ ] Define checkpoint cadence ("closing the books" interval)
+- [ ] Define checkpoint cadence ("closing the books" interval) beyond once-per-session
 - [ ] Wire just-in-time context assembly + `context-budget:` enforcement per [ADR-0004](../adr/0004-context-budget.md)
 - [ ] Hook compaction into the checkpoint cadence (summarize → structured note → resume)

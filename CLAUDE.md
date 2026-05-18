@@ -2,7 +2,7 @@
 
 > **Project:** `<PROJECT_NAME>` *(replace at bootstrap)*
 > **Description:** `<one-sentence description>` *(replace at bootstrap)*
-> **Loom version:** 0.1
+> **Loom version:** 0.2.0
 > **Kernel version:** v6
 > **Initialized:** `<YYYY-MM-DD>`
 
@@ -86,6 +86,18 @@ Always be ready to answer: **"What would raise confidence to 95%?"**
 - **Lessons-learned for failures.** Surface to [`lessons-learned/`](./lessons-learned/).
 - **Provenance tags `[source][confidence]`** on every non-trivial claim, per Kernel Rule 22.
 
+## Claim convention (v0.2)
+
+> Hooks in [`.claude/settings.json`](./.claude/settings.json) auto-emit the **mechanical subset** of the Rule-22 trace (timestamp, tool, args, exit code) to `memory/event-log/YYYY-MM-DD.jsonl`. The **introspective subset** (confidence, sources, decision log) requires you, the model, to emit it explicitly.
+
+When stating a non-trivial confidence-tagged claim, append one JSONL line to today's event log:
+
+```json
+{"timestamp":"<iso>","session_id":"<id>","event_type":"claim","agent":"<name-or-session>","claim":"<assertion>","confidence":0.87,"what_would_raise_to_95":"<answer>","sources":["<id>","..."],"decision_log":["<reason>"],"constitutional_check":"Passed Rule N"}
+```
+
+Use `Bash` with a single-line `echo` redirect (POSIX) or `Add-Content` (PowerShell). See [L6](./layers/L6-observability.md) for the full schema and rationale.
+
 ---
 
 ## Open questions (current)
@@ -102,7 +114,7 @@ Always be ready to answer: **"What would raise confidence to 95%?"**
 
 - *(none yet)*
 
-**Recent ADRs (Accepted):** 0003 retrieval pipeline · 0004 context budget · 0005 effective-context routing · 0006 retrieval evaluation · 0007 content trust boundary · 0008 context admission check · 0009 research standards · 0010 agent count by topology — all from Loom Enhancement Batch 01 (Phase 1 research).
+**Recent ADRs (Accepted):** 0003–0010 from Loom Enhancement Batch 01 (retrieval + context engineering, Phase 1 research) · 0011 Claude Code enforcement runtime (v0.2 PR-1 / A). PRs B–F land sequentially.
 
 ---
 

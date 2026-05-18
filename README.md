@@ -2,7 +2,7 @@
 
 > A reusable AI-augmented development ecosystem. This repository is the **template** (`project-000`) — clone it to bootstrap new agentic software projects.
 
-**Status:** v0.1 scaffold
+**Status:** v0.2.0 scaffold (v0.1 docs + v0.2 enforcement runtime)
 **Kernel version:** v6
 **Canonical spec:** [`loom-spec.md`](./loom-spec.md)
 
@@ -93,10 +93,23 @@ Then on GitHub: **Settings → General → Template repository → ☑**
 
 ---
 
+## Upgrading from v0.1
+
+If your project was bootstrapped from the v0.1 template, the v0.2 enforcement runtime is opt-in and additive:
+
+```bash
+# from your existing v0.1 project root, with the v0.2 template checked out alongside
+cp -r /path/to/loom-template/.claude .
+cp -r /path/to/loom-template/scripts/hooks scripts/
+# next Claude Code session will start populating memory/event-log/YYYY-MM-DD.jsonl
+```
+
+No v0.1 files are broken by the upgrade. Future v0.2 PRs (B–F) add subagents, bootstrap unification, `loom doctor`, lessons-learned auto-suggestion, and an Update Bus stub; each is independently mergeable.
+
 ## Roadmap
 
-- **v0.1** (this) — manual scaffold; canonical spec; skeleton dirs and stubs
-- **v0.2** — `loom init <name>` CLI, smoke evals, `loom doctor` env check
+- **v0.1** — manual scaffold; canonical spec; skeleton dirs and stubs
+- **v0.2 (this)** — enforcement runtime: hooks ([ADR-0011](./adr/0011-claude-code-enforcement-runtime.md)), subagents, bootstrap unification, `loom doctor`, lessons-learned auto-suggestion, Update Bus stub
 - **v0.3** — Update Bus implementation; cross-project lessons propagation
 - **v1.0** — A2A / ACP protocol adoption; cryptographic kernel-amendment signing
 

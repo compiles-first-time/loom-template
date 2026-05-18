@@ -1382,6 +1382,42 @@ Numbered references. Source-type tags and independence flags per synthesis promp
 
 ---
 
+# Part J — v0.2 Amendments
+
+This Part tracks runtime additions over the v0.1 documentary scaffold. v0.2 does **not** revise the v0.1 architectural conclusions — it operationalizes the directives v0.1 named but did not enforce. The full text of v0.1 above remains the source of record for *what* Loom decided; this Part tracks *how* v0.2 enforces it.
+
+| ADR | Amendment | Touches |
+|---|---|---|
+| [ADR-0011](../adr/0011-claude-code-enforcement-runtime.md) (PR-1 / A) | Claude Code hooks emit the Rule-22 **mechanical subset** to `memory/event-log/YYYY-MM-DD.jsonl`. The **introspective subset** is emitted by the model itself per the "Claim convention" in CLAUDE.md. Stop hook writes one Session-log row to the Progress Ledger as the L5 closing-the-books checkpoint. SessionStart hook idempotently runs the bootstrap script when placeholders remain. The "Magentic-One supervisor" is reframed honestly: **the Claude Code session is the supervisor**; Magentic-One stays as the cited pattern. L6 stack table marks Langfuse/OTel as integration targets, not shipped infrastructure | §B.3, §B.6, §B.7 |
+
+### Subsequent PRs (planned)
+
+| PR | Letter | Brief | Status |
+|---|---|---|---|
+| 2 | B | Six base subagents at `.claude/agents/*.md` derived from `agents/<name>/SKILL.md`; tool allowlists per role | Planned |
+| 3 | D | Bootstrap unification: one-way generation of `.claude/settings.json#mcpServers` from `tools/mcp-servers/config.yaml`; today's JSONL touch; one-screen summary | Planned |
+| 4 | E | Stop-hook lessons-learned auto-suggestion via error-signature dedup; drafts never auto-promoted | Planned |
+| 5 | C | `loom doctor` cross-checks (placeholders, size caps, ADRs in flight, MCP alignment, event-log coverage ratio) | Planned |
+| 6 | F | Update Bus stub: receiver API docs, no-op tick script, JSON schema for inbox items | Planned |
+
+### Operational invariants v0.2 establishes (not in v0.1)
+
+- Every Claude Code session in a Loom project produces a JSONL audit trail at `memory/event-log/YYYY-MM-DD.jsonl`, automatically.
+- Destructive operations are tagged in the log for cheap grep.
+- The progress-ledger gains a Session log row per session.
+- Bootstrap is self-healing: a session in an unstamped project runs bootstrap with derived defaults.
+- The Rule-22 schema has a documented mechanical/introspective split — honest about what hooks vs. models can fill.
+
+### Honesty corrections vs. v0.1
+
+| v0.1 framing | v0.2 correction |
+|---|---|
+| "Magentic-One supervisor" implied as a separate process | The session is the supervisor; Magentic-One is the cited pattern, not the implementation |
+| "Tracing — Langfuse (self-hosted)" / "Metrics — Prometheus + Grafana" listed as shipped | Marked as **integration targets**, not shipped; JSONL event log is the v0.2 primary observability artifact |
+| Rule-22 trace schema "non-optional" with `confidence`/`decision_log` all in one record | Split into mechanical (hook-emitted, always-on) and introspective (LLM-emitted by convention) subsets |
+
+---
+
 # Appendix A — Glossary (for first-pass readers)
 
 | Term | Meaning |
