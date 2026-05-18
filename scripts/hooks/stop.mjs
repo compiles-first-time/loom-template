@@ -1,0 +1,151 @@
+#!/usr/bin/env node
+// Loom Stop hook.
+//
+// Fired when the Claude Code session ends. Reads today's event log to
+// compute a tiny summary (tool calls, errors, destructive ops, error
+// signatures observed) and appends:
+//   1. A session_end record to today's JSONL.
+//   2. A row to orchestration/progress-ledger.md "Session log" table —
+//      the "closing the books" checkpoint from L5.
+//
+// Lessons-learned auto-suggestion lives in PR-4 (E). This hook intentionally
+// leaves an extension point at the bottom but does not yet write drafts.
+
+import {
+  appendEvent,
+  mechanicalRecord,
+  readStdinJson,
+  todayLogPath,
+  PROJECT_ROOT,
+} from "./_lib.mjs";
+import { promises as fs } from "node:fs";
+import { existsSync } from "node:fs";
+import path from "node:path";
+
+const event = await readStdinJson();
+const sessionId =
+  event.session_id || process.env.CLAUDE_SESSION_ID || `local-${Date.now()}`;
+
+// ── Tally today's events ────────────────────────────────────────────────
+
+const summary = {
+  tool_calls: 0,
+  tool_results: 0,
+  errors: 0,
+  destructive_ops: 0,
+  error_signatures: new Set(),
+  destructive_patterns: new Set(),
+  first_ts: null,
+  last_ts: null,
+};
+
+let logText = "";
+try {
+  logText = await fs.readFile(todayLogPath(), "utf8");
+} catch {
+  // No log today — session was empty or hooks weren't wired.
+}
+
+for (const line of logText.split("\n")) {
+  if (!line.trim()) continue;
+  let rec;
+  try {
+    rec = JSON.parse(line);
+  } catch {
+    continue;
+  }
+  if (rec.session_id && rec.session_id !== sessionId) continue;
+  summary.first_ts = summary.first_ts || rec.timestamp;
+  summary.last_ts = rec.timestamp;
+  if (rec.event_type === "tool_call") summary.tool_calls++;
+  if (rec.event_type === "tool_result") {
+    summary.tool_results++;
+    if (rec.exit_code !== null && rec.exit_code !== 0) {
+      summary.errors++;
+      if (rec.error_signature) summary.error_signatures.add(rec.error_signature);
+    }
+  }
+  if (rec.event_type === "destructive_op") {
+    summary.destructive_ops++;
+    if (rec.destructive_pattern) summary.destructive_patterns.add(rec.destructive_pattern);
+  }
+}
+
+// ── Append session_end record ───────────────────────────────────────────
+
+appendEvent(
+  mechanicalRecord("session_end", {
+    session_id: sessionId,
+    started_at: summary.first_ts,
+    ended_at: summary.last_ts || new Date().toISOString(),
+    tool_calls: summary.tool_calls,
+    tool_results: summary.tool_results,
+    errors: summary.errors,
+    destructive_ops: summary.destructive_ops,
+    error_signatures: [...summary.error_signatures],
+    destructive_patterns: [...summary.destructive_patterns],
+  })
+);
+
+// ── Update progress-ledger.md (Session log table) ───────────────────────
+
+await appendSessionRow({
+  sessionId,
+  startedAt: summary.first_ts,
+  endedAt: summary.last_ts,
+  toolCalls: summary.tool_calls,
+  errors: summary.errors,
+  note:
+    summary.destructive_ops > 0
+      ? `destructive ops: ${[...summary.destructive_patterns].join(", ") || "(unlabeled)"}`
+      : summary.errors > 0
+      ? `${summary.errors} error(s); signatures: ${[...summary.error_signatures].join(",") || "—"}`
+      : "—",
+});
+
+// PR-4 extension point — auto-suggested lessons-learned drafts:
+//   const stopLessons = await import("./stop-lessons.mjs").catch(() => null);
+//   if (stopLessons) await stopLessons.default({ summary, sessionId });
+
+process.exit(0);
+
+// ── Helpers ─────────────────────────────────────────────────────────────
+
+async function appendSessionRow({
+  sessionId,
+  startedAt,
+  endedAt,
+  toolCalls,
+  errors,
+  note,
+}) {
+  const ledgerPath = path.join(PROJECT_ROOT, "orchestration", "progress-ledger.md");
+  if (!existsSync(ledgerPath)) return;
+
+  let text = await fs.readFile(ledgerPath, "utf8");
+  const header = "## Session log";
+  const tableHeader = [
+    "| session_id | started | ended | tool_calls | errors | note |",
+    "|---|---|---|---|---|---|",
+  ].join("\n");
+
+  if (!text.includes(header)) {
+    // Append section at end of file.
+    const newSection = `\n\n---\n\n${header}\n\n> Closing-the-books checkpoint per [L5](../layers/L5-orchestration.md). One row per Claude Code session, written by the Stop hook.\n\n${tableHeader}\n`;
+    text = text.replace(/\s+$/, "") + newSection;
+  }
+
+  const row = `| ${sessionId} | ${startedAt || ""} | ${endedAt || ""} | ${toolCalls} | ${errors} | ${escapePipe(
+    note
+  )} |\n`;
+
+  // Append row at end of file (the Session log table is the last block).
+  if (text.endsWith("\n")) text += row;
+  else text += "\n" + row;
+
+  await fs.writeFile(ledgerPath, text, "utf8");
+}
+
+function escapePipe(s) {
+  return String(s || "").replace(/\|/g, "\\|");
+}

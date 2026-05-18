@@ -11,13 +11,13 @@ A new project is being bootstrapped from the Loom Architectural Base Spec Templa
 
 ## Decision
 
-This project is instantiated from **Loom v0.1**, paired with **Kernel V6**.
+This project is instantiated from **Loom v0.2.0** (originally v0.1; v0.2 adds the enforcement runtime per [ADR-0011](./0011-claude-code-enforcement-runtime.md) without changing the v0.1 architectural conclusions), paired with **Kernel V6**.
 
 ## Consequences
 
-- Future updates flowing through the Update Bus are computed against the v0.1 baseline
-- The canonical spec lives at [`../spec/loom-spec-v0.1-full.md`](../spec/loom-spec-v0.1-full.md) — do not edit; treat it as immutable for this project
-- When Loom v0.2 ships, an upgrade ADR will be authored documenting which changes were accepted
+- Future updates flowing through the Update Bus are computed against the v0.2.0 baseline
+- The canonical spec lives at [`../spec/loom-spec-v0.1-full.md`](../spec/loom-spec-v0.1-full.md); v0.2 amendments are tracked in Part J of that file. The v0.1 architectural conclusions remain intact — v0.2 is additive runtime, not a re-synthesis
+- When Loom v0.3 ships, a fresh upgrade ADR will document the deltas
 
 ## Alternatives considered
 
