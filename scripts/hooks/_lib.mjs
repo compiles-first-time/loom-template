@@ -72,13 +72,21 @@ export function mechanicalRecord(eventType, extra = {}) {
 }
 
 // ── Argument summary (truncate + scrub obvious secrets) ──────────────────
+//
+// Two layers of redaction (per ADR-0018):
+//   1. By key name — if the field name matches secret-y words.
+//   2. By value shape — token-shaped values are redacted regardless of key.
+// Layer 2 was added in v0.3 PR-H because v0.2 had values pasted into Bash
+// commands captured in cleartext (the key was `command`, not `token`).
+
+import { redactSecrets } from "../lib/secret-patterns.mjs";
 
 const SECRET_KEY_PATTERN = /(token|key|secret|password|passwd|auth|bearer|api[_-]?key)/i;
 const MAX_ARG_LEN = 240;
 
 export function summarizeToolArgs(input) {
   if (input == null) return null;
-  if (typeof input === "string") return truncate(input);
+  if (typeof input === "string") return redactSecrets(truncate(input));
   if (typeof input !== "object") return String(input);
   const out = {};
   for (const [k, v] of Object.entries(input)) {
@@ -86,7 +94,7 @@ export function summarizeToolArgs(input) {
       out[k] = "<redacted>";
       continue;
     }
-    if (typeof v === "string") out[k] = truncate(v);
+    if (typeof v === "string") out[k] = redactSecrets(truncate(v));
     else if (Array.isArray(v)) out[k] = `array(len=${v.length})`;
     else if (v && typeof v === "object") out[k] = `object(keys=${Object.keys(v).length})`;
     else out[k] = v;

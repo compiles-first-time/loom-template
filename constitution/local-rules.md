@@ -61,6 +61,32 @@ This rule is the project-agnostic default per [ADR-0007](../adr/0007-content-tru
 
 Per [ADR-0017](../adr/0017-intent-nag.md).
 
+### LR-03 — Secrets must not appear in chat input or tool output
+
+**Status:** Active
+**Date:** 2026-05-18
+**Extends:** Kernel Rule 22 (epistemic transparency — provenance is *not* the same as exposure); Kernel Rule 20 (some narrowings are irreversible — a credential pasted into a chat log is leaked forever)
+**Author:** Architect handoff (v0.3 PR-H) — approved by Nick
+
+**Rule:** API keys, access tokens, OAuth client secrets, database connection strings with embedded passwords, signing keys, and similar credentials must **not** be pasted into:
+
+- The chat input the user sends to the model.
+- Tool call arguments captured in `memory/event-log/YYYY-MM-DD.jsonl`.
+- Any tracked file in the working tree (`.env` is the documented exception and must be `.gitignore`'d).
+
+**Why:** Once a secret hits the event log or git history it is leaked forever — rotating the credential is the only remediation. The v0.2 hook layer captures every tool call in cleartext for transparency, which is the right design *except* when a secret is in the args.
+
+**How to apply:**
+- **Prevention:** the `pre-tool-use.mjs` hook redacts token-shaped values from `tool_args_summary` before persisting (per [ADR-0018](../adr/0018-secrets-handling.md)). HIGH-confidence patterns (`ghp_*`, `sk-ant-*`, `AKIA*`, etc.) are redacted automatically.
+- **Detection:** `scripts/secrets-doctor.{sh,ps1}` scans the event log + uncommitted tracked files retrospectively. Run before any commit that touches credential-adjacent code.
+- **MCP-over-CLI:** prefer an MCP server's credentialed flow over a CLI tool that takes a secret on the command line. The credential lives in MCP config (env var or secrets-manager reference), not in tool args. See [L4 §MCP-over-CLI](../layers/L4-tooling.md).
+
+**Enforcement:** PreToolUse hook (value-shape redaction); `loom secrets-doctor` (retrospective scan); Critic monthly audit.
+
+**Heuristic — not perfect.** The redaction pattern list is curated; novel token shapes will slip through. Project-specific patterns may be added in [`scripts/lib/secret-patterns.mjs`](../scripts/lib/secret-patterns.mjs) in an ADR.
+
+Per [ADR-0018](../adr/0018-secrets-handling.md).
+
 <!--
 Template:
 
