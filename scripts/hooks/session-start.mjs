@@ -92,3 +92,24 @@ if (placeholders.length > 0) {
     }
   }
 }
+
+// Runtime discovery (PR-J / ADR-0020): regenerate tools/discovered-runtime.md
+// so the user sees what MCPs are actually wired up + which subagent files
+// are stale (newer than the discovery sentinel — not invokable until restart).
+{
+  const discoverScript = path.join(PROJECT_ROOT, "scripts", "lib", "discover-runtime.mjs");
+  if (existsSync(discoverScript)) {
+    const result = spawnSync("node", [discoverScript, "--quiet"], {
+      cwd: PROJECT_ROOT,
+      encoding: "utf8",
+    });
+    appendEvent(
+      mechanicalRecord("runtime_discovery_run", {
+        session_id: event.session_id || process.env.CLAUDE_SESSION_ID || `local-${Date.now()}`,
+        exit_code: result.status,
+        stdout_preview: (result.stdout || "").slice(0, 400),
+        stderr_preview: (result.stderr || "").slice(0, 400),
+      })
+    );
+  }
+}

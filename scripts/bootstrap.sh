@@ -129,6 +129,16 @@ else
     echo "  skip: node or generator not available; .claude/settings.json mcpServers not regenerated"
 fi
 
+# Discover runtime (MCPs + subagents) and stamp the subagent sentinel
+# so the staleness check is clean on first run.
+if [ -f "$ROOT/scripts/lib/discover-runtime.mjs" ] && command -v node >/dev/null 2>&1; then
+    node "$ROOT/scripts/lib/discover-runtime.mjs" --quiet 2>&1 | sed 's/^/  /' || true
+fi
+if [ -d "$ROOT/.claude/agents" ]; then
+    touch "$ROOT/.claude/agents/.last-discovered-at"
+    echo "  stamped: .claude/agents/.last-discovered-at (subagent discovery sentinel)"
+fi
+
 # --- 4. Summary --------------------------------------------------------------
 echo ""
 echo "============================================================"
@@ -147,6 +157,16 @@ echo "  2. Edit CLAUDE.md to describe this project's specific goals"
 echo "  3. Decide full-6 vs minimal-3 agent set (see layers/L2-agents.md)"
 echo "  4. Copy .env.example to .env and fill in API keys"
 echo "  5. Confirm or override ADR-0002 (orchestration framework)"
-echo "  6. git init && git add . && git commit -m 'Loom v0.2 scaffold'"
+echo "  6. Edit tools/runtime.yaml: set deploy.command + post_deploy_url_pattern"
+echo "  7. git init && git add . && git commit -m 'Loom v0.3 scaffold'"
 echo ""
-echo "Run \`scripts/doctor.sh\` (PR-5) to validate the project at any time."
+echo "  Run \`scripts/doctor.sh\` to validate the project at any time."
+echo "  Run \`scripts/secrets-doctor.sh\` before any commit touching credentials."
+echo ""
+echo "============================================================"
+echo "⚠  RESTART CLAUDE CODE NOW"
+echo "============================================================"
+echo "  Claude Code builds the subagent registry at session start."
+echo "  The six base subagents at .claude/agents/*.md were just"
+echo "  added to disk — they are NOT yet invokable in the current"
+echo "  session. Restart Claude Code to load them. (Per ADR-0020.)"
