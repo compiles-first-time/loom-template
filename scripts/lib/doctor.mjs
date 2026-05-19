@@ -32,6 +32,7 @@ async function main() {
   await checkMcpAlignment();
   await checkSubagentsParse();
   await checkEventLogCoverage();
+  await checkConstitutionCoverage();
   await checkSkeleton();
 
   report();
@@ -168,6 +169,56 @@ async function checkEventLogCoverage() {
   const detail = `${covered}/${total} commit days have an event-log file (last 14 days)`;
   if (ratio >= 0.5) soft("event-log-coverage", true, detail);
   else soft("event-log-coverage", false, `${detail} — under 50%; hooks may have been disabled`);
+}
+
+async function checkConstitutionCoverage() {
+  // Soft check (LR-02 / ADR-0017): for each session in the last 14 days that
+  // emitted a production_mutation_attempted event, was there a prior
+  // constitution-service claim in the same session?
+  const eventDir = path.join(ROOT, "memory", "event-log");
+  if (!existsSync(eventDir)) return soft("constitution-coverage", true, "no event log (skipped)");
+  const files = (await fs.readdir(eventDir)).filter((f) => /^\d{4}-\d{2}-\d{2}\.jsonl$/.test(f));
+  // last 14 by name sort
+  files.sort();
+  const recent = files.slice(-14);
+  const sessions = new Map(); // session_id -> { mutated, constitutionClaimed }
+  for (const f of recent) {
+    let text;
+    try {
+      text = await fs.readFile(path.join(eventDir, f), "utf8");
+    } catch {
+      continue;
+    }
+    for (const line of text.split("\n")) {
+      if (!line.trim()) continue;
+      let rec;
+      try {
+        rec = JSON.parse(line);
+      } catch {
+        continue;
+      }
+      const sid = rec.session_id;
+      if (!sid) continue;
+      const cur = sessions.get(sid) || { mutated: false, constitutionClaimed: false };
+      if (rec.event_type === "production_mutation_attempted") cur.mutated = true;
+      if (rec.event_type === "claim") {
+        const agent = String(rec.agent || "").toLowerCase();
+        if (agent === "constitution-service" || agent.endsWith("/constitution-service")) {
+          cur.constitutionClaimed = true;
+        }
+      }
+      sessions.set(sid, cur);
+    }
+  }
+  let violations = 0;
+  for (const v of sessions.values()) {
+    if (v.mutated && !v.constitutionClaimed) violations++;
+  }
+  if (violations === 0) {
+    soft("constitution-coverage", true, "no sessions mutated prod without a constitution-service claim (last 14 days)");
+  } else {
+    soft("constitution-coverage", false, `${violations} session(s) mutated prod without a constitution-service claim (LR-02). Grep memory/event-log/ for production_mutation_attempted to find them.`);
+  }
 }
 
 async function checkSkeleton() {

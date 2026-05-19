@@ -208,3 +208,34 @@ export function deriveUserName() {
 export function warn(message) {
   process.stderr.write(`[loom-hook] ${message}\n`);
 }
+
+// ── Session inspection: has constitution-service been consulted? ─────────
+//
+// Used by pre-tool-use to enforce LR-02 (production mutations require a
+// prior constitution-service claim in the same session). Returns true if any
+// `event_type: claim` line in today's JSONL has the constitution-service as
+// the `agent` field and matches the given session.
+
+export async function sessionHasConstitutionClaim(sessionId) {
+  try {
+    const text = await fs.readFile(todayLogPath(), "utf8");
+    for (const line of text.split("\n")) {
+      if (!line.trim()) continue;
+      let rec;
+      try {
+        rec = JSON.parse(line);
+      } catch {
+        continue;
+      }
+      if (rec.session_id !== sessionId) continue;
+      if (rec.event_type !== "claim") continue;
+      const agent = String(rec.agent || "").toLowerCase();
+      if (agent === "constitution-service" || agent.endsWith("/constitution-service")) {
+        return true;
+      }
+    }
+  } catch {
+    // No log today — no claim. Falls through to false.
+  }
+  return false;
+}

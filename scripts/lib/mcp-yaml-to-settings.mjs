@@ -156,7 +156,29 @@ export function parseMcpYaml(text) {
 }
 
 function parseScalar(raw) {
-  const trimmed = raw.trim();
+  // Strip inline `# comment` (but not `#` inside quotes). The YAML uses
+  // patterns like `enabled: false  # set true to enable` — without this
+  // strip, `false  # ...` was being captured as a string, defeating the
+  // `enabled: false` skip in toClaudeMcpServers. Carried in PR-G as a
+  // PR-3 bug fix.
+  let value = raw;
+  let inQuote = null;
+  for (let i = 0; i < value.length; i++) {
+    const c = value[i];
+    if (inQuote) {
+      if (c === inQuote && value[i - 1] !== "\\") inQuote = null;
+      continue;
+    }
+    if (c === '"' || c === "'") {
+      inQuote = c;
+      continue;
+    }
+    if (c === "#") {
+      value = value.slice(0, i);
+      break;
+    }
+  }
+  const trimmed = value.trim();
   if (trimmed === "") return "";
   if (trimmed === "true") return true;
   if (trimmed === "false") return false;
