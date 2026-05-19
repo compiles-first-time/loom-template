@@ -48,6 +48,7 @@ async function checkPlaceholders() {
     "loom-spec.md",
     "memory/self-knowledge.md",
     "tools/mcp-servers/config.yaml",
+    "tools/runtime.yaml",
     "observability/langfuse-config.yaml",
   ];
   const tokens = ["<PROJECT_NAME>", "<USER_NAME>", "<YYYY-MM-DD>"];

@@ -114,7 +114,7 @@ Use `Bash` with a single-line `echo` redirect (POSIX) or `Add-Content` (PowerShe
 
 - **ADR-0002** — Orchestration framework (LangGraph.js as v1 default). Confirm or override at bootstrap.
 
-**Recent ADRs (Accepted):** v0.2 = 0011 (hooks) · 0012 (subagents) · 0013 (bootstrap unification) · 0014 (lessons auto-suggest) · 0015 (loom doctor) · 0016 (Update Bus stub). v0.3 in progress: 0017 (intent classifier + LR-02) · 0018 (secrets handling + LR-03). PRs I, J, K land next.
+**Recent ADRs (Accepted):** v0.2 = 0011 (hooks) · 0012 (subagents) · 0013 (bootstrap unification) · 0014 (lessons auto-suggest) · 0015 (loom doctor) · 0016 (Update Bus stub). v0.3 in progress: 0017 (intent classifier + LR-02) · 0018 (secrets handling + LR-03) · 0019 (deploy primitive). PRs J, K land next.
 
 ---
 
