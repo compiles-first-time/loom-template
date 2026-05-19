@@ -101,10 +101,19 @@ If your project was bootstrapped from the v0.1 template, the v0.2 enforcement ru
 # from your existing v0.1 project root, with the v0.2 template checked out alongside
 cp -r /path/to/loom-template/.claude .
 cp -r /path/to/loom-template/scripts/hooks scripts/
+cp -r /path/to/loom-template/scripts/lib scripts/
+cp /path/to/loom-template/scripts/doctor.* scripts/
 # next Claude Code session will start populating memory/event-log/YYYY-MM-DD.jsonl
+bash scripts/doctor.sh   # validate the upgrade
 ```
 
-No v0.1 files are broken by the upgrade. Future v0.2 PRs (B–F) add subagents, bootstrap unification, `loom doctor`, lessons-learned auto-suggestion, and an Update Bus stub; each is independently mergeable.
+No v0.1 files are broken by the upgrade.
+
+## Running `loom doctor`
+
+`scripts/doctor.{sh,ps1}` cross-checks your project for v0.2 conformance: placeholders stamped, size caps held, Proposed ADRs listed in CLAUDE.md, MCP YAML/JSON in sync, subagents present + parsing, hook coverage. Exit 0 if all hard checks pass; exit 1 if any hard check fails. Pass `--fix` to attempt mechanical fixes (currently: regenerate `.claude/settings.json#mcpServers` from YAML).
+
+**Note:** `loom doctor` exits 1 against the *template itself* on the placeholder check — that's correct, since the template ships placeholders by design for `bootstrap.{sh,ps1}` to stamp. Run doctor against a *bootstrapped project*, not the template.
 
 ## Roadmap
 

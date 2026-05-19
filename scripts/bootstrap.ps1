@@ -116,14 +116,52 @@ if ($failures.Count -gt 0) {
 
 Write-Host "  All smoke checks passed." -ForegroundColor Green
 
-# --- 3. Next steps ---------------------------------------------------------------
+# --- 3. v0.2 runtime stamping ----------------------------------------------------
 Write-Host ""
-Write-Host "Bootstrap complete. Next steps:" -ForegroundColor Cyan
+Write-Host "Generating v0.2 runtime artifacts..." -ForegroundColor Cyan
+
+# Touch today's JSONL so hooks have somewhere to write
+$dateLog = Join-Path $root "memory/event-log/$(Get-Date -AsUTC -Format 'yyyy-MM-dd').jsonl"
+if (-not (Test-Path $dateLog)) {
+    New-Item -ItemType File -Path $dateLog -Force | Out-Null
+    Write-Host "  created: memory/event-log/$(Split-Path $dateLog -Leaf)"
+} else {
+    Write-Host "  exists:  memory/event-log/$(Split-Path $dateLog -Leaf)" -ForegroundColor DarkGray
+}
+
+# Regenerate .claude/settings.json mcpServers block from the YAML
+$gen = Join-Path $root "scripts/lib/mcp-yaml-to-settings.mjs"
+if ((Test-Path $gen) -and (Get-Command node -ErrorAction SilentlyContinue)) {
+    try {
+        & node $gen | ForEach-Object { Write-Host "  $_" }
+    } catch {
+        Write-Host "  warn: mcp settings generation failed (continuing)" -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "  skip: node or generator not available; .claude/settings.json mcpServers not regenerated" -ForegroundColor DarkGray
+}
+
+# --- 4. Summary ------------------------------------------------------------------
+$subagentCount = (Get-ChildItem -Path (Join-Path $root ".claude/agents") -Filter "*.md" -ErrorAction SilentlyContinue | Measure-Object).Count
+$hookCount = (Get-ChildItem -Path (Join-Path $root "scripts/hooks") -Filter "*.mjs" -ErrorAction SilentlyContinue | Measure-Object).Count
+
+Write-Host ""
+Write-Host "============================================================" -ForegroundColor Cyan
+Write-Host "Bootstrap complete - Loom v0.2.0 | Kernel v6" -ForegroundColor Cyan
+Write-Host "============================================================" -ForegroundColor Cyan
+Write-Host "  Project:     $ProjectName"
+Write-Host "  Root:        $root"
+Write-Host "  Stamped:     $($placeholderFiles.Count) files"
+Write-Host "  Event log:   memory/event-log/$(Split-Path $dateLog -Leaf)"
+Write-Host "  Subagents:   $subagentCount at .claude/agents/"
+Write-Host "  Hooks:       $hookCount at scripts/hooks/"
+Write-Host ""
+Write-Host "Next steps:"
 Write-Host "  1. Install your canonical Trajectory Kernel V6 text into constitution/kernel-v6.md"
 Write-Host "  2. Edit CLAUDE.md to describe this project's specific goals"
 Write-Host "  3. Decide full-6 vs minimal-3 agent set (see layers/L2-agents.md)"
 Write-Host "  4. Copy .env.example to .env and fill in API keys"
 Write-Host "  5. Confirm or override ADR-0002 (orchestration framework)"
-Write-Host "  6. git init && git add . && git commit -m 'Loom v0.1 scaffold'"
+Write-Host "  6. git init; git add .; git commit -m 'Loom v0.2 scaffold'"
 Write-Host ""
-Write-Host "Loom version: 0.1.0 | Kernel version: v6"
+Write-Host "Run scripts/doctor.ps1 (PR-5) to validate the project at any time."

@@ -69,3 +69,9 @@ Reversible actions (in-process state changes, local file edits) **may** be auto-
 - Any amendment to Kernel Rules 1–8 → escalate to override authority (cannot self-approve)
 - Any rule conflict between kernel and local-rules → escalate
 - Ambiguous applicability → escalate, do not guess
+
+---
+
+## Runtime counterpart
+
+This is the **design source**. The runtime contract lives at [`../../.claude/agents/constitution-service.md`](../../.claude/agents/constitution-service.md) (Claude Code subagent, per [ADR-0012](../../adr/0012-base-subagents.md)). The runtime subagent is **read-only on every path** — audit writes route through hooks ([`../../scripts/hooks/`](../../scripts/hooks/), per [ADR-0011](../../adr/0011-claude-code-enforcement-runtime.md)), not from this subagent. This v0.2 hardening removes a self-modification risk: the constitution validator never has an edit path into the constitution.

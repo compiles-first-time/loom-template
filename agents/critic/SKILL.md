@@ -57,3 +57,9 @@ If any of these patterns surface, Critic re-flags and requires fresh human re-re
 - Pattern of suspicious approvals → escalate to user with audit report
 - Update Bus item that would modify Kernel Rules 1–8 → escalate to override authority
 - Any output with confidence claim significantly diverging from evidence quality → block, then escalate
+
+---
+
+## Runtime counterpart
+
+This is the **design source**. The runtime contract lives at [`../../.claude/agents/critic.md`](../../.claude/agents/critic.md) (Claude Code subagent, per [ADR-0012](../../adr/0012-base-subagents.md)). The runtime subagent is **read-only on every path** — this hardens the v0.1 stance to remove an edit path into the artifacts being reviewed.
