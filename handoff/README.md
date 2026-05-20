@@ -15,6 +15,57 @@ The Loom template is a multi-session project. Across 30+ commits and 20 PRs, we'
 - **CLAUDE.md points at the latest.** When you add a new handoff, update the CLAUDE.md link.
 - **Keep the history.** Old handoff docs preserve what we knew when we knew it — useful for future "wait why did we decide that?" questions.
 
+## When to write a new handoff (maintenance triggers)
+
+Per [ADR-0031](../adr/0031-handoff-maintenance-policy.md):
+
+| Trigger | New handoff required? |
+|---|---|
+| Major-version PR cascade merged (e.g., v0.3→v1.0 batch lands) | **Yes** — within 1 session of the last merge |
+| New constitutional rule (LR-NN) added | **Yes** |
+| New layer (LN) added | **Yes** |
+| Single isolated bug-fix or doc PR | No |
+| Spec amendment that doesn't change behavior | No |
+| > 30 days since the latest handoff AND any new ADR accepted | **Yes** (default cadence) |
+
+The `handoff-freshness` soft check in [`loom doctor`](../scripts/doctor.sh) surfaces this when triggered. **Soft** by design — surfaces as a warning, never blocks.
+
+## What goes in a new handoff (required sections per ADR-0031)
+
+The first handoff (2026-05-20) is the comprehensive baseline. Subsequent handoffs may be **shorter** — they reference the baseline for older context and focus on what changed since the prior handoff. Required sections:
+
+1. **TL;DR** — paste-able into a new chat (≤ 250 words; self-contained — readable without the rest of the doc, without the repo, without prior chat context)
+2. **Read order for a fresh Claude instance**
+3. **What changed since the prior handoff** (the load-bearing section for incremental handoffs)
+4. **Open work / PRs**
+5. **Critical decisions and idioms** — only NEW ones since the prior handoff; reference the prior handoff for older context
+6. **What's incomplete** — re-stated each time so it stays fresh
+7. **What's likely next**
+
+## Memory-entry refresh
+
+When merge state shifts (a PR merges, a new cascade opens, a roadmap re-prioritizes), update `~/.claude/projects/<project-id>/memory/project_version_state.md` so the next session's auto-recalled context is accurate. Other memory entries (`user_role`, `feedback_*`) update less often — review every ~10 sessions.
+
+## TL;DR portability
+
+The TL;DR section of every handoff is designed to be paste-able in three contexts:
+
+1. **A new Loom-template Claude chat** (primary use — bootstraps context without forcing the new session to read 30+ KB).
+2. **A non-Loom AI tool** for a second opinion ("here's the project I'm working on; what would you suggest?"). The TL;DR must be self-contained for this case.
+3. **A human collaborator** seeing the project at a glance.
+
+The **≤ 250-word constraint** is load-bearing — beyond that, paste-friction kills the usage. If you need more context, write it as a separate section below the TL;DR.
+
+## Procedure for writing a new handoff
+
+1. Decide a `<short-topic>` (e.g., `post-v1.0-merge`, `v1.1-context`, `discovery-restructure`).
+2. Copy the most recent handoff to `handoff/<today>-<short-topic>.md` as a starting template, OR write fresh following the required sections above.
+3. Write **What changed since the prior handoff** first — this is the most load-bearing section.
+4. Update the CLAUDE.md "Fresh Claude instance? Read..." pointer to the new file.
+5. Update `~/.claude/projects/<...>/memory/project_version_state.md` if state has shifted.
+6. Update the index table in this README with the new entry.
+7. Commit on a `docs/handoff-<YYYY-MM-DD>` branch; open a PR; merge.
+
 ## How to use these documents
 
 ### If you are a fresh Claude Code instance
