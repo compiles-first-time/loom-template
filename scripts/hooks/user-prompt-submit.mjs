@@ -6,8 +6,9 @@
 // event to today's JSONL and emits the suggestion as `additionalContext` so
 // the model sees it on the way in.
 //
-// Per ADR-0017. Heuristic — wrong calls are quiet (extra context the model
-// can ignore), not blocking.
+// Per ADR-0017 (base classifier) + ADR-0023 (specialist registry path).
+// Heuristic — wrong calls are quiet (extra context the model can ignore),
+// not blocking.
 
 import {
   appendEvent,
@@ -21,7 +22,7 @@ const sessionId =
   event.session_id || process.env.CLAUDE_SESSION_ID || "unknown";
 const prompt = event.prompt || event.user_prompt || event.message || "";
 
-const hits = classifyIntent(prompt);
+const hits = await classifyIntent(prompt);
 
 if (hits.length > 0) {
   appendEvent(

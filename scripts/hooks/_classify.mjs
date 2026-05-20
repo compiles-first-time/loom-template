@@ -112,7 +112,45 @@ const INTENT_RULES = [
   },
 ];
 
-export function classifyIntent(text) {
+// Built-in INTENT_RULES match user prompts to base subagents (per ADR-0017).
+// v0.4 (ADR-0023): also consult the specialist registry at
+// agents/specialists/_registry/manifest.yaml for project-bootstrap-task
+// patterns (oauth, payments, deploy, db-migration, ci, etc.).
+
+import { loadRegistry, matchRegistry } from "../lib/registry-loader.mjs";
+
+export async function classifyIntent(text) {
+  if (!text || typeof text !== "string") return [];
+  const hits = [];
+  // Built-in rules first (base subagents)
+  for (const rule of INTENT_RULES) {
+    for (const pattern of rule.patterns) {
+      if (pattern.test(text)) {
+        hits.push({
+          intent: rule.intent,
+          suggest: rule.suggest,
+          rationale: rule.rationale,
+          matched: text.match(pattern)?.[0] || null,
+        });
+        break;
+      }
+    }
+  }
+  // Registry specialists (project-bootstrap tasks). Best-effort: if the
+  // manifest is missing or malformed, return only built-in hits.
+  try {
+    const specialists = await loadRegistry();
+    const registryHits = matchRegistry(text, specialists);
+    hits.push(...registryHits);
+  } catch {
+    // Silent — registry is best-effort. v0.2 functionality is unaffected.
+  }
+  return hits;
+}
+
+// Synchronous fallback for callers that can't await (legacy path; not used
+// by current hooks but kept for compatibility).
+export function classifyIntentSync(text) {
   if (!text || typeof text !== "string") return [];
   const hits = [];
   for (const rule of INTENT_RULES) {
