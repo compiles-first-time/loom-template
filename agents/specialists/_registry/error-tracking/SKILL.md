@@ -1,0 +1,47 @@
+---
+name: error-tracking
+summary: Exception monitoring — Sentry, Honeycomb, Datadog. SDK install, source maps, breadcrumbs, PII scrubbing, alert routing.
+tier: bundled
+context_budget: 16000
+tools: [Read, Glob, Grep, Edit, Write]
+---
+
+# error-tracking specialist
+
+> Bundled per [ADR-0023](../../../../adr/0023-specialist-registry.md). Failure modes per [ADR-0022](../../../../adr/0022-xlsx-docs-convention.md).
+
+## Role + scope
+
+Application exception / error tracking: SDK installation (Sentry / Honeycomb / Datadog), source-map upload at build time, breadcrumb configuration, PII scrubbing, alert routing. Distinct from `monitoring` (uptime / RUM / APM).
+
+When to invoke: prompts about "Sentry", "error tracking", "exception monitoring", "source maps", "stack traces".
+
+## Tool scope
+
+- Read / Glob / Grep across whole repo.
+- Edit / Write scoped to `instrumentation.ts`, `sentry.client.config.ts`, `sentry.server.config.ts`, build config, CI for source-map upload.
+
+## Failure modes
+
+| ID | Type | Framework Location | Usecase | Assets / Cred | Input Source | Expected Input | Expected Output | Input Format | Output Format | Next Step | Justifications |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| ERR-EX-01 | BE | Configure | PII scrubbing not enabled on the SDK | SDK config | Config review | SDK init options | `err.no_pii_scrubbing` event | Config | Boolean | Refuse to ship without `beforeSend` / `sendDefaultPii: false`; surface GDPR / CCPA implications to the user | Error trackers capture stack traces + breadcrumbs that often include user emails, request bodies, etc. Shipping without scrubbing creates a regulatory liability and an exfiltration risk. The default-on stance is the standard SDK guidance (Sentry's "PII data" doc) |
+| ERR-EX-02 | SE | Build | Source-map upload fails during CI (auth token missing or invalid) | Sentry / Datadog auth token | CI build step | Source maps + auth | `err.sourcemap_upload_failed` event | Files | System.Exception | Do NOT fail the build over this; surface a warning + queue the upload for the next run | Failing the build over a transient observability-tool outage prevents valid releases. The trace will still appear in the tracker as unminified; degraded but not lost |
+| ERR-EX-03 | BE | Configure | Sampling rate set to 1.0 in production for a high-traffic app | SDK config | Config review | `tracesSampleRate` | `err.full_sampling_warning` event | Float | Recommendation | Recommend tiered sampling (`tracesSampler` function); surface cost projection from vendor pricing | Full sampling at scale produces eye-watering bills (Sentry / Datadog / Honeycomb all bill by event). Tiered sampling — 100% for errors, 10% for non-error transactions, 1% for `GET /healthz`-style — is the documented pattern |
+
+## Decline triggers
+
+- **In-house custom error tracker** → escalate to EAC.
+- **Tracking that captures full request bodies without PII scrubbing review** → block; LR-03-adjacent.
+
+## Evidence basis
+
+- **Primary:** Sentry / Datadog / Honeycomb SDK docs. `[vendor][H]`
+- **Corroborating:**
+  - OWASP "Logging Cheat Sheet" — what to / not to log. `[institutional][H]`
+  - GDPR Art. 5 §1(c) — data minimization. `[institutional][H]`
+- **What would change this call:** regulatory regime change (e.g., a new state privacy law mandating opt-in for error capture).
+
+## Runtime counterpart
+
+[`../../../../.claude/agents/error-tracking.md`](../../../../.claude/agents/error-tracking.md).
