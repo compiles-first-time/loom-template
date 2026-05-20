@@ -89,4 +89,4 @@ The **≤ 250-word constraint** is load-bearing — beyond that, paste-friction 
 
 | Date | File | Phase covered | Notes |
 |---|---|---|---|
-| 2026-05-20 | [`2026-05-20-loom-v1.0-context.md`](./2026-05-20-loom-v1.0-context.md) | batch-01 → v1.0 | Comprehensive — 30 ADRs, 5 LRs, 8 layers, 18 subagents, 18 open PRs. First handoff doc in the project. |
+| 2026-05-20 | [`2026-05-20-loom-v1.0-context.md`](./2026-05-20-loom-v1.0-context.md) | batch-01 → v1.0 | Comprehensive — 30 ADRs, 5 LRs, 8 layers, 18 subagents, 14 open PRs (v0.2 cascade merged 2026-05-18). First handoff doc in the project. |
