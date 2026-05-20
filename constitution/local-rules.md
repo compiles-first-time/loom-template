@@ -87,6 +87,42 @@ Per [ADR-0017](../adr/0017-intent-nag.md).
 
 Per [ADR-0018](../adr/0018-secrets-handling.md).
 
+### LR-04 — Permissions protocol: meta-rule subsuming LR-02 + LR-03
+
+**Status:** Active
+**Date:** 2026-05-20
+**Extends:** Kernel Rule 20 (temporal weighting); Kernel Rule 22 (epistemic transparency)
+**Subsumes:** LR-02 (production-mutation discipline) + LR-03 (secrets-in-args) as specializations of the unified permissions framework
+**Author:** Architect handoff (v0.6 PR-P) — approved by Nick
+
+**Rule:** Before any tool call whose permission category is not `auto`, the acting agent must — in this session, recorded in the event log — present:
+
+1. **The action** — what does it do? Which service / system / data does it touch?
+2. **The smallest needed credential scope** — what is the minimum permission needed? (project-scoped vs. org-wide; read-only vs. write; one resource vs. many).
+3. **The rollback path** — how is this undone if wrong? Or, if irreversible (Kernel Rule 20 weight), explicitly acknowledge.
+
+For **hard-enforcement** categories (currently `destructive_actions`), step 1-3 must additionally be reflected in a `constitution-service` `claim` event before the tool call. For **soft-enforcement** categories (`external_service_setup`, `credentials`), the protocol is observable in the event log and the Critic flags drift.
+
+**Why:** LR-02 governed production mutations; LR-03 governed secrets in args. v0.3+ real sessions showed both rules applying to overlapping situations (`vercel env add SUPABASE_SERVICE_ROLE_KEY xxx` is both production-mutation and secrets-in-args). Three parallel rules drift in opposite directions over time. LR-04 is the **meta-rule** that classifies the action; LR-02 and LR-03 become the *category-specific* protocols (destructive_actions, credentials).
+
+**Categories** *(defined in `.claude/loom-permissions.yaml`)*:
+
+| Category | Triggers (examples) | Enforcement | Subsumed prior rule |
+|---|---|---|---|
+| `external_service_setup` | `supabase link`, `vercel domains`, `gh repo create`, `aws ... create` | Soft (warn-only) | (new in v0.6) |
+| `destructive_actions` | `rm -rf`, `DROP TABLE`, `git push --force`, `vercel deploy`, `npm publish` | **Hard** (constitution-service required) | LR-02 |
+| `credentials` | `--token`, `npm login`, `gh auth`, `vercel env add` | Soft (event-log + secrets-doctor catches retroactively) | LR-03 |
+
+**How to apply:**
+- The PreToolUse hook classifies each call against `.claude/loom-permissions.yaml` (per ADR-0027). Hits emit `<category>_attempted` events.
+- Hard-enforcement categories also emit `constitution_check_missing` if no prior `constitution-service` claim exists in this session.
+- `loom doctor` continues to surface `constitution-coverage` as a soft warning across sessions.
+- Project-local overrides at `.claude/loom-permissions.local.yaml` (gitignored) merge over the bundled file.
+
+**Continuity:** LR-02 + LR-03 remain as historical records. The `pre-tool-use.mjs` hook continues to emit `production_mutation_attempted` events for backward compatibility with consumers that grep for those specifically. New consumers should grep for the LR-04 `<category>_attempted` events.
+
+Per [ADR-0027](../adr/0027-permissions-protocol.md).
+
 ### LR-05 — Decisions are best-current-call; supersedence requires independent peer-reviewed evidence
 
 **Status:** Active
