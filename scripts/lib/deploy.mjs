@@ -15,6 +15,7 @@ import { promises as fs, existsSync } from "node:fs";
 import path from "node:path";
 import readline from "node:readline";
 import { spawn, spawnSync } from "node:child_process";
+import { checkDiscoveryGate } from "./discovery-gate.mjs";
 
 const ROOT = process.cwd();
 const args = new Set(process.argv.slice(2));
@@ -29,6 +30,28 @@ await main();
 async function main() {
   const config = await loadRuntimeConfig();
   const sessionId = process.env.CLAUDE_SESSION_ID || `local-${Date.now()}`;
+
+  // ── Step 0: discovery gate (v0.5, ADR-0026) ────────────────────────────
+  process.stdout.write("Step 0/5: discovery gate\n");
+  const gate = await checkDiscoveryGate(ROOT);
+  if (gate.warnings.length > 0) {
+    for (const w of gate.warnings) process.stdout.write(`  ! ${w}\n`);
+  }
+  if (!gate.ok) {
+    process.stderr.write("\n  ✗ discovery is not 'good enough' to deploy:\n");
+    for (const m of gate.missing) process.stderr.write(`    - ${m}\n`);
+    if (!FORCE) {
+      process.stderr.write(
+        "\n  Fill in the missing discovery artifacts (see discovery/README.md \"When is discovery done?\"),\n" +
+          "  or rerun with --force to deploy anyway. Deploying without a complete risk register\n" +
+          "  is the v0.3 finding (B) — surfacing NFR gaps post-deploy is expensive.\n"
+      );
+      process.exit(1);
+    }
+    process.stderr.write("  (proceeding because --force was passed.)\n\n");
+  } else {
+    process.stdout.write("  ✓ discovery artifacts present and good-enough\n\n");
+  }
 
   // ── Step 1: loom doctor ────────────────────────────────────────────────
   if (!FORCE) {

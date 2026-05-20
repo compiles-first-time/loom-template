@@ -119,7 +119,7 @@ What MCP servers + subagents are actually available to this session: [`tools/dis
 
 - **ADR-0002** — Orchestration framework (LangGraph.js as v1 default). Confirm or override at bootstrap.
 
-**Recent ADRs (Accepted):** v0.2 = 0011 (hooks) · 0012 (subagents) · 0013 (bootstrap unification) · 0014 (lessons auto-suggest) · 0015 (loom doctor) · 0016 (Update Bus stub). v0.3 = 0017 (intent classifier + LR-02) · 0018 (secrets handling + LR-03) · 0019 (deploy primitive) · 0020 (runtime discovery + subagent staleness) · 0021 (subagent canonical-prompt evals). v0.4 = 0022 (xlsx docs convention + LR-05) · 0023 (specialist registry) · 0024 (12 starter specialists). v0.5 in progress = 0025 (Discovery scaffolding + L8 layer). PRs O–S land next.
+**Recent ADRs (Accepted):** v0.2 = 0011 (hooks) · 0012 (subagents) · 0013 (bootstrap unification) · 0014 (lessons auto-suggest) · 0015 (loom doctor) · 0016 (Update Bus stub). v0.3 = 0017 (intent classifier + LR-02) · 0018 (secrets handling + LR-03) · 0019 (deploy primitive) · 0020 (runtime discovery + subagent staleness) · 0021 (subagent canonical-prompt evals). v0.4 = 0022 (xlsx docs convention + LR-05) · 0023 (specialist registry) · 0024 (12 starter specialists). v0.5 = 0025 (Discovery scaffolding + L8 layer) · 0026 (Discovery gate + Critic checklists + skeleton amendments). PRs P–S land next.
 
 ---
 
