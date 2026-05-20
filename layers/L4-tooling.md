@@ -56,6 +56,31 @@ This decision is itself an ADR. Revisable; see [`../adr/0002-orchestration-frame
 
 **Critical:** All routing decisions logged. No model grades its own output (information-theoretic collapse — `[LLM-A][H]`).
 
+## Credential-source hierarchy (v0.6)
+
+> Per [LR-04](../constitution/local-rules.md#lr-04--permissions-protocol-meta-rule-subsuming-lr-02--lr-03) + [ADR-0028](../adr/0028-oauth-preference.md).
+
+When a service offers multiple authentication methods, Loom recommends:
+
+| Tier | Mechanism | Rationale |
+|---|---|---|
+| 1 | **OAuth / OIDC / SSO** (provider-issued, short-lived, scoped) | Smallest credential scope; auto-rotating; revocable per device |
+| 2 | **Project-scoped + expiring** API tokens | Long-lived but narrow scope + finite lifetime |
+| 3 | **User-scoped** API tokens / PATs | Long-lived + broad scope — preferred only when 1+2 aren't available |
+| Avoid | **Username + password** for service access | Single-factor; account-takeover impact |
+
+Service-specific recommendations (Loom's OAuth-preference detector flags long-lived keys when an OAuth alternative exists):
+
+| Service | Long-lived (avoid where possible) | Recommended (OAuth / scoped) |
+|---|---|---|
+| GitHub | Classic PAT `ghp_*` | `gh auth login` (OAuth device flow); GitHub App installation tokens |
+| Google Cloud | Service-account JSON key | `gcloud auth application-default login`; Workload Identity Federation |
+| AWS | IAM access key `AKIA*` | `aws configure sso` (IAM Identity Center); IRSA / STS short-lived creds |
+| Vercel | User-scoped token | Project-scoped + expiring access token |
+| npm | Classic publish token | Granular access token; OIDC trusted publishing from CI |
+
+The detector at [`../scripts/lib/oauth-preference.mjs`](../scripts/lib/oauth-preference.mjs) surfaces `oauth_preference_hint` events in the event log when a long-lived pattern appears in tool args. `scripts/secrets-doctor.{sh,ps1}` also reports OAuth-preference findings retrospectively.
+
 ## MCP-over-CLI for credentialed services
 
 > Per [LR-03](../constitution/local-rules.md#lr-03-secrets-must-not-appear-in-chat-input-or-tool-output) / [ADR-0018](../adr/0018-secrets-handling.md).

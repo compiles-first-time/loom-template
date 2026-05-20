@@ -13,6 +13,7 @@ import { promises as fs, existsSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { scanForSecrets } from "./secret-patterns.mjs";
+import { detectOauthPreferenceMisses } from "./oauth-preference.mjs";
 
 const ROOT = process.cwd();
 const args = new Set(process.argv.slice(2));
@@ -23,16 +24,17 @@ await main();
 
 async function main() {
   const findings = [];
+  const oauthMisses = [];
 
-  await scanEventLog(findings);
-  await scanUncommittedFiles(findings);
+  await scanEventLog(findings, oauthMisses);
+  await scanUncommittedFiles(findings, oauthMisses);
 
-  report(findings);
+  report(findings, oauthMisses);
 }
 
 // ── Scanners ─────────────────────────────────────────────────────────────
 
-async function scanEventLog(findings) {
+async function scanEventLog(findings, oauthMisses) {
   const dir = path.join(ROOT, "memory", "event-log");
   if (!existsSync(dir)) return;
   const files = (await fs.readdir(dir)).filter((f) => /^\d{4}-\d{2}-\d{2}\.jsonl$/.test(f));
@@ -50,10 +52,14 @@ async function scanEventLog(findings) {
     for (const h of hits) {
       findings.push({ source: `event-log/${f}`, ...h });
     }
+    const oauth = detectOauthPreferenceMisses(text);
+    for (const m of oauth) {
+      oauthMisses.push({ source: `event-log/${f}`, ...m });
+    }
   }
 }
 
-async function scanUncommittedFiles(findings) {
+async function scanUncommittedFiles(findings, oauthMisses) {
   // Untracked + modified, but not deleted.
   const status = spawnSync(
     "git",
@@ -94,18 +100,22 @@ async function scanUncommittedFiles(findings) {
     for (const h of hits) {
       findings.push({ source: file, ...h });
     }
+    const oauth = detectOauthPreferenceMisses(text);
+    for (const m of oauth) {
+      oauthMisses.push({ source: file, ...m });
+    }
   }
 }
 
 // ── Report ───────────────────────────────────────────────────────────────
 
-function report(findings) {
+function report(findings, oauthMisses = []) {
   const high = findings.filter((f) => f.confidence === "high");
   const medium = findings.filter((f) => f.confidence === "medium");
 
   process.stdout.write(`loom secrets-doctor — scanned event log (last ${HISTORY_DAYS} days) + uncommitted tracked files\n\n`);
 
-  if (high.length === 0 && medium.length === 0) {
+  if (high.length === 0 && medium.length === 0 && oauthMisses.length === 0) {
     process.stdout.write("  ✓ no token-shaped values found\n");
     process.exit(0);
   }
@@ -126,6 +136,16 @@ function report(findings) {
     process.stdout.write("\n");
   } else if (medium.length > 0) {
     process.stdout.write(`(${medium.length} medium-confidence finding(s) suppressed; pass --include-medium to see them)\n\n`);
+  }
+
+  if (oauthMisses.length > 0) {
+    process.stdout.write(`OAuth-preference findings (${oauthMisses.length}) — long-lived keys where OAuth is available (per ADR-0028):\n`);
+    for (const m of oauthMisses) {
+      process.stdout.write(`  i ${m.source}: ${m.service} ${m.sample}\n`);
+      process.stdout.write(`     → ${m.oauth_alternative}\n`);
+      process.stdout.write(`     reason: ${m.rationale}\n`);
+    }
+    process.stdout.write("\n");
   }
 
   if (high.length > 0) {
