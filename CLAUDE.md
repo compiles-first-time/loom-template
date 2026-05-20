@@ -43,6 +43,7 @@ The architecture is documented as **spec-as-codebase**. Each layer has its own f
 | L5 — Orchestration | [layers/L5-orchestration.md](./layers/L5-orchestration.md) | When designing task flows |
 | L6 — Observability & eval | [layers/L6-observability.md](./layers/L6-observability.md) | When debugging or shipping |
 | L7 — Self-extension / Update Bus | [layers/L7-extension.md](./layers/L7-extension.md) | When the system changes itself |
+| L8 — Discovery (v0.5) | [layers/L8-discovery.md](./layers/L8-discovery.md) | When capturing what to build (functional + NFR + risks) |
 
 Quick agent reference: [`AGENTS.md`](./AGENTS.md).
 Canonical spec: [`loom-spec.md`](./loom-spec.md) (executive) → [`spec/loom-spec-v0.1-full.md`](./spec/loom-spec-v0.1-full.md) (complete).
@@ -118,7 +119,7 @@ What MCP servers + subagents are actually available to this session: [`tools/dis
 
 - **ADR-0002** — Orchestration framework (LangGraph.js as v1 default). Confirm or override at bootstrap.
 
-**Recent ADRs (Accepted):** v0.2 = 0011 (hooks) · 0012 (subagents) · 0013 (bootstrap unification) · 0014 (lessons auto-suggest) · 0015 (loom doctor) · 0016 (Update Bus stub). v0.3 = 0017 (intent classifier + LR-02) · 0018 (secrets handling + LR-03) · 0019 (deploy primitive) · 0020 (runtime discovery + subagent staleness) · 0021 (subagent canonical-prompt evals). v0.4 in progress = 0022 (xlsx docs convention + LR-05) · 0023 (specialist registry) · 0024 (12 starter specialists). PRs N–S land next.
+**Recent ADRs (Accepted):** v0.2 = 0011 (hooks) · 0012 (subagents) · 0013 (bootstrap unification) · 0014 (lessons auto-suggest) · 0015 (loom doctor) · 0016 (Update Bus stub). v0.3 = 0017 (intent classifier + LR-02) · 0018 (secrets handling + LR-03) · 0019 (deploy primitive) · 0020 (runtime discovery + subagent staleness) · 0021 (subagent canonical-prompt evals). v0.4 = 0022 (xlsx docs convention + LR-05) · 0023 (specialist registry) · 0024 (12 starter specialists). v0.5 in progress = 0025 (Discovery scaffolding + L8 layer). PRs O–S land next.
 
 ---
 
