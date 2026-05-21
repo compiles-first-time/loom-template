@@ -11,6 +11,16 @@
 //
 // LR-04 subsumes LR-02 (production-mutation) and LR-03 (secrets) as
 // specializations of the unified permissions framework.
+//
+// v0.3.2 extension (ADR-0032 §B): triggers may declare separate
+// `billable_command_patterns` / `billable_mcp_patterns` lists. Matches
+// against those produce hits flagged with `requires_pre_flight_quota: true`,
+// signaling that the operation targets a known billable cloud service and
+// the caller must emit a `pre_flight_quota_check` event before proceeding.
+// The classifier surfaces the requirement; downstream layers (PreToolUse
+// hook + specialists) decide enforcement. Billable patterns are checked
+// FIRST inside each category, so they take precedence when a command would
+// otherwise also match a generic pattern.
 
 import { promises as fs, existsSync } from "node:fs";
 import path from "node:path";
@@ -171,6 +181,41 @@ function yamlUnescape(s) {
   });
 }
 
+// Known billable cloud platforms (per ADR-0032 §B). Operations against any
+// of these classified by billable_command_patterns or billable_mcp_patterns
+// require a pre_flight_quota_check event before the operation proceeds.
+// Adding a new platform = add it here + add the platform's billable action
+// patterns to .claude/loom-permissions.yaml. The list is informational +
+// used by isBillablePlatform(); the actual pattern matching is driven by
+// the YAML config to keep behavior data-driven and auditable.
+export const KNOWN_BILLABLE_PLATFORMS = Object.freeze([
+  "vercel",
+  "netlify",
+  "fly",
+  "render",
+  "supabase",
+  "railway",
+  "planetscale",
+  "aws",
+  "gcp",
+  "azure",
+  "digitalocean",
+  "cloudflare",
+  "openai",
+  "anthropic",
+]);
+
+export function isBillablePlatform(name) {
+  if (typeof name !== "string") return false;
+  return KNOWN_BILLABLE_PLATFORMS.includes(name.toLowerCase());
+}
+
+// Convenience predicate over a classifier hit. Returns true when the hit
+// was matched against a billable_* pattern.
+export function requiresPreFlightQuota(hit) {
+  return Boolean(hit && hit.requires_pre_flight_quota);
+}
+
 // ── Classify a tool call against the loaded permissions config ───────────
 
 export function classifyToolCall({ tool, input, permissions }) {
@@ -193,7 +238,9 @@ export function classifyToolCall({ tool, input, permissions }) {
       hits.push({
         category: name,
         enforcement: cat.enforcement || "soft",
-        matched_on: matched,
+        matched_on: matched.matched_on,
+        matched_via: matched.matched_via,
+        requires_pre_flight_quota: matched.requires_pre_flight_quota,
         required_protocol: cat.required_protocol || [],
       });
     }
@@ -201,15 +248,61 @@ export function classifyToolCall({ tool, input, permissions }) {
   return hits;
 }
 
+// Match a command/tool against one category's trigger lists. Billable
+// patterns are checked FIRST so they take precedence when both a billable
+// and a generic pattern would match the same input — preserves the
+// ADR-0032 §B requirement that billable ops are recognized as such even
+// when a generic external_service_setup pattern also matches.
+//
+// Returns null on no match, or:
+//   { matched_on, matched_via, requires_pre_flight_quota }
+// where `matched_via` is one of:
+//   billable_command_patterns | billable_mcp_patterns |
+//   command_patterns | mcp_patterns | keywords
 function matchCategory(commandText, toolName, cat) {
   const t = cat.triggers || {};
+
+  // Billable command patterns — flag the hit as requiring pre-flight quota.
+  for (const p of t.billable_command_patterns || []) {
+    try {
+      const re = new RegExp(p, "i");
+      const m = commandText.match(re);
+      if (m) {
+        return {
+          matched_on: m[0],
+          matched_via: "billable_command_patterns",
+          requires_pre_flight_quota: true,
+        };
+      }
+    } catch { /* skip invalid regex */ }
+  }
+
+  // Billable MCP patterns — flag the hit as requiring pre-flight quota.
+  for (const p of t.billable_mcp_patterns || []) {
+    try {
+      const re = new RegExp(p, "i");
+      if (re.test(toolName)) {
+        return {
+          matched_on: toolName,
+          matched_via: "billable_mcp_patterns",
+          requires_pre_flight_quota: true,
+        };
+      }
+    } catch { /* skip */ }
+  }
 
   // command_patterns: regex against the command string
   for (const p of t.command_patterns || []) {
     try {
       const re = new RegExp(p, "i");
       const m = commandText.match(re);
-      if (m) return m[0];
+      if (m) {
+        return {
+          matched_on: m[0],
+          matched_via: "command_patterns",
+          requires_pre_flight_quota: false,
+        };
+      }
     } catch { /* skip invalid regex */ }
   }
 
@@ -217,13 +310,25 @@ function matchCategory(commandText, toolName, cat) {
   for (const p of t.mcp_patterns || []) {
     try {
       const re = new RegExp(p, "i");
-      if (re.test(toolName)) return toolName;
+      if (re.test(toolName)) {
+        return {
+          matched_on: toolName,
+          matched_via: "mcp_patterns",
+          requires_pre_flight_quota: false,
+        };
+      }
     } catch { /* skip */ }
   }
 
   // keywords: literal string check in command text
   for (const k of t.keywords || []) {
-    if (commandText.toLowerCase().includes(k.toLowerCase())) return k;
+    if (commandText.toLowerCase().includes(k.toLowerCase())) {
+      return {
+        matched_on: k,
+        matched_via: "keywords",
+        requires_pre_flight_quota: false,
+      };
+    }
   }
   return null;
 }
