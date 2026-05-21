@@ -8,6 +8,8 @@
 
 This file is the **primary entry point** for Claude (chat) and Claude Code into this project. Keep it small — hard cap ~10 KB. Detail belongs in [`layers/`](./layers/), not here.
 
+> **Fresh Claude instance? Read [`handoff/2026-05-20-loom-v1.0-context.md`](./handoff/2026-05-20-loom-v1.0-context.md) before generating output.** It captures collaboration conventions, the 18 open PRs, and the nuances behind every architectural decision through v1.0. See [`handoff/README.md`](./handoff/README.md) for the dated-snapshot convention.
+
 ---
 
 ## Project identity
@@ -114,7 +116,7 @@ Use `Bash` with a single-line `echo` redirect (POSIX) or `Add-Content` (PowerShe
 
 - **ADR-0002** — Orchestration framework (LangGraph.js as v1 default). Confirm or override at bootstrap.
 
-**Recent ADRs (Accepted):** 0003–0010 from Loom Enhancement Batch 01 (retrieval + context engineering, Phase 1 research) · 0011 Claude Code enforcement runtime (v0.2 PR-1 / A) · 0012 base subagents (v0.2 PR-2 / B) · 0013 bootstrap unification (v0.2 PR-3 / D) · 0014 lessons-learned auto-suggest (v0.2 PR-4 / E) · 0015 loom doctor (v0.2 PR-5 / C) · 0016 Update Bus stub (v0.2 PR-6 / F). v0.2 enforcement runtime complete.
+**Recent ADRs (Accepted):** 0003–0010 from Loom Enhancement Batch 01 (retrieval + context engineering, Phase 1 research) · 0011 Claude Code enforcement runtime (v0.2 PR-1 / A) · 0012–0016 (v0.2 B–F: subagents, bootstrap unification, lessons auto-suggest, loom doctor, Update Bus stub). v0.2 enforcement runtime complete. **Docs:** 0031 (handoff maintenance policy — when to write new handoffs, what goes in them, TL;DR ≤ 250 words constraint, `loom doctor` `handoff-freshness` check).
 
 ---
 
