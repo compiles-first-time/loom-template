@@ -37,6 +37,7 @@ async function main() {
   await checkConstitutionCoverage();
   await checkAdrTemplateConformance();
   await checkBidirectionalAdrLinks();
+  await checkHandoffFreshness();
   await checkSkeleton();
 
   report();
@@ -307,6 +308,40 @@ function extractAffectsBlock(text) {
     paths.push(p);
   }
   return paths;
+}
+
+async function checkHandoffFreshness() {
+  // Per ADR-0031 §F. Soft check — surfaces a warning, never blocks.
+  const handoffDir = path.join(ROOT, "handoff");
+  if (!existsSync(handoffDir)) return soft("handoff-freshness", true, "no handoff/ directory (skipped)");
+  const files = (await fs.readdir(handoffDir))
+    .filter((f) => /^\d{4}-\d{2}-\d{2}-.+\.md$/.test(f))
+    .sort();
+  if (files.length === 0) return soft("handoff-freshness", false, "no dated handoff documents found");
+  const latest = files[files.length - 1];
+  const latestDate = latest.slice(0, 10);
+  const daysSince = Math.floor((Date.now() - new Date(latestDate + "T00:00:00Z").getTime()) / (24 * 3600 * 1000));
+
+  // Commits on milestone-shaped paths since the latest handoff date.
+  const log = spawnSync(
+    "git",
+    ["log", `--since=${latestDate}`, "--format=%H %s", "--", "adr/", "layers/", "scripts/", ".claude/", "constitution/"],
+    { cwd: ROOT, encoding: "utf8" }
+  );
+  const milestoneCommits = (log.stdout || "")
+    .split("\n")
+    .filter(Boolean)
+    .filter((line) => /Merge pull request|adr\/\d{4}|layers\/L\d/.test(line));
+
+  if (daysSince > 30 && milestoneCommits.length > 0) {
+    return soft("handoff-freshness", false,
+      `latest handoff is ${daysSince} days old AND ${milestoneCommits.length} milestone commit(s) have landed since. Write a new handoff at handoff/${new Date().toISOString().slice(0, 10)}-<topic>.md per ADR-0031.`);
+  }
+  if (milestoneCommits.length >= 5) {
+    return soft("handoff-freshness", false,
+      `${milestoneCommits.length} milestone commits since latest handoff (${latest}). Consider writing a new handoff per ADR-0031.`);
+  }
+  soft("handoff-freshness", true, `latest handoff ${latest} (${daysSince} days old; ${milestoneCommits.length} milestone commits since)`);
 }
 
 async function checkSkeleton() {
