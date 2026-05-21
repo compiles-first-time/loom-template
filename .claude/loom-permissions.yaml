@@ -24,21 +24,57 @@ categories:
   # to the external service operator + may incur cost.
   external_service_setup:
     triggers:
-      command_patterns:
-        - "\\bsupabase\\s+(?:link|secrets|projects)\\b"
-        - "\\bvercel\\s+(?:domains|env|projects)\\b"
-        - "\\bgh\\s+(?:repo|secret)\\s+create\\b"
-        - "\\bstripe\\s+(?:webhook_endpoints|products)\\b"
+      # Billable patterns (ADR-0032 §B). Matches here flag the hit with
+      # requires_pre_flight_quota: true. The classifier checks these
+      # BEFORE the generic command_patterns / mcp_patterns lists below,
+      # so billable ops are correctly recognized even when a generic
+      # pattern would also match.
+      billable_command_patterns:
+        # Deploy operations — billable on these platforms (build minutes,
+        # compute, egress, etc.).
+        - "\\bvercel\\s+deploy\\b"
+        - "\\bvercel\\s+(?:.*\\s+)?--prod\\b"
+        - "\\bnetlify\\s+deploy\\b"
+        - "\\bfly\\s+deploy\\b"
+        - "\\brender\\s+deploy\\b"
+        - "\\brailway\\s+(?:up|deploy)\\b"
+        # Provision / create operations on billable platforms — these
+        # spawn new compute / storage / projects that begin accruing cost.
+        - "\\bvercel\\s+projects\\s+(?:add|create)\\b"
         - "\\bfly\\s+apps\\s+create\\b"
+        - "\\brender\\s+services\\s+create\\b"
+        - "\\bsupabase\\s+projects\\s+create\\b"
+        - "\\brailway\\s+init\\b"
+        - "\\bplanetscale\\s+(?:database|branch)\\s+create\\b"
+        - "\\bdoctl\\s+(?:apps|compute)\\s+create\\b"
+        # Generic cloud-CLI create patterns. These over-fire by design —
+        # better a false-positive pre-flight check than a silent billable
+        # provision. The pre-flight is observability, not blocking.
         - "\\bgcloud\\s+\\w+\\s+create\\b"
         - "\\baws\\s+\\w+\\s+create-\\w+\\b"
+        - "\\baz\\s+\\w+\\s+create\\b"
+      billable_mcp_patterns:
+        # MCP servers performing deploys or new-resource provisioning on
+        # billable platforms.
+        - "mcp__.*__deploy_(?:to_)?(?:vercel|netlify|fly|render|railway|supabase|aws|gcp|azure)"
+        - "mcp__.*__(?:provision|create_project|create_app|create_service)_.*"
+      # Non-billable external_service_setup — config-only ops on external
+      # services. These trigger the soft warning but NOT the pre-flight
+      # quota requirement.
+      command_patterns:
+        - "\\bsupabase\\s+(?:link|secrets)\\b"
+        - "\\bvercel\\s+(?:domains|env)\\b"
+        - "\\bgh\\s+(?:repo|secret)\\s+create\\b"
+        - "\\bstripe\\s+(?:webhook_endpoints|products)\\b"
       mcp_patterns:
-        # MCP servers performing setup operations on external services
-        - "mcp__.*__(?:create|update|configure|provision)_.*"
+        # MCP setup operations that aren't provision/deploy (e.g., update,
+        # configure). Provision-class MCPs go in billable_mcp_patterns above.
+        - "mcp__.*__(?:update|configure)_.*"
     required_protocol:
       - present_action: "What is the action and which service does it touch?"
       - smallest_scope: "What is the minimum credential scope needed? (e.g., write to one Vercel project, NOT org-wide admin)"
       - rollback_path: "How is this undone if it's wrong? (manual delete? automatic teardown script?)"
+      - pre_flight_quota: "For billable hits: emit a pre_flight_quota_check event with the platform's quota / billing status BEFORE the op proceeds (ADR-0032 §B)"
       - constitution_service: "consulted-or-escalated"  # not always required; user discretion
     enforcement: "soft"  # warning event in JSONL; deploy/CI may upgrade to hard
 
