@@ -114,7 +114,7 @@ The pre-flight emits `pre_flight_quota_check` event with `{platform, payment_met
 
 ### MCP counterparts
 
-When invoking a deploy via MCP (`mcp__*__deploy_*`), the response shape is dictated by the MCP server's schema. This specialist consults the MCP-vs-CLI capability matrix (per ADR-0032 §E, ships in PR #27) **before** picking MCP vs CLI — some MCPs delegate back to the CLI, in which case both shapes apply.
+When invoking a deploy via MCP (`mcp__*__deploy_*`), the response shape is dictated by the MCP server's schema. This specialist consults the [MCP-vs-CLI capability matrix](../../../../tools/mcp-cli-capability-matrix.md) (per [ADR-0033](../../../../adr/0033-mcp-vs-cli-capability-matrix.md)) **before** picking MCP vs CLI — some MCPs delegate back to the CLI, in which case both shapes apply and the MCP gives no credential-hygiene benefit.
 
 ### Internal contract (what THIS specialist commits to returning)
 

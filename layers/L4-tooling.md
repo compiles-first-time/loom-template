@@ -98,6 +98,20 @@ Concrete guidance:
 
 This is **not** a ban on CLIs — they're fine when no MCP server exists, or when the CLI reads its credential from an env var sourced outside the chat (`.env`, OS keyring, secrets manager). The rule is: **the credential value must not appear in a tool call's args**.
 
+## Capability matrix for (platform, action) tuples (v0.3.2)
+
+> Per [ADR-0033](../adr/0033-mcp-vs-cli-capability-matrix.md). Authoritative reference at [`../tools/mcp-cli-capability-matrix.md`](../tools/mcp-cli-capability-matrix.md).
+
+The MCP-over-CLI guidance above optimizes for credential hygiene. The matrix at [`../tools/mcp-cli-capability-matrix.md`](../tools/mcp-cli-capability-matrix.md) covers the **prior** axis: capability — does the chosen surface actually complete the action end-to-end? Some MCPs delegate back to their CLI (no credential-hygiene benefit; observed on Vercel MCP per AnonForum 2026-05-21); some actions are entirely browser-gated (billing changes, account verification); some platforms have no MCP at all.
+
+Specialists consult the matrix before picking a tool. The decision algorithm:
+
+1. **Capability**: prefer the surface that completes the action end-to-end. If only one does, pick that.
+2. **Credential hygiene** (this section): when both are capable, prefer MCP.
+3. **Cost** (per [ADR-0032 §B](../adr/0032-deployment-hardening.md)): a billable action's `pre_flight_quota_check` event fires regardless of surface.
+
+When the matrix lacks a row, the specialist notes the gap in its return and proposes adding the row (architect-approved follow-up PR per ADR-0033 §D maintenance policy).
+
 ---
 
 ## Open work for this layer
