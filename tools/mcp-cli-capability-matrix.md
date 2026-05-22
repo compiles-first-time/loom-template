@@ -23,6 +23,29 @@ This is a **living document**. Rows are added when a specialist hits an unmapped
 4. **Cost** (per [ADR-0032 §B](../adr/0032-deployment-hardening.md)): a billable action's `pre_flight_quota_check` event still fires regardless of surface; the matrix doesn't change that.
 5. **If absent**: note the gap in the specialist's return; default to credential-hygiene preference; propose a matrix row in a follow-up PR.
 
+## One-time browser-gated setup vs. recurring browser-gating
+
+Per [lessons-learned/2026-05-22-browser-gated-provisioning-friction.md](../lessons-learned/2026-05-22-browser-gated-provisioning-friction.md), `Human-browser: required` rows fall into two friction classes that specialists must distinguish:
+
+- **One-time per account** — generate a Personal Access Token (PAT), create an OAuth Client, install a service account. After the one-time step, the platform's Management API is automatable via the issued credential. **Bundle these into a single architect handoff at session start.** Don't surface them one-at-a-time during execution.
+- **Recurring** — every operation requires browser confirmation (rare; usually billing portal access). Genuinely fragments the flow; surface immediately with the dashboard URL.
+
+The matrix's Notes column calls out which category each row belongs to. A specialist that hits a `Human-browser: required` row should:
+
+1. Check Notes for `one-time PAT setup; then automatable` — if present, prefer driving the platform's Management API after architect has set up the PAT (capture the PAT in `.env.local`, not in chat).
+2. If genuinely recurring, batch the architect handoffs: do not surface step-by-step.
+
+## Management-API discipline (population checklist)
+
+When adding or auditing a `create-*` / `provision-*` / `manage-*` row, BEFORE marking `Human-browser: required` with `[H]` confidence, verify:
+
+- [ ] Searched the platform's docs for "Management API", "Admin API", or "Account API" — these are typically at separate domains (e.g., `api.supabase.com` vs `<ref>.supabase.co`)
+- [ ] Searched the platform's docs for "Personal Access Token" or "PAT" — a PAT often unlocks an entire Management API surface
+- [ ] Searched for `*-api` / `*-admin` packages on npm / pypi — third-party SDKs often exist before first-party CLIs
+- [ ] Checked whether the operation is in the platform's [Open API spec](https://api.swagger.io) — many platforms ship a spec even when their docs site is sparse
+
+If you can't confirm "no management API exists" via at least three of these, mark the row `[M]` not `[H]`. The Supabase `create-project` row taught us this discipline by being wrong (PR #27, corrected in this PR).
+
 ---
 
 ## Vercel
@@ -72,7 +95,7 @@ This is a **living document**. Rows are added when a specialist hits an unmapped
 |---|---|---|---|---|---|---|
 | query (SELECT) | `mcp__supabase__execute_sql` | `supabase db query` | — | [H] | Supabase MCP repo; [supabase CLI](https://supabase.com/docs/reference/cli) | MCP strongly preferred for credential hygiene |
 | migrate | `mcp__supabase__apply_migration` | `supabase db push` | — | [H] | Supabase MCP repo | MCP and CLI both work; MCP preferred |
-| create-project | — | — | required | [H] | [Supabase dashboard](https://supabase.com/dashboard/projects) | No automated path — billing + region selection required in browser. Pre-flight quota per ADR-0032 §B does NOT apply (no programmatic creation) |
+| create-project | — | `POST https://api.supabase.com/v1/projects` (Management API, PAT-authed) | one-time PAT setup | [M] | [Supabase Management API](https://supabase.com/docs/reference/api/v1-create-a-project) | **Earlier matrix row claimed "no programmatic path" — that was wrong** (corrected per lessons-learned/2026-05-22-browser-gated-provisioning-friction.md). The Management API at `api.supabase.com` (distinct from per-project `<ref>.supabase.co`) creates projects given a PAT. PAT generated once at https://supabase.com/dashboard/account/tokens (browser, one-time). Body: `name`, `organization_id`, `plan`, `region`, `db_pass`. Pre-flight quota per ADR-0032 §B applies. Confidence `[M]` until verified end-to-end against a fresh org |
 | deploy-edge-function | `mcp__supabase__deploy_edge_function` | `supabase functions deploy <name>` | — | [H] | Supabase MCP repo | Both work; MCP preferred |
 | set-secret | — | `supabase secrets set NAME=value --project-ref <ref>` | — | [H] | [supabase secrets](https://supabase.com/docs/reference/cli/supabase-secrets) | No MCP coverage for secrets at time of writing |
 | link-project | — | `supabase link --project-ref <ref>` | optional | [H] | [supabase link](https://supabase.com/docs/reference/cli/supabase-link) | First-time link prompts for DB password (LR-03 — value should be sourced from env, not typed inline) |
@@ -99,6 +122,22 @@ This is a **living document**. Rows are added when a specialist hits an unmapped
 | process-refund | `mcp__stripe__create_refund` | `stripe refunds create --charge <id>` | — | [M] | Stripe MCP | Both work; payments specialist's PAY-EX-04 (tax-side-effect) applies regardless |
 | portal-config | — | — | required | [H] | [Stripe customer portal](https://docs.stripe.com/customer-management/integrate-customer-portal) | Customer portal config requires browser-side dashboard interaction for branding / consent text |
 
+## Google Cloud (OAuth client management)
+
+Most commonly used by Loom projects to configure **Sign in with Google** as an IAM. OAuth Client creation for standard web applications is genuinely browser-gated (no first-party API); related operations (consent screen config, redirect URI updates) inherit the same constraint. The good news: all of it is **one-time-per-project** — once the Client ID + secret are issued, subsequent dev/deploy work needs no further Google Cloud Console visits.
+
+| Action | MCP server | CLI | Human-browser | Confidence | Source | Notes |
+|---|---|---|---|---|---|---|
+| oauth-consent-screen-config | — | — | required (one-time) | [H] | [OAuth consent screen](https://console.cloud.google.com/apis/credentials/consent) | No first-party API for the consent-screen branding + scope declaration. One-time per Google Cloud project |
+| oauth-client-create (Web app) | — | — | required (one-time) | [H] | [Credentials page](https://console.cloud.google.com/apis/credentials) | No first-party API for standard-web OAuth Client creation. (`gcloud iap oauth-clients` covers Identity-Aware Proxy clients only — different artifact, NOT a substitute.) One-time per project |
+| oauth-client-update-redirects | — | — | required | [M] | [Credentials page](https://console.cloud.google.com/apis/credentials) | Redirect URI list edited via the Console only. Recurring whenever a new prod/preview URL is added — surface to architect at deploy time, not bootstrap |
+| oauth-client-list | — | `gcloud iap oauth-clients list` | — | [L] | [gcloud iap reference](https://cloud.google.com/sdk/gcloud/reference/iap/oauth-clients/list) | Only lists IAP-class clients, NOT standard web clients. Standard-web Client IDs visible only in Console |
+| project-create | — | `gcloud projects create <id>` | — | [H] | [gcloud projects](https://cloud.google.com/sdk/gcloud/reference/projects/create) | Cloud project itself IS automatable — only the OAuth Client inside it isn't |
+| api-enable | — | `gcloud services enable <api>` | — | [H] | [gcloud services](https://cloud.google.com/sdk/gcloud/reference/services/enable) | Enabling Google APIs (Google Books, OAuth, etc.) is CLI-driven |
+| auth (developer login) | — | `gcloud auth login` / `gcloud auth application-default login` | required | [H] | [gcloud auth](https://cloud.google.com/sdk/gcloud/reference/auth) | Device-code browser dance for the developer themselves; same DEPLOY-EX-06 scope-drop pattern applies |
+
+**Implication for the `oauth` specialist:** when adding Google Sign-In to a project, bundle ALL one-time Google Cloud setup into a single architect handoff at session start (consent screen + OAuth Client + redirect URIs). Surface it once with the full list, not as N separate "go log into the Console" round-trips. See [lessons-learned/2026-05-22-browser-gated-provisioning-friction.md](../lessons-learned/2026-05-22-browser-gated-provisioning-friction.md).
+
 ## SendGrid / Resend
 
 | Action | MCP server | CLI | Human-browser | Confidence | Source | Notes |
@@ -114,7 +153,7 @@ This is a **living document**. Rows are added when a specialist hits an unmapped
 These platforms / actions appeared in PR #26's specialist updates but don't yet have matrix rows. Add a row when a specialist hits one during real work:
 
 - AWS — `s3 cp`, `lambda invoke`, `secretsmanager get-secret-value`, `iam create-role`, `ses send-email`, `sqs send-message`
-- GCP — `gcloud compute *`, `gcloud functions deploy`, `gcloud secrets create`
+- GCP — `gcloud compute *`, `gcloud functions deploy`, `gcloud secrets create` (OAuth + projects are populated above as of 2026-05-22)
 - Azure — `az * create`
 - Cloudflare — `wrangler deploy`, `wrangler r2 *`, Cloudflare Images
 - Sentry — `sentry-cli sourcemaps upload`, `sentry-cli releases new`, Sentry MCP (if any)
@@ -132,3 +171,4 @@ These platforms / actions appeared in PR #26's specialist updates but don't yet 
 ## Version log
 
 - **2026-05-21** — Initial population (PR #27 / ADR-0033). 30 rows across 8 platforms. Gaps section enumerates 12 platforms / 40+ actions awaiting first-need.
+- **2026-05-22** — First real-session correction (Ravenwise bootstrap). Supabase `create-project` row corrected: the Management API at `api.supabase.com` was missed in the initial population. Added Google Cloud (OAuth client management) section. Added "One-time vs. recurring browser-gating" guidance + management-API discipline checklist. See [lessons-learned/2026-05-22-browser-gated-provisioning-friction.md](../lessons-learned/2026-05-22-browser-gated-provisioning-friction.md).
