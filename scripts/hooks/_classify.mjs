@@ -113,9 +113,11 @@ const INTENT_RULES = [
 ];
 
 // Built-in INTENT_RULES match user prompts to base subagents (per ADR-0017).
-// v0.4 (ADR-0023): also consult the specialist registry at
+// v0.4 (ADR-0023 + ADR-0024): also consult the specialist registry at
 // agents/specialists/_registry/manifest.yaml for project-bootstrap-task
-// patterns (oauth, payments, deploy, db-migration, ci, etc.).
+// patterns. PR-M (ADR-0024) populates the manifest with 12 starter
+// specialists (auth, oauth, deploy, db-migration, secrets, email,
+// file-storage, error-tracking, monitoring, queues, payments, ci).
 
 import { loadRegistry, matchRegistry } from "../lib/registry-loader.mjs";
 

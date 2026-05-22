@@ -145,7 +145,23 @@ function parseScalar(raw) {
 }
 
 function unquote(s) {
-  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+  if (s.startsWith('"') && s.endsWith('"')) {
+    // Double-quoted YAML: unescape backslash sequences. For our regex-bearing
+    // manifest, `\\b` (two chars in YAML source) means literal `\b` (one
+    // backslash + b — i.e., the regex word-boundary).
+    return s.slice(1, -1).replace(/\\(.)/g, (_, c) => {
+      switch (c) {
+        case "n": return "\n";
+        case "t": return "\t";
+        case "r": return "\r";
+        case "\\": return "\\";
+        case "\"": return "\"";
+        default: return "\\" + c; // keep regex escapes like \b, \d, \s untouched
+      }
+    });
+  }
+  if (s.startsWith("'") && s.endsWith("'")) {
+    // Single-quoted YAML: no escape processing per the spec; just strip quotes.
     return s.slice(1, -1);
   }
   return s;
