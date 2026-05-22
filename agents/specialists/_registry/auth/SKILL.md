@@ -31,6 +31,33 @@ When to invoke: user prompts containing "login", "signup", "session", "password"
 | AUTH-EX-03 | SE | Session lookup | Session cookie present but session row missing from DB | Session store (Redis/DB) | Middleware | Session ID from cookie | `auth.session_missing` event | String | Null | Treat as logged-out; clear cookie; redirect to sign-in | Session row can disappear via admin revocation, DB rotation, or expiry sweep. Treating "missing" identically to "expired" simplifies the state machine |
 | AUTH-EX-04 | BE | MFA enrollment | User enters wrong TOTP code 3+ times during enrollment | TOTP secret (temp) | Enrollment handler | 6-digit code | `auth.mfa_enrollment_failed` event | String | Boolean | Discard temp secret; require user to restart enrollment | Don't persist a half-enrolled MFA factor; the user may have scanned the wrong QR. Restarting is safer than partial state |
 
+## Response shape
+
+Per [ADR-0032 §C](../../../../adr/0032-deployment-hardening.md), this specialist treats response bodies as authoritative over process exit codes for any external tool it invokes. Shapes declared here are the contract; deviations are failure-mode triggers (see DEPLOY-EX-07 in the `deploy` specialist for the general "exit code lies" anti-pattern).
+
+This specialist is **library-driven, not CLI-driven** — it primarily configures auth libraries (Lucia, Auth.js, Better-Auth, Clerk) rather than driving external CLIs. The response shapes are therefore mostly NPM/Yarn install outputs and library-runtime success signals.
+
+### `npm install <auth-lib>` / `pnpm add` / `yarn add`
+
+- **Format**: text + `package.json` / lockfile delta
+- **Success criteria**: lockfile contains the expected package at the resolved version; `node_modules/<pkg>` directory exists
+- **Failure criteria**: exit code ≠ 0 (npm/pnpm/yarn are well-behaved on package install); `ERESOLVE` / `EACCES` / network-error patterns in stderr; lockfile unchanged after install
+- **Note**: package managers ARE trustworthy on exit codes for `install` (one of the few CLIs that is — npm uses well-defined exit codes per [npm CLI docs](https://docs.npmjs.com/cli/v10/using-npm/scripts#per-script-environments)). Still capture stderr for actionable diagnostics
+
+### Library-runtime success signals
+
+- **Password hash**: `argon2.hash(plain)` returns string of form `$argon2id$v=19$m=...$t=...$p=...$<salt>$<hash>` per [Argon2 spec](https://github.com/P-H-C/phc-string-format/blob/master/phc-sf-spec.md)
+- **Session create**: write to session store returns the inserted row with `id, user_id, expires_at` populated; missing `id` after insert = `auth.session_create_failed` (AUTH-EX-03 inverse)
+- **TOTP verify**: library returns boolean; on `false`, increment rate-limiter (per AUTH-EX-04)
+
+### Internal contract (what THIS specialist commits to returning)
+
+When invoked, returns:
+- A list of files written (paths + summary of change)
+- The auth library chosen + rationale (citing OWASP ASVS §2 / §3)
+- Failure-mode IDs (AUTH-EX-*) the implementation guards against
+- Any deferred work + reason for deferral
+
 ## Decline triggers
 
 - **OAuth provider integration** → escalate to [`oauth`](../oauth/SKILL.md).

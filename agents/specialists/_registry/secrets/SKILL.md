@@ -31,6 +31,50 @@ When to invoke: user prompts containing "secret", "credential", "API key", "rota
 | SEC-EX-03 | SE | `.env.example` generation | App needs a new secret (e.g., `STRIPE_WEBHOOK_SECRET`) | App config | App schema diff | New env var name + purpose comment | Append to `.env.example` with placeholder | String | Text patch | Add `<name>=` line with a `# <purpose, where to obtain>` comment; never include a real value even in dev | `.env.example` is committed; placing a real value (even a "dev" or "test" one) re-creates SEC-EX-02. Convention: placeholder is empty after `=`, with a comment pointing at the source-of-truth provisioning step |
 | SEC-EX-04 | BE | Rotation request | User asks "rotate the Stripe key" without specifying environment | Multi-env config | User prompt | Ambiguous rotation request | Clarifying question | String | Question | Decline and ask: live vs. test vs. preview? Rotating live without coordination causes outages; rotating test silently can mask integration tests | Multi-environment credential management is the most common source of production incidents during rotation (Verizon DBIR 2024 §Web App attacks). Ambiguity = halt + clarify |
 
+## Response shape
+
+Per [ADR-0032 §C](../../../../adr/0032-deployment-hardening.md), this specialist treats response bodies as authoritative over process exit codes for any external tool it invokes. Critical for this specialist because secret-handling CLIs frequently exit 0 on operations that silently no-op'd (rotation that hit a stale token cache; setting a value with the wrong scope).
+
+### `doppler secrets`
+
+- **Format**: text by default; `--json` flag yields JSON
+- **Success criteria** (with `--json`): HTTP 2xx + body contains the operation result (`name`, `value` — but **this specialist NEVER captures or logs the value** per LR-03); `updated_at` timestamp post-operation
+- **Failure criteria**: stderr contains `Error:` / `Unable to`; HTTP 4xx in body; missing `updated_at`
+- **Vendor docs**: [Doppler CLI reference](https://docs.doppler.com/docs/cli)
+
+### `vault kv get` / `vault kv put`
+
+- **Format**: text by default; `-format=json` for JSON
+- **Success criteria** (with `-format=json`): exit 0 AND body contains `data.metadata.version` greater than previous version on `put`; `data.data` keys match expected on `get`
+- **Failure criteria**: exit ≠ 0; stderr `Error writing data` / `permission denied`; same `data.metadata.version` after `put` (indicates no-op write)
+- **Vendor docs**: [HashiCorp Vault CLI docs](https://developer.hashicorp.com/vault/docs/commands/kv)
+
+### `op` (1Password CLI)
+
+- **Format**: JSON by default
+- **Success criteria**: exit 0 AND body contains expected `id` / `vault.id` fields; `updated_at` advances on writes
+- **Failure criteria**: exit ≠ 0; stderr `[ERROR]` lines; `Forbidden` / `Not authenticated` (1Password device-code session expiry, similar to OAUTH-EX device-code-scope-drop pattern — see DEPLOY-EX-06)
+- **Vendor docs**: [1Password CLI reference](https://developer.1password.com/docs/cli/reference)
+
+### Platform env-var CLIs (`vercel env`, `gh secret`, `fly secrets`)
+
+These specialists DRIVE these CLIs but invoke them **only to set / list, never to read values**. Response shape:
+
+- **`vercel env ls`**: text table; success = exit 0 + table header present
+- **`vercel env add`**: prompt-driven (interactive); success = "Added Environment Variable <name>" on stdout AND `vercel env ls` shows the new entry on follow-up call
+- **`gh secret set`**: text; success = exit 0 (no body); confirm via `gh secret list`
+- **`fly secrets set`**: text; success = exit 0 + "Secrets are staged for the next deployment" line. Note: writes are staged, not applied, until next deploy — confirm via follow-up `fly secrets list`
+
+### Internal contract (what THIS specialist commits to returning)
+
+When invoked, returns:
+- Storage decision (`.env` / Doppler / Vault / 1Password / platform-native) with rationale
+- `.env.example` entries (NAMES only, never values)
+- `.gitignore` additions
+- Rotation procedure document (per-credential)
+- Failure-mode IDs (SEC-EX-*) the design guards against
+- **Never** in the return: a credential value, even redacted
+
 ## Decline triggers
 
 - **HSM / custom KMS integration** → escalate to EAC. Hardware-backed key management is project-specific and needs a deeper research pass.

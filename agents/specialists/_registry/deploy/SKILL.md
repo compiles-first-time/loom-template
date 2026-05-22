@@ -62,6 +62,70 @@ Cloud-platform CLIs (`vercel`, `gh`, `supabase`, `flyctl`, `netlify`, `render`) 
 | DEPLOY-EX-07 | SE | Verify CLI outcome | CLI exits 0 with `"status": "error"` in response body | Captured stdout/stderr | Post-run parse | Process exit + captured output | Parsed structured result | Process + Text | Structured | Treat response-body `status` field as authoritative. Exit code is one signal; absence of error in body is one signal; both must agree to declare success | `vercel deploy`, `gh pr create`, `supabase functions deploy` all routinely exit 0 on operations that returned a structured error. Trusting exit code alone declared 6 failed AnonForum deploys "successful" in the event log. ADR-0032 §C + Finding 5 |
 | DEPLOY-EX-08 | SE | Wait for terminal state | Deploy reaches non-terminal state (`UNKNOWN`, `BUILDING` for too long, or no observation for too long) | Platform status API or CLI stream | Wait loop | Streaming status | Terminal outcome `non_progressing` | Stream | Structured outcome | Use [`scripts/lib/wait-for-deploy.mjs`](../../../../scripts/lib/wait-for-deploy.mjs) — its three-outcome model treats non-progressing as a first-class outcome with a loud `onProgress` notification. Do NOT roll your own `until grep ... ; do sleep ...; done` — that's the AnonForum failure mode | A naive wait loop hung the AnonForum session for 12 hours on Vercel's `UNKNOWN` state. The primitive enumerates terminal states per platform + has stall + in-progress-timeout detectors + surfaces non-progressing with a diagnostic message. ADR-0032 §A + Finding 3 |
 
+## Response shape
+
+Concrete shapes per CLI/MCP this specialist drives. The "Response-body discipline" section above is the WHY (ADR-0032 §C); this section is the WHAT — the parseable contract for each surface. Deviations are failure-mode triggers (specifically DEPLOY-EX-07).
+
+### `vercel deploy` / `vercel inspect <url-or-id>`
+
+- **Format**: `vercel deploy` outputs text by default; `--json` (and `inspect --json`) yields JSON
+- **Authoritative fields** (JSON): `state` (READY / ERROR / BUILDING / QUEUED / CANCELED / UNKNOWN — see TERMINAL_STATES.vercel), `aliasError`, `errorMessage`, `readyState`
+- **Success criteria**: `state === "READY"` AND no `errorMessage`. **Do NOT** treat exit 0 alone as success (DEPLOY-EX-07; AnonForum Finding 5)
+- **Failure criteria**: `state` in `{ERROR, CANCELED}`; OR `state === "UNKNOWN"` (DEPLOY-EX-08 — `non_progressing` per ADR-0032 §A); OR `errorMessage` non-empty
+- **Vendor docs**: [Vercel deployment states](https://vercel.com/docs/deployments/states)
+
+### `netlify deploy` / `netlify status`
+
+- **Format**: text by default; `--json` for JSON
+- **Authoritative fields**: `state` (READY / CURRENT / ERROR / REJECTED / PROCESSING / PREPARING / UPLOADING / UPLOADED / ENQUEUED / NEW), `deploy_url`, `error_message`
+- **Success criteria**: `state` in `{READY, CURRENT}` AND no `error_message`
+- **Failure criteria**: `state` in `{ERROR, REJECTED}`; `state === "NEW"` after threshold → non_progressing
+- **Vendor docs**: [Netlify deploys API](https://docs.netlify.com/api/get-started/#deploys)
+
+### `flyctl deploy` / `flyctl status`
+
+- **Format**: text with state markers (e.g., `==> Status: ...`); JSON via `--json`
+- **Authoritative fields**: `Status` (running / pending / succeeded / failed / dead / cancelled), `Hostname`, latest release version
+- **Success criteria**: `Status` in `{running, succeeded}` for the release; new release version > previous
+- **Failure criteria**: `Status` in `{failed, dead, cancelled}`; release version unchanged after deploy
+- **Vendor docs**: [Fly.io release states](https://fly.io/docs/reference/release-states/)
+
+### `render deploy`
+
+- **Format**: text + dashboard URL line. API-driven verification (`render deploys list --service <id> --json`)
+- **Authoritative fields**: `status` (live / build_in_progress / update_in_progress / failed / canceled / deactivated / build_failed / update_failed), `commit`
+- **Success criteria**: `status === "live"`
+- **Failure criteria**: `status` in `{failed, build_failed, update_failed, canceled, deactivated}`
+- **Vendor docs**: [Render deploy statuses](https://render.com/docs/deploys#deploy-statuses)
+
+### Platform billing/quota endpoints (pre-flight per §B)
+
+Per platform, the pre-flight call shape:
+
+| Platform | Endpoint / CLI | Authoritative quota field | Authoritative billing field |
+|---|---|---|---|
+| Vercel | `GET /v2/teams/<id>/integrations` + dashboard | `usage.bandwidth`, `usage.buildMinutes` | `paymentMethodAttached` (boolean) |
+| Netlify | `GET /api/v1/accounts/<id>/billing` | `included_minutes`, `usage_minutes` | `payment_method_id` non-null |
+| Fly.io | `flyctl orgs show <org> --json` | machine count vs plan cap | `billing_status` field |
+| Supabase | dashboard (no public CLI yet) — manual verify | project compute / DB hours | payment method on file (dashboard) |
+| Render | `GET /v1/owners/<id>/billing` | service count / plan tier | `payment_method` non-null |
+
+The pre-flight emits `pre_flight_quota_check` event with `{platform, payment_method_present, quota_remaining, account_state}`. Body capture is structured — never include raw API tokens in the event.
+
+### MCP counterparts
+
+When invoking a deploy via MCP (`mcp__*__deploy_*`), the response shape is dictated by the MCP server's schema. This specialist consults the MCP-vs-CLI capability matrix (per ADR-0032 §E, ships in PR #27) **before** picking MCP vs CLI — some MCPs delegate back to the CLI, in which case both shapes apply.
+
+### Internal contract (what THIS specialist commits to returning)
+
+When invoked, returns:
+- Platform chosen + the `tools/runtime.yaml` configuration written
+- The pre-flight quota verification artifact (per §B)
+- The `waitForDeploy` integration confirmation (TERMINAL_STATES key + thresholds — defaults if unchanged)
+- CI hook configuration (preview deploys, prod deploy gating)
+- Health-check endpoint + post-deploy verification approach
+- Failure-mode IDs (DEPLOY-EX-*) the implementation guards against
+
 ## Decline triggers
 
 - **Custom-built / on-prem deploy targets** → escalate to EAC; this specialist covers managed PaaS runtimes only.
