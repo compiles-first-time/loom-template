@@ -142,6 +142,23 @@ if ((Test-Path $gen) -and (Get-Command node -ErrorAction SilentlyContinue)) {
     Write-Host "  skip: node or generator not available; .claude/settings.json mcpServers not regenerated" -ForegroundColor DarkGray
 }
 
+# Discover runtime (MCPs + subagents) and stamp the subagent sentinel.
+$discover = Join-Path $root "scripts/lib/discover-runtime.mjs"
+if ((Test-Path $discover) -and (Get-Command node -ErrorAction SilentlyContinue)) {
+    try {
+        & node $discover --quiet | ForEach-Object { Write-Host "  $_" }
+    } catch {
+        Write-Host "  warn: runtime discovery failed (continuing)" -ForegroundColor Yellow
+    }
+}
+$sentinelDir = Join-Path $root ".claude/agents"
+if (Test-Path $sentinelDir) {
+    $sentinel = Join-Path $sentinelDir ".last-discovered-at"
+    (Get-Item $sentinel -ErrorAction SilentlyContinue) ?? (New-Item -ItemType File -Path $sentinel -Force) | Out-Null
+    (Get-Item $sentinel).LastWriteTime = Get-Date
+    Write-Host "  stamped: .claude/agents/.last-discovered-at (subagent discovery sentinel)"
+}
+
 # --- 4. Summary ------------------------------------------------------------------
 $subagentCount = (Get-ChildItem -Path (Join-Path $root ".claude/agents") -Filter "*.md" -ErrorAction SilentlyContinue | Measure-Object).Count
 $hookCount = (Get-ChildItem -Path (Join-Path $root "scripts/hooks") -Filter "*.mjs" -ErrorAction SilentlyContinue | Measure-Object).Count
@@ -163,6 +180,16 @@ Write-Host "  2. Edit CLAUDE.md to describe this project's specific goals"
 Write-Host "  3. Decide full-6 vs minimal-3 agent set (see layers/L2-agents.md)"
 Write-Host "  4. Copy .env.example to .env and fill in API keys"
 Write-Host "  5. Confirm or override ADR-0002 (orchestration framework)"
-Write-Host "  6. git init; git add .; git commit -m 'Loom v0.2 scaffold'"
+Write-Host "  6. Edit tools/runtime.yaml: set deploy.command + post_deploy_url_pattern"
+Write-Host "  7. git init; git add .; git commit -m 'Loom v0.3 scaffold'"
 Write-Host ""
-Write-Host "Run scripts/doctor.ps1 (PR-5) to validate the project at any time."
+Write-Host "  Run scripts/doctor.ps1 to validate the project at any time."
+Write-Host "  Run scripts/secrets-doctor.ps1 before any commit touching credentials."
+Write-Host ""
+Write-Host "============================================================" -ForegroundColor Yellow
+Write-Host "RESTART CLAUDE CODE NOW" -ForegroundColor Yellow
+Write-Host "============================================================" -ForegroundColor Yellow
+Write-Host "  Claude Code builds the subagent registry at session start."
+Write-Host "  The six base subagents at .claude/agents/*.md were just"
+Write-Host "  added to disk - they are NOT yet invokable in the current"
+Write-Host "  session. Restart Claude Code to load them. (Per ADR-0020.)"
