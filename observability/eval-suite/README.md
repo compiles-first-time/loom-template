@@ -13,6 +13,9 @@
 | **Drift** | Confidence drift (secondary), faithfulness drift against the golden set (primary), hallucination rate, response distribution shift | Weekly | `drift/` |
 | **Adversarial** | Prompt injection, jailbreak attempts, kernel-violation provocations | Pre-release | `adversarial/` |
 | **Retrieval** | Faithfulness / groundedness, retrieval recall, retrieval precision against a fixed golden set | Nightly | `retrieval/` |
+| **Subagent canonical prompts** | One canonical prompt per base subagent; behavioral markers verify each subagent honors its v0.2 SKILL.md contract. **Human-graded.** | Each template release | `subagents/` (prompts) + `runs/` (captures) |
+
+The **Subagent** category was added per [ADR-0021](../../adr/0021-subagent-evals.md). Closes v0.3 finding #5 (HR/EAC unverified). Each `subagents/<name>.md` has a `canonical_prompt:` + `marker_behaviors:` in frontmatter. `scripts/eval-subagents.{sh,ps1}` dispatches each prompt to the matching subagent via the `claude` CLI and captures the response to `runs/YYYY-MM-DD/<name>.md` for human grading. Automated grading of agentic responses is explicitly **not** v0.3's scope.
 
 The **Retrieval** category was added per [ADR-0006](../../adr/0006-retrieval-evaluation.md). Self-reported confidence is unreliable as a drift signal (Kadavath et al.); RAGAS-style faithfulness against a fixed golden set is the primary drift detector. `[research-p1][H]`
 
