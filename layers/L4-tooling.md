@@ -56,6 +56,23 @@ This decision is itself an ADR. Revisable; see [`../adr/0002-orchestration-frame
 
 **Critical:** All routing decisions logged. No model grades its own output (information-theoretic collapse — `[LLM-A][H]`).
 
+## MCP-over-CLI for credentialed services
+
+> Per [LR-03](../constitution/local-rules.md#lr-03-secrets-must-not-appear-in-chat-input-or-tool-output) / [ADR-0018](../adr/0018-secrets-handling.md).
+
+When a service offers both a CLI and an MCP server (Supabase, Vercel, GitHub, Linear, Slack, etc.), **prefer the MCP server**. The credential lives in MCP config (env var or secrets-manager reference) and never reaches the tool args captured in the event log. A CLI invocation like `supabase --service-key=eyJ...` leaks the credential into `memory/event-log/YYYY-MM-DD.jsonl` even with the v0.3 redaction layer (high-confidence patterns are redacted, but novel token shapes can slip through).
+
+Concrete guidance:
+
+| Service | Prefer | Avoid |
+|---|---|---|
+| Supabase | `mcp__supabase__*` tools | `supabase --service-key=...` on the CLI |
+| Vercel | `mcp__vercel__*` tools | `vercel --token=...` on the CLI |
+| GitHub | `mcp__github__*` tools | `gh` with `GH_TOKEN` inlined in the command |
+| Linear, Slack, etc. | corresponding MCP server | CLI with inline credentials |
+
+This is **not** a ban on CLIs — they're fine when no MCP server exists, or when the CLI reads its credential from an env var sourced outside the chat (`.env`, OS keyring, secrets manager). The rule is: **the credential value must not appear in a tool call's args**.
+
 ---
 
 ## Open work for this layer
