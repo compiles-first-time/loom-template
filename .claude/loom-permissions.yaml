@@ -1,0 +1,104 @@
+# Loom v0.6 permissions protocol — per ADR-0027 / LR-04.
+#
+# Three policy categories. Each declares which tool-call patterns it covers
+# and what the required pre-action protocol is (smallest-needed credential
+# scope + rollback path + constitution-service consultation, etc.).
+#
+# This is NOT Claude Code's `.claude/settings.json#permissions` block (which
+# is allow/deny lists). This is Loom's higher-level *policy* classifier that
+# the PreToolUse hook consults. The two coexist:
+#   - settings.json.permissions = allow/deny lists at the tool level
+#   - loom-permissions.yaml      = LR-04 meta-rule policy categories
+#
+# Project-local overrides go in .claude/loom-permissions.local.yaml
+# (gitignored) — same schema; merges over this file.
+
+version: "1.0"
+
+categories:
+
+  # ── external_service_setup ──────────────────────────────────────────────
+  # Tool calls that configure or modify a third-party service. Examples:
+  # creating a Stripe webhook endpoint, configuring a Supabase project,
+  # adding a custom domain to Vercel. Reversible in most cases but visible
+  # to the external service operator + may incur cost.
+  external_service_setup:
+    triggers:
+      command_patterns:
+        - "\\bsupabase\\s+(?:link|secrets|projects)\\b"
+        - "\\bvercel\\s+(?:domains|env|projects)\\b"
+        - "\\bgh\\s+(?:repo|secret)\\s+create\\b"
+        - "\\bstripe\\s+(?:webhook_endpoints|products)\\b"
+        - "\\bfly\\s+apps\\s+create\\b"
+        - "\\bgcloud\\s+\\w+\\s+create\\b"
+        - "\\baws\\s+\\w+\\s+create-\\w+\\b"
+      mcp_patterns:
+        # MCP servers performing setup operations on external services
+        - "mcp__.*__(?:create|update|configure|provision)_.*"
+    required_protocol:
+      - present_action: "What is the action and which service does it touch?"
+      - smallest_scope: "What is the minimum credential scope needed? (e.g., write to one Vercel project, NOT org-wide admin)"
+      - rollback_path: "How is this undone if it's wrong? (manual delete? automatic teardown script?)"
+      - constitution_service: "consulted-or-escalated"  # not always required; user discretion
+    enforcement: "soft"  # warning event in JSONL; deploy/CI may upgrade to hard
+
+  # ── destructive_actions ─────────────────────────────────────────────────
+  # Tool calls that are irreversible by their nature. Inherits LR-02
+  # production-mutation detection (vercel deploy, gh release create, etc.)
+  # plus filesystem / DB / git destructive patterns.
+  destructive_actions:
+    triggers:
+      command_patterns:
+        # Local destructive
+        - "\\brm\\s+-[rf]+\\b"
+        - "\\bgit\\s+reset\\s+--hard\\b"
+        - "\\bgit\\s+push\\s+(?:.*\\s+)?(?:--force|-f)\\b"
+        - "\\bgit\\s+branch\\s+-D\\b"
+        - "\\bgit\\s+clean\\s+-[fd]+\\b"
+        - "\\bRemove-Item\\s+.*\\s+-Recurse\\s+-Force\\b"
+        # Database destructive
+        - "\\bdrop\\s+(?:table|database|schema)\\b"
+        - "\\btruncate\\s+table\\b"
+        - "\\bprisma\\s+migrate\\s+reset\\b"
+        - "\\bsupabase\\s+db\\s+reset\\b"
+        # Production-mutation (was LR-02, now subsumed by LR-04)
+        - "\\bvercel\\s+deploy\\b"
+        - "\\bvercel\\s+(?:.*\\s+)?--prod\\b"
+        - "\\bnpm\\s+publish\\b"
+        - "\\bgh\\s+release\\s+create\\b"
+        - "\\bgit\\s+push\\s+(?:.*\\s+)?origin\\s+(?:main|master|prod|production)\\b"
+        - "\\bprisma\\s+migrate\\s+deploy\\b"
+        - "\\bterraform\\s+apply\\b"
+        - "\\bkubectl\\s+apply\\s+.*\\s+(?:prod|production)\\b"
+    required_protocol:
+      - present_action: "What is the action and what state does it destroy or mutate?"
+      - smallest_scope: "Is there a narrower variant? (e.g., delete specific rows vs. truncate table)"
+      - rollback_path: "Is rollback possible at all? If not, the action is irreversible — Kernel Rule 20 weight applies"
+      - constitution_service: "required"  # constitution-service claim must precede the call
+    enforcement: "hard"  # PreToolUse hook emits constitution_check_missing event; deploy gates on it
+
+  # ── credentials ──────────────────────────────────────────────────────────
+  # Tool calls that handle credentials. Subsumes LR-03 (secrets in chat /
+  # tool args) and OAuth-preference enforcement (PR-Q).
+  credentials:
+    triggers:
+      # Value-shape patterns delegated to scripts/lib/secret-patterns.mjs.
+      # This category's purpose here is to flag *intent* — the user is
+      # likely about to handle credentials when these patterns appear in
+      # tool args.
+      command_patterns:
+        - "\\b(?:--token|--api[-_]?key|--secret|--password|--access[-_]?key)\\b"
+        - "\\bnpm\\s+(?:login|token)\\b"
+        - "\\bgh\\s+auth\\s+login\\b"
+        - "\\bdoppler\\s+secrets\\s+set\\b"
+        - "\\bvercel\\s+env\\s+(?:add|set)\\b"
+      keywords:
+        - "service_role_key"
+        - "client_secret"
+    required_protocol:
+      - present_action: "What credential will the action use, and what is its scope?"
+      - smallest_scope: "Is there a narrower credential (project-scoped vs. org-wide; read-only vs. write)?"
+      - rollback_path: "Rotation procedure documented? Where is the credential stored after?"
+      - never_in_args: "The credential VALUE must not appear in tool args (LR-03; hook redacts HIGH-confidence shapes)"
+      - oauth_preferred: "If the service offers OAuth (provider-issued, short-lived) — prefer it over a long-lived API key"
+    enforcement: "soft"  # PreToolUse emits credential_action_attempted event; secrets-doctor catches retroactively
