@@ -159,6 +159,18 @@ if (Test-Path $sentinelDir) {
     Write-Host "  stamped: .claude/agents/.last-discovered-at (subagent discovery sentinel)"
 }
 
+# Quick-scan discovery (5 questions). Per ADR-0025 / L8.
+$discoverScript = Join-Path $root "scripts/lib/discover.mjs"
+if ((Test-Path $discoverScript) -and (Get-Command node -ErrorAction SilentlyContinue)) {
+    Write-Host ""
+    Write-Host "Running quick-scan discovery (5 questions, ~2 min)..." -ForegroundColor Cyan
+    try {
+        & node $discoverScript --quick
+    } catch {
+        Write-Host "  warn: quick-scan failed (continuing)" -ForegroundColor Yellow
+    }
+}
+
 # --- 4. Summary ------------------------------------------------------------------
 $subagentCount = (Get-ChildItem -Path (Join-Path $root ".claude/agents") -Filter "*.md" -ErrorAction SilentlyContinue | Measure-Object).Count
 $hookCount = (Get-ChildItem -Path (Join-Path $root "scripts/hooks") -Filter "*.mjs" -ErrorAction SilentlyContinue | Measure-Object).Count

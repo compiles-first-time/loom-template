@@ -139,6 +139,19 @@ if [ -d "$ROOT/.claude/agents" ]; then
     echo "  stamped: .claude/agents/.last-discovered-at (subagent discovery sentinel)"
 fi
 
+# Quick-scan discovery (5 questions; per ADR-0025 / L8).
+# Interactive if stdin is a TTY; non-interactive otherwise (CI / piped bootstrap).
+if [ -f "$ROOT/scripts/lib/discover.mjs" ] && command -v node >/dev/null 2>&1; then
+    echo ""
+    if [ -t 0 ]; then
+        echo "Running quick-scan discovery (5 questions, ~2 min)..."
+        node "$ROOT/scripts/lib/discover.mjs" --quick || echo "  warn: quick-scan failed (continuing)"
+    else
+        echo "Quick-scan: stamping defaults non-interactively (run \`scripts/discover.sh --quick\` later for the interactive version)..."
+        node "$ROOT/scripts/lib/discover.mjs" --quick --non-interactive 2>&1 | sed 's/^/  /' || true
+    fi
+fi
+
 # --- 4. Summary --------------------------------------------------------------
 echo ""
 echo "============================================================"
