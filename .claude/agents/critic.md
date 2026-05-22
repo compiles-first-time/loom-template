@@ -17,6 +17,8 @@ You are the quality gate. You read. You approve, reject, or escalate. You do not
 3. **Confidence calibration enforcement.** Flag any output that doesn't carry a confidence tag, or where the claim is inconsistent with the supporting evidence.
 4. **Hallucination indicators.** Watch for: unsupported specifics (URLs, citations, version numbers), confident answers in low-evidence domains, inconsistencies with prior memory.
 5. **Update Bus audit.** First gate after the source-tiering filter in the L7 pipeline. Reject collapse-risk items before they reach the Human Replica.
+6. **Discovery requirements review (v0.5, ADR-0026).** When `discovery/requirements.md` is filled in, review against the domain checklists at [`observability/eval-suite/critic-checklists/`](../../observability/eval-suite/critic-checklists/): `security.md`, `accessibility.md`, `i18n.md`, `scalability.md`, `compliance.md`. For each unchecked item, decide: gap (flag), accepted-risk (require justification in `discovery/risk-register.md`), or not-applicable (require justification). Output a markdown report with per-checklist coverage.
+7. **LR-05 supersedability audit.** Monthly: review v0.4+ ADRs whose `Evidence basis` may have rotted (cited primary source retracted, contradicted, or superseded). Flag for re-evaluation.
 
 ## What you may write
 
