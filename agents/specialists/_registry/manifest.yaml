@@ -1,0 +1,40 @@
+# Specialist registry manifest — Loom v0.4 per ADR-0023.
+#
+# Each entry binds a specialist's name to its trigger patterns (which the
+# intent classifier reads from scripts/hooks/_classify.mjs) and to its
+# canonical SKILL.md location.
+#
+# Two namespaces:
+#   - _registry/<name>/SKILL.md   — bundled with Loom; imported as-is.
+#   - ../<name>/SKILL.md          — project-local; may override a registry
+#                                   entry by setting `extends: _registry/<name>`
+#                                   in its SKILL.md frontmatter.
+#
+# Specialist SKILL.md ships with a "Failure modes" section in the xlsx
+# convention (ADR-0022) — SE (System Exception) + BE (Business Exception)
+# rows, each with input/output schema, remediation, and JUSTIFICATIONS.
+
+version: "1.0"
+
+# Specialists are populated by PR-M (v0.4). PR-L ships only the schema.
+specialists: []
+
+# ── Schema for entries ────────────────────────────────────────────────────
+#
+# - name: <kebab-case-id>             # unique identifier; matches directory name
+#   summary: <one-line>               # shown by the classifier in additionalContext
+#   skill_md: _registry/<name>/SKILL.md  # path relative to agents/specialists/
+#   tier: bundled | community | local # provenance
+#   triggers:                          # how the intent classifier surfaces this
+#     patterns:                        # regex(es) against user prompt text
+#       - "<regex>"
+#     tools:                           # tool-name allowlist that hints invocation
+#       - "<tool-name>"
+#     keywords:                        # exact tokens (lowercased) in tool args
+#       - "<keyword>"
+#   context_budget: <int>             # token budget per ADR-0004 (advisory)
+#   evidence_basis:                   # per LR-05 — what backs this specialist
+#     primary: <citation>
+#     confidence: H | M | L | S
+#     supersedability: <what would change the call>
+#   eval_source: observability/eval-suite/subagents/<name>.md  # canonical-prompt eval

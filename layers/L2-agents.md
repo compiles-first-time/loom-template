@@ -52,6 +52,15 @@ Governance need is orthogonal to this choice — the Critic + Constitution Servi
 
 Created on demand by the EAC; live under [`../agents/specialists/<name>/`](../agents/specialists/). Terminated at end of project lifecycle. Their lessons-learned persist in [`../lessons-learned/`](../lessons-learned/).
 
+### Specialist registry (v0.4)
+
+> **Per [ADR-0023](../adr/0023-specialist-registry.md).** Loom v0.4 ships a project-bootstrap specialist registry at [`../agents/specialists/_registry/`](../agents/specialists/_registry/). Two namespaces:
+>
+> - **Bundled** — [`_registry/<name>/SKILL.md`](../agents/specialists/_registry/) — ships with Loom; updated via template upgrades.
+> - **Project-local** — [`<name>/SKILL.md`](../agents/specialists/) — project-specific specialists or overrides (set `extends: _registry/<name>` in frontmatter).
+>
+> The intent classifier ([`scripts/hooks/_classify.mjs`](../scripts/hooks/_classify.mjs)) reads [`_registry/manifest.yaml`](../agents/specialists/_registry/manifest.yaml) on every user prompt and surfaces specialist suggestions via the UserPromptSubmit hook. Specialist SKILL.md files follow the [xlsx failure-modes convention](../adr/0022-xlsx-docs-convention.md) — SE/BE rows with `Justifications` column.
+
 ## Context budget
 
 > **Canonical default per [ADR-0004](../adr/0004-context-budget.md).**

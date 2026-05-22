@@ -87,6 +87,34 @@ Per [ADR-0017](../adr/0017-intent-nag.md).
 
 Per [ADR-0018](../adr/0018-secrets-handling.md).
 
+### LR-05 — Decisions are best-current-call; supersedence requires independent peer-reviewed evidence
+
+**Status:** Active
+**Date:** 2026-05-20
+**Extends:** Kernel Rule 22 (epistemic transparency); Kernel Rule 19 (self-modification process)
+**Author:** Architect handoff (v0.4 PR-L) — approved by Nick
+
+**Rule:** Every architectural decision recorded in an ADR is a **best-current-call**. It is binding until **superseded by independent peer-reviewed evidence** that contradicts the decision's stated `Evidence basis`. Supersedence requires a new ADR that (a) cites the superseding source(s), (b) explains why the new evidence overrides the prior basis, and (c) marks the prior ADR `Superseded by ADR-XXXX` per the template.
+
+**Why:** Loom synthesizes from heuristics, vendor docs, prior projects, podcast transcripts, and synthesizer reasoning at varying confidence levels. Many decisions are `[M]`/`[S]` — corroborated or speculative, not primary. Without an explicit "supersedable by evidence" stance, those decisions calcify and the framework drifts away from what's actually true. This rule keeps the architecture honest about its evidence basis while preventing churn from low-quality "I read a tweet" replacements.
+
+**Independence definition** *(per ADR-0009 source tiering)*: corroborating sources are checked at the **publisher** level, not just the URL. Blog A citing Blog B citing Blog A is **one** source. The threshold for supersedence:
+
+- A `[H]` decision is superseded only by a `[H]` finding with ≥ 1 independent corroboration.
+- A `[M]` decision is superseded by a `[H]` finding with no corroboration required, OR by `[M]` findings with ≥ 2 independent corroborations.
+- A `[S]` decision is superseded by any `[M]` or `[H]` finding.
+- A `[L]` (training-knowledge only) decision is superseded by any cited primary source.
+
+**How to apply:**
+- The ADR template (`adr/0000-template.md`) requires an `Evidence basis` section listing primary sources, corroborating sources, and **what would change the call**.
+- New ADRs that supersede prior ones must include the citation chain.
+- The Critic's monthly audit checks for ADRs whose evidence basis has rotted (e.g., the cited primary source has been retracted or contradicted) and flags them.
+- LR-01 (external content untrusted until validated) governs incoming content; **LR-05 governs outgoing decisions** — both sides of the same epistemic process.
+
+**Enforcement:** ADR template (structural); Critic monthly audit; `loom doctor` (verifies the `Evidence basis` section is present on `v0.4+` ADRs as a soft check). The kernel itself (Rules 1–8) is exempt — those are effectively immutable per Rule 19.
+
+Per [ADR-0022](../adr/0022-xlsx-docs-convention.md) and [ADR-0023](../adr/0023-specialist-registry.md).
+
 <!--
 Template:
 

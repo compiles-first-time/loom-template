@@ -1,11 +1,13 @@
 #!/usr/bin/env node
-// `loom doctor` — cross-checks a Loom project for v0.2 conformance.
+// `loom doctor` — cross-checks a Loom project for v0.2+ conformance.
 //
 // Exit codes:
 //   0  all checks passed (warnings allowed)
 //   1  one or more hard checks failed
 //
-// Per ADR-0015.
+// Per ADR-0015 (foundational), extended by ADR-0017 (LR-02 / constitution
+// coverage), ADR-0022 (template conformance), and ADR-0023 (bidirectional
+// ADR links).
 
 import { promises as fs, existsSync } from "node:fs";
 import path from "node:path";
@@ -33,6 +35,8 @@ async function main() {
   await checkSubagentsParse();
   await checkEventLogCoverage();
   await checkConstitutionCoverage();
+  await checkAdrTemplateConformance();
+  await checkBidirectionalAdrLinks();
   await checkHandoffFreshness();
   await checkSkeleton();
 
@@ -220,6 +224,89 @@ async function checkConstitutionCoverage() {
   } else {
     soft("constitution-coverage", false, `${violations} session(s) mutated prod without a constitution-service claim (LR-02). Grep memory/event-log/ for production_mutation_attempted to find them.`);
   }
+}
+
+async function checkAdrTemplateConformance() {
+  // Soft (LR-05 / ADR-0022): v0.4+ ADRs (≥ 0022) must have an
+  // `Evidence basis` section and an `Affects / Affected by` section.
+  // Pre-v0.4 ADRs (≤ 0021) predate the convention and are exempt.
+  const adrDir = path.join(ROOT, "adr");
+  if (!existsSync(adrDir)) return;
+  const files = (await fs.readdir(adrDir)).filter((f) => /^\d{4}-.+\.md$/.test(f));
+  const missing = [];
+  for (const f of files) {
+    const num = parseInt(f.slice(0, 4), 10);
+    if (num < 22) continue; // pre-v0.4
+    if (f.startsWith("0000-")) continue; // template
+    const text = await fs.readFile(path.join(adrDir, f), "utf8");
+    const lacks = [];
+    if (!/## Evidence basis/m.test(text)) lacks.push("Evidence basis");
+    if (!/## Affects \/ Affected by/m.test(text)) lacks.push("Affects / Affected by");
+    if (lacks.length) missing.push(`${f}: missing ${lacks.join(" + ")}`);
+  }
+  if (missing.length === 0) {
+    soft("adr-template-conformance", true, "all v0.4+ ADRs include Evidence basis + Affects sections");
+  } else {
+    soft("adr-template-conformance", false, `${missing.length} ADR(s) missing required v0.4+ sections: ${missing.join("; ")}`);
+  }
+}
+
+async function checkBidirectionalAdrLinks() {
+  // Soft (ADR-0022 interoperability tracking): for each v0.4+ ADR with an
+  // `Affects / Affected by` "This ADR affects" block, verify the named
+  // downstream artifacts reference this ADR back. One-shot pass: build the
+  // set of artifacts each ADR claims to affect, then grep each for the
+  // ADR number.
+  const adrDir = path.join(ROOT, "adr");
+  if (!existsSync(adrDir)) return;
+  const files = (await fs.readdir(adrDir)).filter((f) => /^\d{4}-.+\.md$/.test(f) && !f.startsWith("0000-"));
+  const orphans = [];
+  for (const f of files) {
+    const num = parseInt(f.slice(0, 4), 10);
+    if (num < 22) continue;
+    const text = await fs.readFile(path.join(adrDir, f), "utf8");
+    const affectsBlock = extractAffectsBlock(text);
+    if (!affectsBlock) continue;
+    const adrNum = `ADR-${String(num).padStart(4, "0")}`;
+    for (const target of affectsBlock) {
+      const targetPath = path.join(ROOT, target);
+      if (!existsSync(targetPath)) {
+        orphans.push(`${f} → ${target} (target file missing)`);
+        continue;
+      }
+      const targetText = await fs.readFile(targetPath, "utf8");
+      if (!targetText.includes(adrNum) && !targetText.includes(`${num}-`)) {
+        orphans.push(`${f} → ${target} (no back-reference to ${adrNum})`);
+      }
+    }
+  }
+  if (orphans.length === 0) {
+    soft("bidirectional-adr-links", true, "all v0.4+ ADR `Affects` links are reciprocal");
+  } else {
+    soft("bidirectional-adr-links", false, `${orphans.length} one-way link(s): ${orphans.slice(0, 5).join("; ")}${orphans.length > 5 ? " …" : ""}`);
+  }
+}
+
+function extractAffectsBlock(text) {
+  // Pull file paths from the "This ADR affects" bullet list under
+  // "## Affects / Affected by". Heuristic: backticked relative paths.
+  const sectionMatch = text.match(/##\s+Affects \/ Affected by\s*([\s\S]+?)(?=\n##\s+|\n#\s+|$)/);
+  if (!sectionMatch) return null;
+  const block = sectionMatch[1];
+  const affectsSubsection = block.split(/\*\*This ADR (?:affects|is affected by)\*\*/)[1];
+  if (!affectsSubsection) return null;
+  // Stop at the "is affected by" block, then capture backticked paths.
+  const upstream = affectsSubsection.split(/\*\*This ADR is affected by\*\*/)[0] || "";
+  const paths = [];
+  const re = /`([^`]+\.(?:md|mjs|js|json|yaml|sh|ps1))`/g;
+  let m;
+  while ((m = re.exec(upstream)) !== null) {
+    const p = m[1];
+    // Skip placeholders like `<file>`
+    if (p.includes("<") || p.includes(">")) continue;
+    paths.push(p);
+  }
+  return paths;
 }
 
 async function checkHandoffFreshness() {
