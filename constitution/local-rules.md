@@ -38,6 +38,29 @@
 
 This rule is the project-agnostic default per [ADR-0007](../adr/0007-content-trust-boundary.md). Loom-template projects ship with it active; remove only with explicit justification in an ADR.
 
+### LR-02 — Production-state mutations require constitution-service consultation
+
+**Status:** Active
+**Date:** 2026-05-18
+**Extends:** Kernel Rule 20 (temporal weighting — irreversible narrowings); Kernel Rule 22 (epistemic transparency)
+**Author:** Architect handoff (v0.3 PR-G) — approved by Nick
+
+**Rule:** Tool calls that mutate production state (`vercel deploy`, `npm publish`, `gh release create`, `git push origin main`, `prisma migrate deploy`, `supabase db push`, `terraform apply`, force-push to a prod branch, etc.) **must be preceded** in the same session by an explicit `constitution-service` invocation whose decision is recorded as a `claim` event in the session's `memory/event-log/YYYY-MM-DD.jsonl`.
+
+**Why:** Production mutations are irreversible externally-visible actions (Kernel Rule 20). v0.2 found that even with the Critic and Constitution Service shipping as subagents, sessions still mutated prod without invoking either — the rule existed in text but not in flow. The hooks now make the omission *visible* in the audit log even when no one blocks the action.
+
+**How to apply:**
+- The `pre-tool-use.mjs` hook detects production-mutation patterns and emits a `production_mutation_attempted` event.
+- If no `constitution-service` claim exists in this session's log, the hook also emits a `constitution_check_missing` event.
+- The doctor (`loom doctor`) surfaces sessions with `production_mutation_attempted` and no preceding constitution-service claim as a **soft warning**.
+- The Critic's monthly audit flags repeated violations.
+
+**Heuristic — not perfect.** The production-mutation pattern list is curated (see [`../scripts/hooks/_classify.mjs`](../scripts/hooks/_classify.mjs)) and will miss novel deploy mechanisms. Project-specific patterns may be added there in an ADR.
+
+**Enforcement:** PreToolUse hook (detection + event emission); `loom doctor` (post-hoc surfacing); Critic monthly audit; ultimately, social discipline. v0.3 hooks do **not** block — the rule is load-bearing through transparency, consistent with the constitution-as-text philosophy.
+
+Per [ADR-0017](../adr/0017-intent-nag.md).
+
 <!--
 Template:
 
