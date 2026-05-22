@@ -60,6 +60,28 @@ This is a procedural failure that *caused* Root cause 1. If the `deploy` or `oau
 
 The third sub-cause is the one with no architectural excuse. It's a procedural-discipline gap that needs codifying.
 
+### Root cause 4 — MCP auth target was unverified (surfaced after Root cause 3 was acted on)
+
+**This was caught only because the architect read the org name back.** It would not have been caught by any current Loom mechanism.
+
+After Root cause 3 was captured and the corrective sequence was approved, the builder followed the lesson's own discipline: spawn agents (via the `Agent` tool with each specialist's SKILL.md as the prompt). Agent A's investigation surfaced that the Supabase MCP server's "account" tool group could automate project creation if the MCP was launched in PAT-mode. The builder then proceeded to read-only-test the MCP: `list_organizations`, `get_organization`, `list_projects`, `get_cost`. All four calls succeeded.
+
+The MCP returned one organization: `ZD Digital Marketing`. The builder formatted this finding and asked the architect to confirm before any write.
+
+The architect's response: **"No — wrong account; stop."**
+
+Had the architect green-lit the operation without reading the org name back — or had the MCP been authed to *any* account the architect had access to (e.g., a different personal account of theirs) — the `create_project` call would have written to the wrong organization. Recovery: dashboard cleanup, possible cross-account quota burn, days-later auditability headache, and a `lessons-learned` entry written under a different file name.
+
+**Why this happens:** the MCP server's credential (a PAT) is configured at the *MCP server level* (typically in the user's Claude Code MCP config). The credential travels with the session, not with the project. There is no current Loom mechanism to:
+
+- Cross-check that the MCP's authenticated account matches the project's intended account
+- Surface the auth-target to the architect proactively at session start
+- Prevent a write op against an unverified target
+
+In effect, every MCP credential is a *shared default* across the architect's projects. For a Loom user who has multiple accounts on the same service (Nick has at least two Supabase accounts: `ZD Digital Marketing` org + the intended `nick@ideallab.ai` org), the default account may be the wrong one for the current project. The builder cannot tell. Only the architect can.
+
+**Why the lesson must absorb this NOW, not later:** the proposed `provisioning` specialist (out-of-scope #4 of the original list) would have committed this exact failure if it had landed in time for the Ravenwise bootstrap. The specialist's discipline would be to "call `create_project` after pre-flight passes" — but pre-flight as currently scoped checks *cost + quota*, not *target-account-identity*. Without the identity-verification step, automation amplifies the wrong-account risk.
+
 ## What we did
 
 In this PR:
@@ -77,6 +99,7 @@ Out of scope for this PR but flagged for the next architect-builder cycle (in pr
 - **A `provisioning` specialist** (analogous to `deploy`) whose SKILL.md drives the platform-management APIs Loom now knows exist (Supabase, Vercel, Render, GitHub, Cloudflare, fly, etc.). The specialist would consult the matrix, find management-API rows, and provision resources end-to-end after the architect has set up the relevant PATs once.
 - **A bootstrap-time provisioning-PAT collection step** in `scripts/bootstrap.{sh,ps1}` — interactive prompt: "Do you want to enable programmatic provisioning of {Supabase, Vercel, ...}? Paste a PAT for each platform; we'll store under `.env.local`." Honors LR-03 (paste-in-shell, not chat). This would close the loop on "I don't want to do this manually."
 - **A matrix maintenance discipline doctor check** — when a `[H]` confidence "no automated path" row is added, doctor surfaces a soft warning to verify against the platform's management API documentation before committing.
+- **(new — high-leverage adjacency to #4 + provisioning specialist) MCP auth-target verification at session start.** Specifically: a SessionStart hook + doctor check that, for every credentialed-service MCP (Supabase, GitHub, Vercel, Stripe, etc.) configured in the project's `.claude/settings.json`, calls the MCP's identity / "whoami" / `list_organizations` equivalent and writes the authenticated identity to `tools/discovered-runtime.md` under a new section: `MCP auth targets`. Bootstrap then asks the architect to attest, per credentialed MCP: "the `<service>` MCP is authenticated as `<identity>`; confirm this is the intended account for this project [y/N]." Attestation is recorded in `.claude/mcp-auth-attestations.json` (gitignored to prevent identity leaks via the audit log) and is required before any MCP write tool call. Per ADR-0027 / LR-04 `credentials` category. This closes the Root cause 4 gap.
 
 ## What we'd do differently
 
@@ -102,6 +125,17 @@ When starting a new Loom-based project:
 4. **Verify hook capture is live.** Before writing any non-trivial code, check `memory/event-log/YYYY-MM-DD.jsonl` for a SessionStart event. If absent, the hooks aren't firing for this session (likely a CWD mismatch — Claude Code must be opened IN the project directory for `.claude/settings.json`'s hooks to load). Surface the gap to the architect.
 
 The fail-state of these four steps — what happened in the Ravenwise bootstrap — is silent. Nothing crashed. Nothing warned. The builder produced code that compiled, looked plausible, and had documented decisions in CLAUDE.md / ADRs / PRs. The output was just *worse than it should have been* because the specialists' discipline was bypassed. That silent degradation is the hardest failure mode to catch — exactly why the discipline above needs to be enforced (eventually by the SessionStart hook proposed in "Out of scope" #2), not just documented.
+
+**MCP auth-target discipline (Root cause 4):**
+
+Before any MCP write operation against a credentialed service, the agent MUST:
+
+1. **Read the MCP's authenticated identity** via the service's `list_organizations` / `whoami` / equivalent read-only call.
+2. **Report the identity to the architect** with the org/account name explicitly named: "The `<service>` MCP is authenticated as `<identity>`. Is this the intended account for this project?"
+3. **Wait for explicit architect confirmation** before queuing any write op. "Proceed" / "stop" answers are required; ambiguous responses (`continue`, `looks good`) are not sufficient.
+4. **Treat the verification as per-session-per-write-class** — confirming for `create_project` does NOT extend to `create_org` or `delete_project`. Each new write class re-prompts unless the architect's settings explicitly broaden the scope.
+
+The Ravenwise session validated this discipline: the architect's "No — wrong account; stop" response prevented a wrong-org `create_project` call. Without the read-back step, the operation would have proceeded silently. *Trust but verify* is the operative principle, and verify means *get architect attestation*, not *the credential exists therefore it's the right one*.
 
 ## Related
 
