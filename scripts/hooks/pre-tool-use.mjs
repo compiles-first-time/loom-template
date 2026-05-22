@@ -18,6 +18,7 @@ import {
 } from "./_lib.mjs";
 import { classifyProductionMutation } from "./_classify.mjs";
 import { loadPermissions, classifyToolCall } from "../lib/permissions-classifier.mjs";
+import { detectOauthPreferenceMisses } from "../lib/oauth-preference.mjs";
 
 const event = await readStdinJson();
 const sessionId = event.session_id || process.env.CLAUDE_SESSION_ID || "unknown";
@@ -81,6 +82,41 @@ try {
   }
 } catch {
   // Permissions classifier is best-effort. v0.5 functionality unaffected.
+}
+
+// OAuth-preference detector (PR-Q / ADR-0028). Surfaces "you're using a
+// long-lived API key for a service that offers OAuth" as a hint event.
+// Non-blocking; the credential_action category in LR-04 carries the
+// hard-failure path for actual exposures.
+try {
+  const fields = ["command", "Command", "script"];
+  let candidate = "";
+  if (typeof toolInput === "string") candidate = toolInput;
+  else if (toolInput && typeof toolInput === "object") {
+    for (const f of fields) {
+      if (typeof toolInput[f] === "string") {
+        candidate = toolInput[f];
+        break;
+      }
+    }
+  }
+  if (candidate) {
+    const oauthHits = detectOauthPreferenceMisses(candidate);
+    for (const m of oauthHits) {
+      appendEvent(
+        mechanicalRecord("oauth_preference_hint", {
+          session_id: sessionId,
+          tool: toolName,
+          service: m.service,
+          oauth_alternative: m.oauth_alternative,
+          rationale: m.rationale,
+          rule: "LR-04 / credentials",
+        })
+      );
+    }
+  }
+} catch {
+  // Best-effort.
 }
 
 // Exit 0 — hook does not block the tool call. Blocking remains the existing
