@@ -1,8 +1,9 @@
 # Runtime configuration — used by scripts/deploy.{sh,ps1}.
 #
-# Per ADR-0019. The deploy primitive reads this file to know what command
-# to run, what env vars are required, and how to extract the deployment URL
-# from the deploy command's stdout.
+# Per ADR-0019, extended by ADR-0032 §A (wait-for-deploy integration).
+# The deploy primitive reads this file to know what command to run, what
+# env vars are required, and how to extract the deployment URL from the
+# deploy command's stdout.
 #
 # Stamped by scripts/bootstrap.{sh,ps1}; fill in the values for your runtime.
 
@@ -18,6 +19,15 @@ deploy:
   #   Custom:   command: "bash"             args: ["scripts/my-deploy.sh"]
   command: "<DEPLOY_COMMAND>"
   args: []
+
+  # Platform identifier — used by the wait-for-deploy primitive (ADR-0032 §A)
+  # to look up TERMINAL_STATES for non_progressing detection. Known platforms:
+  # vercel, netlify, fly, render. Leave empty to auto-detect from `command`
+  # basename; set explicitly when `command` is a wrapper (e.g., "bash" calling
+  # a custom deploy script) or when the basename does not match a known key.
+  # When unknown, the deploy primitive falls back to plain process capture
+  # without non_progressing detection (no hard fail).
+  platform: ""
 
   # Env vars that must be present for the deploy to work. The deploy script
   # checks each one before running and aborts with a clear error if missing.

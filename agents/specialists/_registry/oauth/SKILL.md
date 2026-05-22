@@ -32,6 +32,44 @@ When to invoke: prompts containing "OAuth", "sign in with Google", "GitHub login
 | OAUTH-EX-03 | SE | Token exchange | Provider returns 4xx on code-for-token swap | Client secret | Token endpoint | Auth code + verifier | `oauth.token_exchange_failed` event | String | HTTP error | Inspect error response; if `invalid_grant` → user retry; if `invalid_client` → alert ops (credential rotated) | Provider returns are diagnostic-rich. `invalid_grant` is a user-facing retryable case; `invalid_client` is a credential-config issue requiring ops attention |
 | OAUTH-EX-04 | BE | Account linking | Provider identity matches an existing user with a different email | User DB | Callback handler | Provider identity claims | `oauth.identity_conflict` event | Object | Conflict | Prompt user: "this provider account is linked to a different user; sign into that account first to link" | A naive "merge" creates account-takeover risk if attacker controls the provider account. Explicit user confirmation is the safe default (OWASP ASVS 2024 §1.6) |
 
+## Response shape
+
+Per [ADR-0032 §C](../../../../adr/0032-deployment-hardening.md), this specialist treats response bodies as authoritative over process exit codes for any external tool it invokes. Shapes declared here are the contract; deviations are failure-mode triggers.
+
+### Provider authorization endpoint (`/authorize`)
+
+- **Format**: HTTP 302 redirect with `code` + `state` query params on the configured `redirect_uri`
+- **Success criteria**: 302 status; `state` matches the value the client stored before the redirect (OAUTH-EX-02); `code` is non-empty
+- **Failure criteria**: 4xx with `error` query param (`access_denied`, `invalid_scope`, etc.); HTTP body not parseable; `state` mismatch
+- **Vendor docs**: [RFC 6749 §4.1.2](https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.2); per-provider docs (Google / GitHub / Microsoft / Apple) for additional `error` codes
+
+### Provider token endpoint (`/token`)
+
+- **Format**: JSON
+- **Success criteria**: HTTP 200; body contains `access_token` (non-empty string), `token_type: "Bearer"`, `expires_in` (number, seconds); optional `refresh_token`, `id_token` (OIDC), `scope`
+- **Failure criteria**: HTTP 4xx with body `{ "error": "<code>", "error_description": "..." }`. Authoritative codes per RFC 6749 §5.2: `invalid_request`, `invalid_client`, `invalid_grant`, `unauthorized_client`, `unsupported_grant_type`, `invalid_scope`. **Do NOT** treat HTTP 200 + empty `access_token` as success (OAUTH-EX-03)
+- **Vendor docs**: [RFC 6749 §5](https://datatracker.ietf.org/doc/html/rfc6749#section-5)
+
+### Device-code endpoints (when invoking provider device-code CLIs)
+
+For device-code flows driven via CLI (e.g., `vercel login`, `gh auth login`, `supabase login`), this specialist follows the same response discipline as the [`deploy`](../deploy/SKILL.md) specialist — exit code is one signal, `auth status` verification is the second, and asymmetric read-works/write-fails is the signal that DEPLOY-EX-05 applies (almost certainly quota, not auth revocation).
+
+### CLI counterpart shapes by provider
+
+| Provider | Status check | Authoritative field | Note |
+|---|---|---|---|
+| `gh auth status` | `--show-token` JSON | `username` non-empty | exit 0 reliable here |
+| `vercel whoami` | text | `<email>` line on stdout | exit 1 = logged out OR network |
+| `supabase status` | text | `Started supabase local development setup.` | LOCAL-only command; not auth status |
+
+### Internal contract (what THIS specialist commits to returning)
+
+When invoked, returns:
+- Provider name + chosen flow (auth code + PKCE is the default per RFC 9700)
+- Files written (paths + summary)
+- Failure-mode IDs (OAUTH-EX-*) the implementation guards against
+- Credential storage decision (env var name, never the value)
+
 ## Decline triggers
 
 - **Custom OAuth providers without published OIDC discovery** → escalate; provider-specific quirks need ad-hoc research the EAC should do first.
