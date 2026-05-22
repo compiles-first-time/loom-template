@@ -48,6 +48,20 @@ The supervisor practices **just-in-time context assembly**, not preloading. Conc
 
 The Critic also performs a pre-dispatch **context admission check** ([ADR-0008](../adr/0008-context-admission-check.md)) on the assembled context.
 
+## Deploy primitive (v0.3)
+
+> Per [ADR-0019](../adr/0019-deploy-primitive.md).
+
+Deployments are recurring, irreversible actions (Kernel Rule 20). Loom ships a wrapper at `scripts/deploy.{sh,ps1}` that enforces the order of operations:
+
+1. **`loom doctor` must pass** (override with `--force`).
+2. **Hook coverage check** — this session must have a `session_start` event in today's log (sanity: hooks ran).
+3. **Constitution-service consultation prompt** (Y/n) — skip with `--yes`. Closes LR-02 at the deploy boundary.
+4. **Run the configured deploy command** from `tools/runtime.yaml` (`deploy.command` + `deploy.args`).
+5. **Record** `deployment_started` / `deployment_completed` events in the JSONL log, with exit code, duration, and extracted deployment URL.
+
+The runtime-specific command is **not** hard-coded into Loom. It lives in `tools/runtime.yaml`, stamped at bootstrap. Project-supplied. Examples are documented in the file itself.
+
 ## Failure patterns to avoid
 
 - *"A major retailer spent 18 months building a perfect system that was obsolete on launch"* — countered by incremental v0.1 → v0.2 cycles

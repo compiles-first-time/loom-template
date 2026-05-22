@@ -36,6 +36,7 @@ PLACEHOLDER_FILES=(
     "constitution/local-rules.md"
     "memory/self-knowledge.md"
     "tools/mcp-servers/config.yaml"
+    "tools/runtime.yaml"
     "observability/langfuse-config.yaml"
 )
 
