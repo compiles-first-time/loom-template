@@ -38,6 +38,7 @@ async function main() {
   await checkAdrTemplateConformance();
   await checkBidirectionalAdrLinks();
   await checkHandoffFreshness();
+  await checkPlaybookFreshness();
   await checkSkeleton();
 
   report();
@@ -341,6 +342,59 @@ async function checkHandoffFreshness() {
       `${milestoneCommits.length} milestone commits since latest handoff (${latest}). Consider writing a new handoff per ADR-0031.`);
   }
   soft("handoff-freshness", true, `latest handoff ${latest} (${daysSince} days old; ${milestoneCommits.length} milestone commits since)`);
+}
+
+async function checkPlaybookFreshness() {
+  // Per ADR-0035 §C layer 1. Soft check — surfaces a warning, never blocks.
+  // Scans tools/provisioning-playbooks/*.md for the frontmatter `last_verified`
+  // date AND per-section `<!-- last_verified: YYYY-MM-DD -->` markers.
+  // Warns when ANY date is > 90 days old. Per-section dating lets the warning
+  // be precise about which slice of the playbook needs re-validation.
+  const playbookDir = path.join(ROOT, "tools", "provisioning-playbooks");
+  if (!existsSync(playbookDir)) return soft("playbook-freshness", true, "no playbooks present (skipped)");
+  const files = (await fs.readdir(playbookDir)).filter((f) => f.endsWith(".md") && !f.startsWith("README"));
+  if (files.length === 0) return soft("playbook-freshness", true, "no playbooks present (skipped)");
+
+  const STALE_DAYS = 90;
+  const now = Date.now();
+  const stale = []; // [{ playbook, scope, date, days }, ...]
+
+  for (const f of files) {
+    const text = await fs.readFile(path.join(playbookDir, f), "utf8");
+    // Top-of-file frontmatter (line beginning "> last_verified: YYYY-MM-DD")
+    const headerMatch = text.match(/^>\s*last_verified:\s*(\d{4}-\d{2}-\d{2})/m);
+    if (headerMatch) {
+      const date = headerMatch[1];
+      const days = Math.floor((now - new Date(date + "T00:00:00Z").getTime()) / (24 * 3600 * 1000));
+      if (days > STALE_DAYS) stale.push({ playbook: f, scope: "header", date, days });
+    }
+    // Per-section markers
+    const sectionRe = /<!--\s*last_verified:\s*(\d{4}-\d{2}-\d{2})/g;
+    let m;
+    while ((m = sectionRe.exec(text)) !== null) {
+      const date = m[1];
+      const days = Math.floor((now - new Date(date + "T00:00:00Z").getTime()) / (24 * 3600 * 1000));
+      if (days > STALE_DAYS) {
+        // Try to find the nearest preceding heading for context
+        const before = text.slice(0, m.index);
+        const headingMatch = [...before.matchAll(/^##+ (.+)$/gm)];
+        const scope = headingMatch.length > 0 ? headingMatch[headingMatch.length - 1][1] : "(unknown section)";
+        stale.push({ playbook: f, scope, date, days });
+      }
+    }
+  }
+
+  if (stale.length === 0) {
+    soft("playbook-freshness", true, `${files.length} playbook(s) all verified within ${STALE_DAYS} days`);
+  } else {
+    const summary = stale.slice(0, 3).map((s) => `${s.playbook}/${s.scope} (${s.days}d)`).join("; ");
+    const more = stale.length > 3 ? ` … and ${stale.length - 3} more` : "";
+    soft(
+      "playbook-freshness",
+      false,
+      `${stale.length} playbook section(s) stale (> ${STALE_DAYS}d): ${summary}${more}. Run scripts/validate-playbook.{sh,ps1} <platform> per ADR-0035 §C layer 3.`
+    );
+  }
 }
 
 async function checkSkeleton() {
