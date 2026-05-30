@@ -13,21 +13,37 @@
 
 import { existsSync } from "node:fs";
 import path from "node:path";
+import { createRequire } from "node:module";
+import { pathToFileURL } from "node:url";
 
 const INSTALL_HINT =
-  'OS keyring support requires @napi-rs/keyring. Install with: npm install --save-optional @napi-rs/keyring';
+  'OS keyring support requires @napi-rs/keyring. From your project root: npm install --save-optional @napi-rs/keyring';
 
 // Lazy dynamic import — keyring is optional, so we don't fail at module
 // load time if it's missing. Only the actual get/set/delete calls require it.
+//
+// IMPORTANT — resolution scope: @napi-rs/keyring is installed in the
+// USER'S project (e.g., ravenwise/node_modules/), not in loom-template's
+// node_modules (which doesn't exist — loom-template is a template, not a
+// package). Node's default resolution looks relative to THIS file's
+// location, which would fail. We use createRequire bound to the user's
+// cwd so resolution walks up THEIR project's node_modules tree.
 let _keyringModule = null;
 async function loadKeyring() {
   if (_keyringModule) return _keyringModule;
   try {
-    _keyringModule = await import("@napi-rs/keyring");
+    // Anchor createRequire to a path inside the user's project. We pass a
+    // file path (not a directory) so Node treats it as the importer location;
+    // it doesn't have to actually exist — only the directory's resolution
+    // chain matters.
+    const anchor = path.join(process.cwd(), "noop.js");
+    const requireFromUserProject = createRequire(anchor);
+    const resolvedPath = requireFromUserProject.resolve("@napi-rs/keyring");
+    _keyringModule = await import(pathToFileURL(resolvedPath).href);
     return _keyringModule;
   } catch (e) {
     const err = new Error(
-      `${INSTALL_HINT}\n\nUnderlying error: ${e.message}`
+      `${INSTALL_HINT}\n\nResolved from cwd: ${process.cwd()}\nUnderlying error: ${e.message}`
     );
     err.code = "KEYRING_NOT_INSTALLED";
     throw err;

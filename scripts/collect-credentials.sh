@@ -111,7 +111,7 @@ fi
 
 check_keyring() {
     "$NODE" -e "
-import('$REPO_ROOT/scripts/lib/keyring.mjs').then(async (m) => {
+import('file://$REPO_ROOT/scripts/lib/keyring.mjs').then(async (m) => {
   const ok = await m.isKeyringAvailable();
   process.stdout.write(ok ? 'AVAILABLE' : 'UNAVAILABLE');
 }).catch(() => process.stdout.write('UNAVAILABLE'));
@@ -137,7 +137,7 @@ fi
 # Get service key from project (per ADR-0036 §G)
 get_service_key() {
     "$NODE" -e "
-import('$REPO_ROOT/scripts/lib/keyring.mjs').then(async (m) => {
+import('file://$REPO_ROOT/scripts/lib/keyring.mjs').then(async (m) => {
   const svc = await m.getServiceKey('$REPO_ROOT');
   process.stdout.write(svc);
 });
@@ -283,7 +283,7 @@ if (Array.isArray(data) && data.length > 1) process.stdout.write(' (and ' + (dat
     # Store
     if [[ $USE_KEYRING -eq 1 ]]; then
         STORE_RESULT=$(printf '%s' "$VALUE" | "$NODE" -e "
-import('$REPO_ROOT/scripts/lib/keyring.mjs').then(async (m) => {
+import('file://$REPO_ROOT/scripts/lib/keyring.mjs').then(async (m) => {
   let value = '';
   for await (const chunk of process.stdin) value += chunk;
   await m.setCredential('$SERVICE_KEY', '$KEYRING_ACCOUNT', value);
