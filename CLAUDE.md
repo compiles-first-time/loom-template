@@ -8,7 +8,7 @@
 
 This file is the **primary entry point** for Claude (chat) and Claude Code into this project. Keep it small — hard cap ~10 KB. Detail belongs in [`layers/`](./layers/), not here.
 
-> **Fresh Claude instance? Read [`handoff/2026-05-20-loom-v1.0-context.md`](./handoff/2026-05-20-loom-v1.0-context.md) before generating output.** It captures collaboration conventions, the 18 open PRs, and the nuances behind every architectural decision through v1.0. See [`handoff/README.md`](./handoff/README.md) for the dated-snapshot convention.
+> **Fresh Claude instance? Read [`handoff/2026-05-25-loom-v0.3.3-context.md`](./handoff/2026-05-25-loom-v0.3.3-context.md) first (what changed since v1.0; the v0.3.3 cascade + Ravenwise findings), THEN [`handoff/2026-05-20-loom-v1.0-context.md`](./handoff/2026-05-20-loom-v1.0-context.md) for foundational collaboration conventions.** See [`handoff/README.md`](./handoff/README.md) for the dated-snapshot convention.
 
 ---
 
