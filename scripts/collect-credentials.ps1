@@ -119,7 +119,7 @@ if (-not $Platform -and -not $List) {
 
 function Test-KeyringAvailable {
     $probe = @"
-import('$($repoRoot.Replace('\','/'))/scripts/lib/keyring.mjs').then(async (m) => {
+import('file:///$($repoRoot.Replace('\','/'))/scripts/lib/keyring.mjs').then(async (m) => {
   const ok = await m.isKeyringAvailable();
   process.stdout.write(ok ? 'AVAILABLE' : 'UNAVAILABLE');
 }).catch(() => process.stdout.write('UNAVAILABLE'));
@@ -150,7 +150,7 @@ if ($List) {
         exit 1
     }
     $listProbe = @"
-import('$($repoRoot.Replace('\','/'))/scripts/lib/keyring.mjs').then(async (m) => {
+import('file:///$($repoRoot.Replace('\','/'))/scripts/lib/keyring.mjs').then(async (m) => {
   const svc = await m.getServiceKey('$($repoRoot.Replace('\','/').Replace("'", "\\'"))');
   process.stdout.write('SERVICE_KEY=' + svc);
 });
@@ -194,7 +194,7 @@ Write-Host ""
 $serviceKey = $null
 if ($useKeyring) {
     $svcProbe = @"
-import('$($repoRoot.Replace('\','/'))/scripts/lib/keyring.mjs').then(async (m) => {
+import('file:///$($repoRoot.Replace('\','/'))/scripts/lib/keyring.mjs').then(async (m) => {
   const svc = await m.getServiceKey('$($repoRoot.Replace('\','/').Replace("'", "\\'"))');
   process.stdout.write(svc);
 });
@@ -291,7 +291,7 @@ foreach ($cred in $platformConfig.Credentials) {
         # Pipe value to a small Node script that writes via keyring.mjs.
         # Value never appears in command args — only on stdin.
         $writeScript = @"
-import('$($repoRoot.Replace('\','/'))/scripts/lib/keyring.mjs').then(async (m) => {
+import('file:///$($repoRoot.Replace('\','/'))/scripts/lib/keyring.mjs').then(async (m) => {
   let value = '';
   for await (const chunk of process.stdin) value += chunk;
   await m.setCredential('$serviceKey', '$($cred.KeyringAccount)', value.trimEnd());
