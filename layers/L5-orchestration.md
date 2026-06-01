@@ -62,6 +62,36 @@ Deployments are recurring, irreversible actions (Kernel Rule 20). Loom ships a w
 
 The runtime-specific command is **not** hard-coded into Loom. It lives in `tools/runtime.yaml`, stamped at bootstrap. Project-supplied. Examples are documented in the file itself.
 
+## Token-cost-aware orchestration
+
+> **Added per [LR-06](../constitution/local-rules.md#lr-06) and [ADR-0037](../adr/0037-retrieval-pipeline-evidence-review.md) §D.** Token spend is irreversible (Kernel Rule 20) and must be observable (Kernel Rule 22).
+
+### Principles
+
+1. **Targeted over fan-out.** Prefer 2–3 focused agents with specific tasks over a broad fan-out of 10+ agents doing overlapping work. Targeted agents consistently produce better results at 10–20x lower cost than workflow fan-outs.
+
+2. **Staged, not single-pass.** For research or exploration: run a quick scoping pass first (1–2 agents), evaluate what you have, then deep-dive only on gaps. Don't fetch 30 sources before knowing which 5 matter.
+
+3. **Canary before fleet.** Before fanning out N agents for a repetitive task (verification, classification, analysis), run 1 agent first to validate the approach works. If the canary fails (wrong output format, tool errors, empty results), fix the approach before spending N× the tokens.
+
+4. **Right model for the task.** Mechanical tasks (claim extraction, format validation, classification) don't require the most capable model. Use the cheapest model that produces correct output. Reserve expensive models for synthesis, reasoning, and novel problem-solving.
+
+5. **Cross-check with data you already have.** If you've already fetched source text, verify claims by searching within that text — don't spawn new agents to re-fetch and re-read the same sources. The cheapest verification is a string match against context you already hold.
+
+6. **Declare before you spend.** Per LR-06: every iterative LLM pattern must declare its exit condition and estimated token bound before execution. Surface the estimated cost to the architect before running expensive operations.
+
+### Cost reference (approximate, for planning)
+
+| Operation | Typical token cost | Typical wall-clock |
+|---|---|---|
+| Single targeted agent (fetch + summarize) | 15–25K tokens | 30–70s |
+| 3 parallel targeted agents | 50–75K tokens | 30–70s (parallel) |
+| Deep-research workflow (30 sources) | 1–1.2M tokens | 7–10 min |
+| Adversarial verification (3 votes × N claims) | ~15K × N tokens | 2–5 min |
+| Full research arc (workflow + targeted follow-ups) | 1.2–1.5M tokens | 10–15 min |
+
+These numbers are from the 2026-05-31 research arc. Use them to estimate before proposing expensive operations to the architect.
+
 ## Failure patterns to avoid
 
 - *"A major retailer spent 18 months building a perfect system that was obsolete on launch"* — countered by incremental v0.1 → v0.2 cycles
@@ -77,3 +107,5 @@ The runtime-specific command is **not** hard-coded into Loom. It lives in `tools
 - [ ] Define checkpoint cadence ("closing the books" interval) beyond once-per-session
 - [ ] Wire just-in-time context assembly + `context-budget:` enforcement per [ADR-0004](../adr/0004-context-budget.md)
 - [ ] Hook compaction into the checkpoint cadence (summarize → structured note → resume)
+- [ ] Surface estimated cost to architect before expensive multi-agent operations per [LR-06](../constitution/local-rules.md#lr-06)
+- [ ] Implement canary-before-fleet pattern for repetitive agent fan-outs

@@ -151,6 +151,34 @@ Per [ADR-0027](../adr/0027-permissions-protocol.md).
 
 Per [ADR-0022](../adr/0022-xlsx-docs-convention.md) and [ADR-0023](../adr/0023-specialist-registry.md).
 
+### LR-06 — Iterative LLM loop cost discipline
+
+**Status:** Active
+**Date:** 2026-05-31
+**Extends:** Kernel Rule 22 (epistemic transparency — cost is an observable property of every action); Kernel Rule 20 (temporal weighting — token spend is irreversible)
+**Author:** Builder (RAG research arc) — approved by Nick
+
+**Rule:** Every architectural pattern that re-invokes an LLM iteratively must:
+
+1. **Declare an explicit exit condition** before execution begins — an iteration cap, convergence criterion, or budget ceiling.
+2. **Estimate a token bound** at design time and document it in the relevant ADR's `Cost model` section.
+3. **Emit actual LLM call count and estimated token spend** to the event log at loop completion.
+
+Unbounded iterative LLM calls — loops with no declared exit condition and no cost observability — are a protocol violation under this rule.
+
+**Why:** The 2026-05-31 RAG research arc ([`research/2026-05-31-rag-scale-synthesis.md`](../research/2026-05-31-rag-scale-synthesis.md)) surveyed iterative RAG patterns and found a 1x–658x token-cost spectrum. Typical iterative patterns (Self-RAG, IRCoT) run 2.5x–5.4x baseline cost. Tree-search patterns (LATS) reach 10–20x. Adversarial worst case: 658x via runaway tool chains (arxiv 2601.10955 `[primary][H]`). Quality plateaus past a small iteration cap (McCleary & Ghawaly 2026 `[primary][H]`), meaning most spend beyond ~5x is waste. Token cost is irreversible (Kernel Rule 20) and must be observable (Kernel Rule 22). Without this rule, iterative patterns can silently exhaust context budgets with no audit trail and no quality gain.
+
+**How to apply:**
+
+- The `Cost model` section is a required field in any ADR that introduces a loop pattern. It must specify: (a) which LLM calls are iterative, (b) the declared exit condition, (c) the estimated token bound under typical and worst-case conditions.
+- At runtime, iterative patterns emit a `loop_cost_summary` event to the session's `memory/event-log/YYYY-MM-DD.jsonl` at loop completion, containing: `loop_id`, `iteration_count`, `estimated_tokens`, `exit_reason`.
+- The Critic's monthly audit checks for iterative patterns without declared exit conditions in their ADRs and flags them.
+- `loom doctor` checks for the presence of the `Cost model` section in ADRs tagged with iterative patterns (advisory, not blocking — this check is deferred until Track C evidence hardens; see below).
+
+**Enforcement:** ADR template (structural — `Cost model` section); event log (runtime — `loop_cost_summary` event); Critic monthly audit; `loom doctor` (advisory, deferred). This rule is **discipline-class** (like LR-05), not enforcement-class. It does not prescribe numeric thresholds — those vary by use case and are project-specific. If Track C evidence hardens (specific patterns shown to be consistently dangerous), an amendment may add enforcement-class clauses with numeric bounds.
+
+Per [ADR-0037](../adr/0037-retrieval-pipeline-evidence-review.md).
+
 <!--
 Template:
 

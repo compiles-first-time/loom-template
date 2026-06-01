@@ -31,6 +31,69 @@
 - **Chunking:** recursive split, target **200–400 tokens**, small overlap. Do not adopt the common ~800-token default. `[research-p1][H]` Chroma chunking evaluation, 2024 — chunk *size* dominates chunk *strategy*.
 - **Embedding model:** commit to **one** embedding model per project; changing it forces a full re-embed of the corpus. Prefer a Matryoshka-trained model for dimension flexibility without re-embed `[research-p1][H]` (Kusupati et al., NeurIPS 2022).
 
+### Confidence gate (between rerank and assemble)
+
+> **Added per [ADR-0037](../adr/0037-retrieval-pipeline-evidence-review.md) §C.** Multiple peer-reviewed sources converge: CRAG's 3-action confidence gate (Yan et al. 2024 `[primary][H]`), Self-RAG's reflection tokens (Asai et al. 2023 `[primary][H]`), practitioner corroboration `[practitioner][M]`.
+
+After reranking and before assembly, evaluate the top-ranked chunk set's confidence. If confidence falls **below a project-configured threshold**, the pipeline returns "insufficient information in the knowledge base" rather than generating from low-quality context. A confident wrong answer is worse than an honest "I don't know."
+
+**The threshold is project-specific** — not prescribed by Loom. Calibrate it using the retrieval eval framework ([ADR-0006](../adr/0006-retrieval-evaluation.md)). Start with a reasonable default (e.g., 0.6–0.7 on normalized retrieval score) and tune against your golden set.
+
+This gate operationalizes ADR-0003's finding #4 (Power of Noise): the reranker mitigates bad retrievals, but the confidence gate **refuses to generate** when even the reranked set is insufficient.
+
+### Reranker alternatives
+
+> **Added per [ADR-0037](../adr/0037-retrieval-pipeline-evidence-review.md) §B.**
+
+ADR-0003's **cross-encoder reranker** remains the default for standard pipelines (reranking 15–30 candidates). One documented alternative exists:
+
+| Reranker | Best for | Latency | Precision trade-off | Source |
+|---|---|---|---|---|
+| **Cross-encoder** (default) | Small candidate sets (15–30) | ~50ms/query | Highest precision at top-k | `[research-p1][H]` |
+| **ColBERTv2+PLAID** (alternative) | Large candidate sets (>30) or tight latency budgets (<25ms) | ~23ms/query | 92% top-5 overlap with cross-encoder; index not incremental | Santhanam et al. 2022 `[primary][H]` |
+
+Choose at bootstrap; record the choice in an ADR. The cross-encoder is the safe default. ColBERT-as-reranker is justified when the project demonstrates a need for larger candidate sets or sub-25ms reranking.
+
+### GraphRAG: when to add it (and when not to)
+
+> **Added per [ADR-0037](../adr/0037-retrieval-pipeline-evidence-review.md) §A.** GraphRAG (Edge et al. 2024 `[primary][H]`) is a **complement** to the flat-chunk pipeline above, not a replacement.
+
+**Add GraphRAG when discovery identifies these query patterns:**
+
+- Multi-hop reasoning across documents (legal analysis, cross-reference queries)
+- Global sensemaking ("summarize the themes across these 500 documents")
+- Corpus-level synthesis where no single chunk contains the answer
+
+**Do NOT add GraphRAG when:**
+
+- Queries are primarily single-hop fact retrieval (GraphRAG adds +0.47 EM vs +27.23 on multi-hop `[primary][H]`)
+- Detail-oriented lookups dominate (GraphRAG scores 21pp below flat RAG on detail queries `[primary][H]`)
+- Token cost is constrained (GraphRAG global mode: ~45x overhead vs basic RAG `[primary][H]`)
+- The corpus is small enough that flat-chunk retrieval already achieves high recall
+
+**Architecture when added:** run both flat-chunk and graph-based retrieval, use a query-type router to select or merge results. The graph pipeline extends the existing pipeline; it does not replace the retrieve -> rerank -> assemble stages. Knowledge graph construction is lossy (~65–66% entity recall `[primary][H]`), so flat retrieval remains the recall backstop.
+
+**Cost model:** GraphRAG's index-time cost is dominated by LLM-based entity extraction. Budget this at discovery time. Query-time cost varies: local mode is comparable to flat retrieval; global mode can reach 45x. Per [LR-06](../constitution/local-rules.md#lr-06), any iterative retrieval loop within the graph pipeline must declare its exit condition.
+
+### Iterative retrieval patterns: cost-aware design
+
+> **Added per [ADR-0037](../adr/0037-retrieval-pipeline-evidence-review.md) §D and [LR-06](../constitution/local-rules.md#lr-06).**
+
+If the project adopts an iterative retrieval pattern (Self-RAG, CRAG, agentic retrieval loops), the following cost guidance applies — drawn from the 2026-05-31 research arc surveying 15 peer-reviewed sources:
+
+| Pattern | Typical cost multiplier | Exit condition | When justified |
+|---|---|---|---|
+| Single-pass RAG (ADR-0003 default) | 1x | N/A | Always the starting point |
+| CRAG (single confidence gate) | ~1.03x | 3-action confidence check | When retrieval quality is variable; low overhead |
+| CompactRAG (fixed 2-call) | ~0.7x (optimized) | Fixed 2 LLM calls | Multi-hop with strict cost ceiling |
+| Self-RAG (selective retrieval) | 3–5x | Reflection token gating | When retrieval is expensive and often unnecessary |
+| IRCoT (iterative chain-of-thought) | ~5.4x | Hop limit | Complex multi-hop; budget-sensitive |
+| LATS (tree search) | 10–20x | Trajectory budget k | Research/exploration; NOT production default |
+
+**Quality plateaus past a small iteration cap** (McCleary & Ghawaly 2026 `[primary][H]`). Additional iterations beyond the plateau burn tokens for zero quality gain. Per LR-06: declare the exit condition in the ADR, estimate the token bound, emit actual cost to the event log.
+
+**Prefer CRAG or CompactRAG over Self-RAG/IRCoT/LATS** unless the project demonstrates multi-hop queries where single-pass retrieval fails. CRAG adds 2.6% overhead for meaningful quality improvement on poor-retrieval queries; Self-RAG adds 3–5x. The burden of proof is on the more expensive pattern.
+
 ## Trust boundary
 
 > **Canonical default per [ADR-0007](../adr/0007-content-trust-boundary.md).**
@@ -66,7 +129,10 @@ Retrieved or externally-ingested content (web search, tool output, third-party f
 - [ ] Decide whether this project needs the KG at all
 - [ ] Set up event-log rotation
 - [ ] Stand up hybrid retrieval (dense + BM25 + RRF) per [ADR-0003](../adr/0003-retrieval-pipeline.md)
-- [ ] Wire a cross-encoder reranker over the top-k fused candidates
+- [ ] Wire a cross-encoder reranker over the top-k fused candidates (or ColBERTv2+PLAID if justified per [ADR-0037](../adr/0037-retrieval-pipeline-evidence-review.md) §B)
+- [ ] Implement confidence gate between rerank and assemble per [ADR-0037](../adr/0037-retrieval-pipeline-evidence-review.md) §C
 - [ ] Configure recursive chunker at 200–400 tokens (not 800)
 - [ ] Commit to one embedding model and record the choice in an ADR; prefer a Matryoshka-capable model
 - [ ] Implement the trust-boundary quarantine for externally-ingested content per [ADR-0007](../adr/0007-content-trust-boundary.md)
+- [ ] At discovery: evaluate whether project query patterns warrant GraphRAG complement per [ADR-0037](../adr/0037-retrieval-pipeline-evidence-review.md) §A
+- [ ] If iterative retrieval adopted: declare exit condition + cost model per [LR-06](../constitution/local-rules.md#lr-06)
