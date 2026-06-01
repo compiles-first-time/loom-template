@@ -20,6 +20,44 @@ export const EVENT_LOG_DIR = path.join(PROJECT_ROOT, "memory", "event-log");
 export const KERNEL_VERSION = "v6";
 export const LOOM_VERSION = "0.2.0";
 
+// ── CWD / project-root validation (ADR-0034 §C, hook-capture-gap fix) ───
+//
+// Ravenwise session (2026-05-22) demonstrated the failure mode: when Claude
+// Code's CWD at session start is NOT the Loom project directory, hooks load
+// against the wrong CWD. The event log goes silent without warning because
+// PROJECT_ROOT points to the parent dir, not the project.
+//
+// This function checks for Loom project indicators at the current CWD.
+// Returns { valid: true } or { valid: false, reason: "..." }.
+// Callers decide severity: SessionStart emits a loud warning; other hooks
+// just tag the event as potentially-misrooted.
+
+const LOOM_INDICATORS = [
+  "CLAUDE.md",
+  ".claude/settings.json",
+  "constitution/kernel-v6.md",
+  "layers/L0-constitutional.md",
+];
+
+export function validateProjectRoot(root = PROJECT_ROOT) {
+  const found = LOOM_INDICATORS.filter((f) => existsSync(path.join(root, f)));
+  if (found.length === 0) {
+    return {
+      valid: false,
+      reason: `CWD "${root}" has none of the expected Loom project indicators (${LOOM_INDICATORS.join(", ")}). Hooks are likely running against the wrong directory. Open Claude Code IN the project directory to fix.`,
+      found: [],
+    };
+  }
+  if (found.length < 2) {
+    return {
+      valid: false,
+      reason: `CWD "${root}" has only "${found[0]}" — may not be a Loom project root. Expected at least CLAUDE.md + .claude/settings.json.`,
+      found,
+    };
+  }
+  return { valid: true, found };
+}
+
 // ── Stdin payload ────────────────────────────────────────────────────────
 
 export async function readStdinJson() {

@@ -13,6 +13,7 @@ import {
   findPlaceholders,
   deriveProjectName,
   deriveUserName,
+  validateProjectRoot,
   warn,
   PROJECT_ROOT,
 } from "./_lib.mjs";
@@ -22,13 +23,56 @@ import { existsSync } from "node:fs";
 
 const event = await readStdinJson();
 
-appendEvent(
-  mechanicalRecord("session_start", {
-    session_id: event.session_id || process.env.CLAUDE_SESSION_ID || `local-${Date.now()}`,
-    source: event.source || "claude-code",
-    transcript_path: event.transcript_path || null,
-  })
-);
+// ── CWD validation (ADR-0034 §C, hook-capture-gap fix) ─────────────────
+//
+// Check that the session's CWD looks like a Loom project before doing
+// anything else. If it doesn't, the entire hook system is running against
+// the wrong directory — the event log, bootstrap, and runtime discovery
+// all write to the wrong paths. Surface this LOUDLY.
+const cwdCheck = validateProjectRoot();
+if (!cwdCheck.valid) {
+  // Still emit the session_start event (to whatever path we can) so the
+  // gap is at least recorded somewhere. Tag it as misrooted.
+  appendEvent(
+    mechanicalRecord("session_start", {
+      session_id: event.session_id || process.env.CLAUDE_SESSION_ID || `local-${Date.now()}`,
+      source: event.source || "claude-code",
+      transcript_path: event.transcript_path || null,
+      hook_capture_gap: true,
+      hook_capture_gap_reason: cwdCheck.reason,
+    })
+  );
+  // Emit a separate warning event so doctor / audit can grep for it.
+  appendEvent(
+    mechanicalRecord("hook_capture_gap_detected", {
+      session_id: event.session_id || process.env.CLAUDE_SESSION_ID || `local-${Date.now()}`,
+      cwd: PROJECT_ROOT,
+      indicators_found: cwdCheck.found,
+      reason: cwdCheck.reason,
+    })
+  );
+  // Loud stderr warning — this shows up in Claude Code's hook output.
+  warn("╔══════════════════════════════════════════════════════════════╗");
+  warn("║  ⚠ HOOK CAPTURE GAP DETECTED (ADR-0034 §C)                ║");
+  warn("║                                                            ║");
+  warn("║  This session's CWD does not appear to be a Loom project.  ║");
+  warn("║  Hooks are running against the wrong directory.            ║");
+  warn("║  The audit trail will be SILENT or MISPLACED.              ║");
+  warn("║                                                            ║");
+  warn("║  To fix: open Claude Code IN the project directory:        ║");
+  warn("║    cd <project-root> && claude                             ║");
+  warn("║  Then restart this session.                                ║");
+  warn("╚══════════════════════════════════════════════════════════════╝");
+  warn(`  Reason: ${cwdCheck.reason}`);
+} else {
+  appendEvent(
+    mechanicalRecord("session_start", {
+      session_id: event.session_id || process.env.CLAUDE_SESSION_ID || `local-${Date.now()}`,
+      source: event.source || "claude-code",
+      transcript_path: event.transcript_path || null,
+    })
+  );
+}
 
 // Idempotent bootstrap: only runs if placeholders remain.
 const placeholders = await findPlaceholders();
