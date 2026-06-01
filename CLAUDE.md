@@ -90,6 +90,17 @@ Always be ready to answer: **"What would raise confidence to 95%?"**
 - **Token-cost awareness.** Per [LR-06](./constitution/local-rules.md#lr-06): before running multi-agent operations, estimate the cost and surface it to the architect. Prefer targeted agents over workflow fan-outs. Run a canary agent before fleet fan-out. Use the cheapest model sufficient for mechanical tasks. See [L5 §Token-cost-aware orchestration](./layers/L5-orchestration.md#token-cost-aware-orchestration) for the full discipline.
 - **RAG-aware guidance.** When the project involves retrieval (search, knowledge base, document QA), consult [L3 §Retrieval pipeline](./layers/L3-memory.md#retrieval-pipeline) for the default pipeline, confidence gating, reranker alternatives, GraphRAG decision tree, and iterative pattern cost guidance. All drawn from peer-reviewed evidence per [ADR-0037](./adr/0037-retrieval-pipeline-evidence-review.md).
 
+## Pre-PR checklist (applies to loom-template itself)
+
+> Loom's governance applies to its own development. The template must meet the same standards it requires of projects built on it.
+
+Before opening a PR on loom-template:
+
+1. **`loom doctor` must pass** — all hard checks green. Warnings noted in PR description.
+2. **Specialist consultation** — for non-trivial changes, invoke relevant specialist(s) via [ADR-0034](./adr/0034-specialist-invocation-discipline.md) path 2b (Agent tool with SKILL.md content). Document which specialists were consulted in the PR description.
+3. **Claim events** — emit `event_type: claim` records for non-trivial assertions introduced by the PR (per the Claim convention below).
+4. **Hook capture verification** — confirm hooks are firing for this session (check `memory/event-log/` for today's `session_start` event). If not, note the gap in the PR description per [ADR-0038](./adr/0038-hook-capture-gap-detection.md).
+
 ## Claim convention (v0.2)
 
 > Hooks in [`.claude/settings.json`](./.claude/settings.json) auto-emit the **mechanical subset** of the Rule-22 trace (timestamp, tool, args, exit code) to `memory/event-log/YYYY-MM-DD.jsonl`. The **introspective subset** (confidence, sources, decision log) requires you, the model, to emit it explicitly.
