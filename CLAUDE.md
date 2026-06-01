@@ -87,6 +87,8 @@ Always be ready to answer: **"What would raise confidence to 95%?"**
 - **ADRs for consequential choices.** Format under [`adr/`](./adr/).
 - **Lessons-learned for failures.** Surface to [`lessons-learned/`](./lessons-learned/).
 - **Provenance tags `[source][confidence]`** on every non-trivial claim, per Kernel Rule 22.
+- **Token-cost awareness.** Per [LR-06](./constitution/local-rules.md#lr-06): before running multi-agent operations, estimate the cost and surface it to the architect. Prefer targeted agents over workflow fan-outs. Run a canary agent before fleet fan-out. Use the cheapest model sufficient for mechanical tasks. See [L5 §Token-cost-aware orchestration](./layers/L5-orchestration.md#token-cost-aware-orchestration) for the full discipline.
+- **RAG-aware guidance.** When the project involves retrieval (search, knowledge base, document QA), consult [L3 §Retrieval pipeline](./layers/L3-memory.md#retrieval-pipeline) for the default pipeline, confidence gating, reranker alternatives, GraphRAG decision tree, and iterative pattern cost guidance. All drawn from peer-reviewed evidence per [ADR-0037](./adr/0037-retrieval-pipeline-evidence-review.md).
 
 ## Claim convention (v0.2)
 

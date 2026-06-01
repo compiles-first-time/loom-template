@@ -48,9 +48,18 @@ L3 specifies an explicit **`retrieve → rerank → assemble`** pipeline as the 
 - **BM25-only retrieval** — rejected: misses semantic paraphrase coverage.
 - **Defer the decision to each project** — rejected: every project would re-improvise; that is exactly what Loom exists to prevent.
 
+## Evidence basis
+
+> **Added 2026-05-31 per LR-05 evidence review (ADR-0037).**
+
+- **Primary evidence:** Cormack et al. 2009, SIGIR (RRF); Santhanam et al. 2022, NAACL (ColBERTv2); Chroma chunking evaluation 2024; Cuconasu et al. 2024, SIGIR ("Power of Noise"); Kusupati et al. 2022, NeurIPS (Matryoshka). All `[research-p1][H]`.
+- **2026-05-31 evidence review:** ADR-0037 surveyed 30 sources (28 arxiv primary) across three tracks. **Result: ADR-0003 confirmed as best-current-call.** Core pipeline (hybrid BM25+embedding + RRF + cross-encoder rerank) validated by 6 independent peer-reviewed papers. Four extensions added in ADR-0037 (GraphRAG complement, ColBERT-as-reranker option, confidence gating, LR-06 token-cost discipline). See [`research/2026-05-31-rag-scale-synthesis.md`](../research/2026-05-31-rag-scale-synthesis.md) for full synthesis.
+- **What would change this call:** Peer-reviewed evidence that (a) a non-hybrid retrieval method consistently outperforms hybrid BM25+embedding on both single-hop and multi-hop queries, or (b) cross-encoder reranking is consistently outperformed by an alternative at ADR-0003's candidate-set size (15–30).
+
 ## References
 
 - [`../layers/L3-memory.md`](../layers/L3-memory.md) — Retrieval pipeline section
 - [`../spec/loom-spec-v0.1-full.md`](../spec/loom-spec-v0.1-full.md) §B.4
 - ADR-0004 (context budget) — assembly stage must respect it
 - `[research-p1][H]` Phase 1 retrieval & context-engineering research synthesis
+- [ADR-0037](./0037-retrieval-pipeline-evidence-review.md) — 2026-05-31 evidence review and extensions (confirms this ADR)

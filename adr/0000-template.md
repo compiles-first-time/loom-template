@@ -22,6 +22,16 @@
 - **Synthesizer reasoning** *(only if no primary evidence available)*: <one paragraph; tag the decision `[synth][S]`>.
 - **What would change this call:** <concrete signal that would justify a superseding ADR — e.g., "a peer-reviewed paper measuring X with N≥1000 finds the opposite," or "an audit reveals the assumed property doesn't hold in production">.
 
+## Cost model
+
+> **Required per [LR-06](../constitution/local-rules.md#lr-06) when this ADR introduces an iterative LLM pattern (retrieval loop, multi-agent fan-out, tree search, self-reflective chain).** Omit this section if the ADR does not introduce a loop pattern.
+
+- **Which LLM calls are iterative:** <describe the loop>
+- **Exit condition:** <iteration cap / convergence criterion / budget ceiling>
+- **Estimated token bound (typical):** <N tokens per invocation under normal conditions>
+- **Estimated token bound (worst case):** <N tokens if exit condition is the only brake>
+- **Cost multiplier vs single-pass baseline:** <Nx — e.g., "~3x single-pass RAG">
+
 ## Consequences
 
 <What this locks in. What this locks out. Migration path if it fails. Anything new that becomes possible / impossible.>

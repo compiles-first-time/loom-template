@@ -76,6 +76,38 @@ The combined log satisfies Rule 22 in spirit (every action has provenance; every
 
 **Non-optional.** Projects whose hooks don't emit the mechanical subset are not Loom v0.2 compliant.
 
+### Loop cost summary — emitted at completion of iterative LLM patterns
+
+> **Added per [LR-06](../constitution/local-rules.md#lr-06) and [ADR-0037](../adr/0037-retrieval-pipeline-evidence-review.md) §D.**
+
+Any iterative LLM pattern (retrieval loops, multi-agent fan-outs, tree-search, self-reflective chains) must emit a `loop_cost_summary` event at loop completion:
+
+```json
+{
+  "timestamp": "<iso>",
+  "session_id": "<...>",
+  "event_type": "loop_cost_summary",
+  "loop_id": "<unique-identifier-for-this-loop>",
+  "pattern": "<crag|self-rag|lats|fan-out|custom>",
+  "iteration_count": 5,
+  "agent_count": 3,
+  "estimated_input_tokens": 45000,
+  "estimated_output_tokens": 12000,
+  "exit_reason": "<cap_reached|converged|budget_exhausted|quality_threshold_met>",
+  "declared_exit_condition": "<what was declared before execution>",
+  "declared_token_bound": 100000,
+  "wall_clock_ms": 35000
+}
+```
+
+This event enables:
+- **Cost accounting:** aggregate token spend per loop pattern across sessions
+- **Plateau detection:** compare quality improvement vs token spend across iterations
+- **Budget enforcement:** alert when actual spend exceeds declared bound
+- **Audit:** the architect can review whether loops are cost-justified post-hoc
+
+The event is **advisory, not blocking** — consistent with Loom's hooks-are-transparency philosophy. The Critic's monthly audit flags loops where actual spend exceeds declared bound by >2x.
+
 ## Eval harness
 
 Lives in [`../observability/eval-suite/`](../observability/eval-suite/). Required types:
