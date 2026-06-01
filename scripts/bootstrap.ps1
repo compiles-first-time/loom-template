@@ -14,7 +14,9 @@ param(
     [string]$Description = "",
 
     [Parameter(Mandatory=$false)]
-    [string]$UserName = $env:USERNAME
+    [string]$UserName = $env:USERNAME,
+
+    [switch]$SetupCredentials   # Prompt for platform credential collection via keyring/collect-credentials (ADR-0036 §E)
 )
 
 $ErrorActionPreference = "Stop"
@@ -154,7 +156,9 @@ if ((Test-Path $discover) -and (Get-Command node -ErrorAction SilentlyContinue))
 $sentinelDir = Join-Path $root ".claude/agents"
 if (Test-Path $sentinelDir) {
     $sentinel = Join-Path $sentinelDir ".last-discovered-at"
-    (Get-Item $sentinel -ErrorAction SilentlyContinue) ?? (New-Item -ItemType File -Path $sentinel -Force) | Out-Null
+    if (-not (Test-Path $sentinel)) {
+        New-Item -ItemType File -Path $sentinel -Force | Out-Null
+    }
     (Get-Item $sentinel).LastWriteTime = Get-Date
     Write-Host "  stamped: .claude/agents/.last-discovered-at (subagent discovery sentinel)"
 }
@@ -171,7 +175,80 @@ if ((Test-Path $discoverScript) -and (Get-Command node -ErrorAction SilentlyCont
     }
 }
 
-# --- 4. Summary ------------------------------------------------------------------
+# --- 4. Credential collection via keyring (ADR-0036 §E) -------------------------
+# Gated on -SetupCredentials to avoid hanging on prompts during auto-bootstrap
+# (SessionStart hook calls bootstrap without this flag).
+
+if ($SetupCredentials) {
+    Write-Host ""
+    Write-Host "Credential setup (ADR-0036 §E)..." -ForegroundColor Cyan
+
+    # Detect keyring availability
+    $keyringAvailable = $false
+    $keyringProbe = Join-Path $root "scripts/lib/keyring.mjs"
+    if ((Test-Path $keyringProbe) -and (Get-Command node -ErrorAction SilentlyContinue)) {
+        $probeScript = @"
+import('file:///$($root.Replace('\','/'))/scripts/lib/keyring.mjs').then(async (m) => {
+  const ok = await m.isKeyringAvailable();
+  process.stdout.write(ok ? 'AVAILABLE' : 'UNAVAILABLE');
+}).catch(() => process.stdout.write('UNAVAILABLE'));
+"@
+        try {
+            $probeResult = & node -e $probeScript 2>$null
+            $keyringAvailable = ($probeResult -eq "AVAILABLE")
+        } catch {
+            $keyringAvailable = $false
+        }
+    }
+
+    if ($keyringAvailable) {
+        Write-Host "  OS keyring is available (Windows Credential Manager)." -ForegroundColor Green
+        Write-Host "  Use OS keyring for credential storage? [Y/n] " -NoNewline -ForegroundColor Yellow
+        $useKeyring = Read-Host
+        if ($useKeyring -match "^[Nn]") {
+            Write-Host "  Skipping keyring — credentials will use literal .env.local." -ForegroundColor DarkGray
+        } else {
+            # List available platforms from collect-credentials
+            $collectScript = Join-Path $root "scripts/collect-credentials.ps1"
+            if (Test-Path $collectScript) {
+                Write-Host ""
+                Write-Host "  Available platforms for credential collection:" -ForegroundColor Cyan
+                Write-Host "    supabase    — Supabase (Postgres + Auth + Storage)"
+                Write-Host "    github      — GitHub (repos, issues, PRs)"
+                Write-Host "    vercel      — Vercel (deploys + env vars)"
+                Write-Host "    anthropic   — Anthropic API (Claude)"
+                Write-Host ""
+                Write-Host "  Enter platform names to set up now (space-separated), or 'skip': " -NoNewline -ForegroundColor Yellow
+                $platformInput = Read-Host
+
+                if ($platformInput -and $platformInput -ne "skip") {
+                    $platforms = $platformInput -split "\s+" | Where-Object { $_ }
+                    foreach ($plat in $platforms) {
+                        Write-Host ""
+                        Write-Host "  ────────────────────────────────────────" -ForegroundColor Cyan
+                        Write-Host "  Collecting credentials for: $plat" -ForegroundColor Cyan
+                        Write-Host "  ────────────────────────────────────────" -ForegroundColor Cyan
+                        try {
+                            & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $collectScript -Platform $plat
+                        } catch {
+                            Write-Host "  ✗ collect-credentials failed for $plat`: $($_.Exception.Message)" -ForegroundColor Red
+                            Write-Host "    Run manually: pwsh scripts/collect-credentials.ps1 $plat" -ForegroundColor DarkGray
+                        }
+                    }
+                } else {
+                    Write-Host "  Skipping credential collection. Run later: pwsh scripts/collect-credentials.ps1 <platform>" -ForegroundColor DarkGray
+                }
+            } else {
+                Write-Host "  ✗ scripts/collect-credentials.ps1 not found. Skipping." -ForegroundColor Yellow
+            }
+        }
+    } else {
+        Write-Host "  OS keyring not available — credentials will use literal .env.local." -ForegroundColor Yellow
+        Write-Host "  To enable: npm install --save-optional @napi-rs/keyring" -ForegroundColor DarkGray
+    }
+}
+
+# --- 5. Summary ------------------------------------------------------------------
 $subagentCount = (Get-ChildItem -Path (Join-Path $root ".claude/agents") -Filter "*.md" -ErrorAction SilentlyContinue | Measure-Object).Count
 $hookCount = (Get-ChildItem -Path (Join-Path $root "scripts/hooks") -Filter "*.mjs" -ErrorAction SilentlyContinue | Measure-Object).Count
 
@@ -190,7 +267,8 @@ Write-Host "Next steps:"
 Write-Host "  1. Install your canonical Trajectory Kernel V6 text into constitution/kernel-v6.md"
 Write-Host "  2. Edit CLAUDE.md to describe this project's specific goals"
 Write-Host "  3. Decide full-6 vs minimal-3 agent set (see layers/L2-agents.md)"
-Write-Host "  4. Copy .env.example to .env and fill in API keys"
+Write-Host "  4. Set up credentials: pwsh scripts/collect-credentials.ps1 <platform>"
+Write-Host "     (Or re-run bootstrap with -SetupCredentials to be guided through it)"
 Write-Host "  5. Confirm or override ADR-0002 (orchestration framework)"
 Write-Host "  6. Edit tools/runtime.yaml: set deploy.command + post_deploy_url_pattern"
 Write-Host "  7. git init; git add .; git commit -m 'Loom v0.3 scaffold'"
