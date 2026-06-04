@@ -8,7 +8,7 @@
 
 This file is the **primary entry point** for Claude (chat) and Claude Code into this project. Keep it small — hard cap ~10 KB. Detail belongs in [`layers/`](./layers/), not here.
 
-> **Fresh Claude instance? Read [`handoff/2026-05-25-loom-v0.3.3-context.md`](./handoff/2026-05-25-loom-v0.3.3-context.md) first (what changed since v1.0; the v0.3.3 cascade + Ravenwise findings), THEN [`handoff/2026-05-20-loom-v1.0-context.md`](./handoff/2026-05-20-loom-v1.0-context.md) for foundational collaboration conventions.** See [`handoff/README.md`](./handoff/README.md) for the dated-snapshot convention.
+> **Fresh Claude instance? Read [`handoff/2026-06-04-observatory-context.md`](./handoff/2026-06-04-observatory-context.md) first (what changed since v0.3.3; the v0.3.4 merge + L9 Observatory), THEN [`handoff/2026-05-20-loom-v1.0-context.md`](./handoff/2026-05-20-loom-v1.0-context.md) for foundational collaboration conventions.** See [`handoff/README.md`](./handoff/README.md) for the dated-snapshot convention.
 
 ---
 
@@ -45,6 +45,8 @@ The architecture is documented as **spec-as-codebase**. Each layer has its own f
 | L5 — Orchestration | [layers/L5-orchestration.md](./layers/L5-orchestration.md) | When designing task flows |
 | L6 — Observability & eval | [layers/L6-observability.md](./layers/L6-observability.md) | When debugging or shipping |
 | L7 — Self-extension / Update Bus | [layers/L7-extension.md](./layers/L7-extension.md) | When the system changes itself |
+| L8 — Discovery | [layers/L8-discovery.md](./layers/L8-discovery.md) | When onboarding or auditing project state |
+| L9 — Observatory | [layers/L9-observatory.md](./layers/L9-observatory.md) | When monitoring operations or reviewing Update Bus proposals |
 
 Quick agent reference: [`AGENTS.md`](./AGENTS.md).
 Canonical spec: [`loom-spec.md`](./loom-spec.md) (executive) → [`spec/loom-spec-v0.1-full.md`](./spec/loom-spec-v0.1-full.md) (complete).
@@ -128,10 +130,11 @@ Use `Bash` with a single-line `echo` redirect (POSIX) or `Add-Content` (PowerShe
 *(list ADRs in `Proposed` status; once `Accepted` they fall off this list)*
 
 - **ADR-0002** — Orchestration framework (LangGraph.js as v1 default). Confirm or override at bootstrap.
+- **ADR-0039** — Observatory architecture (L9 real-time dashboard, zero deps, SSE transport).
+- **ADR-0040** — Observatory projection schemas (8 projections, additive-only evolution).
+- **ADR-0041** — Update Bus → Observatory integration (inbox parsing + decision write-back).
 
-**Recent ADRs (Accepted):** 0003–0010 from Loom Enhancement Batch 01 (retrieval + context engineering, Phase 1 research) · 0011 Claude Code enforcement runtime (v0.2 PR-1 / A) · 0012–0016 (v0.2 B–F: subagents, bootstrap unification, lessons auto-suggest, loom doctor, Update Bus stub). v0.2 enforcement runtime complete. **Docs:** 0031 (handoff maintenance policy — when to write new handoffs, what goes in them, TL;DR ≤ 250 words constraint, `loom doctor` `handoff-freshness` check). v0.3.3 = 0034 (specialist-invocation discipline when registry unavailable; closes Ravenwise lesson Root cause 3) · 0035 (provisioning specialist + per-platform playbook schema + 5-layer staleness validation; closes Ravenwise lesson out-of-scope #4) · 0036 (credential collection: `@napi-rs/keyring` primary + `.env.local` fallback + `keyring:service/account` reference convention; closes architect direction 2026-05-25). **All three Proposed (cascade PRs).**
-
-> **Note:** This line is stale for v0.3 → v0.3.2 entries (0017–0030, 0032, 0033 are merged on main but missing here — collateral from cascade-merge `CLAUDE.md` conflict resolutions). Separate cleanup PR proposed; see [`lessons-learned/2026-05-22-browser-gated-provisioning-friction.md`](./lessons-learned/2026-05-22-browser-gated-provisioning-friction.md).
+**Recent ADRs (Accepted):** 0003–0010 (batch 01: retrieval + context engineering) · 0011–0016 (v0.2: enforcement runtime, subagents, bootstrap, lessons, doctor, Update Bus stub) · 0017–0030 (v0.3–v1.0: intent classifier, secrets, deploy, discovery, specialists, permissions, HR) · 0031 (handoff policy) · 0032–0033 (deploy terminal states, loom-spec maintenance) · 0034–0036 (v0.3.3: specialist invocation, provisioning specialist, credential collection) · 0037–0038 (v0.3.4: RAG research arc + LR-06, hook capture gap detection).
 
 ---
 

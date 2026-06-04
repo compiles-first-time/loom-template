@@ -5,8 +5,28 @@ const main = document.getElementById("main-content");
 const nav = document.getElementById("nav");
 const statusDot = document.getElementById("status-dot");
 const statusText = document.getElementById("status-text");
+const themeToggle = document.getElementById("theme-toggle");
+const themeIcon = document.getElementById("theme-icon");
 
 let activePanel = "overview";
+
+// ─── Theme toggle ────────────────────────────────────────────
+function getStoredTheme() {
+  try { return localStorage.getItem("loom-observatory-theme"); } catch { return null; }
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  themeIcon.textContent = theme === "dark" ? "☽" : "☀";
+  try { localStorage.setItem("loom-observatory-theme", theme); } catch { /* private browsing */ }
+}
+
+applyTheme(getStoredTheme() || document.documentElement.getAttribute("data-theme") || "dark");
+
+themeToggle.addEventListener("click", () => {
+  const current = document.documentElement.getAttribute("data-theme");
+  applyTheme(current === "dark" ? "light" : "dark");
+});
 
 const sse = new SSEClient("/api/events/stream", {
   onInit(data) {
