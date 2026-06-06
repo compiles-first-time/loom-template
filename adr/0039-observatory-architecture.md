@@ -78,7 +78,7 @@ The observatory writes to exactly two places:
 
 ## Affects / Affected by
 
-- **Affects:** L6 (observatory renders L6 signals), L7 (observatory surfaces Update Bus inbox)
+- **Affects:** L6 (observatory renders L6 signals), L7 (observatory surfaces Update Bus inbox), ADR-0040 (projection schemas formalize this ADR's state shape), ADR-0041 (Update Bus integration completes the decision write-path)
 - **Affected by:** ADR-0011 (event log schema), ADR-0016 (Update Bus schema), ADR-0027 (permissions categories), ADR-0032 (deploy terminal states)
 
 ## References
