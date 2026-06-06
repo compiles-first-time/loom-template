@@ -61,6 +61,8 @@ Every non-trivial claim carries two inline tags:
 | L5 — Orchestration | [layers/L5-orchestration.md](./layers/L5-orchestration.md) | Supervisor + ledgers |
 | L6 — Observability & evaluation | [layers/L6-observability.md](./layers/L6-observability.md) | Langfuse, OTel, evals |
 | L7 — Self-extension & Update Bus | [layers/L7-extension.md](./layers/L7-extension.md) | Living-software mechanism |
+| L8 — Discovery | [layers/L8-discovery.md](./layers/L8-discovery.md) | Quick scan + full discovery flow |
+| L9 — Observatory | [layers/L9-observatory.md](./layers/L9-observatory.md) | Real-time operations dashboard |
 
 ---
 
