@@ -4,6 +4,8 @@ summary: Credential storage + rotation — env vars, .env, secrets managers, OS 
 tier: bundled
 context_budget: 18000
 tools: [Read, Glob, Grep, Edit, Write]
+verifier_type: human_gate
+verifier_note: "Storage decisions and resulting config (.env.example entries, .gitignore additions, rotation procedures) are verified by the human architect reviewing the output. The specialist never writes real credential values, so exit_code verification is not applicable. Per ADR-0044."
 ---
 
 # secrets specialist
