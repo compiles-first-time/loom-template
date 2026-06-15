@@ -14,7 +14,7 @@ const MIME = {
   ".yaml": "text/yaml; charset=utf-8",
 };
 
-export function createRouter(aggregator) {
+export function createRouter(aggregator, { projectRoot = process.cwd() } = {}) {
   return async function handleRequest(req, res) {
     const url = new URL(req.url, `http://${req.headers.host}`);
 
@@ -27,7 +27,7 @@ export function createRouter(aggregator) {
     }
 
     if (url.pathname.startsWith("/api/update-bus/") && req.method === "POST") {
-      return handleUpdateBusDecision(req, res, url);
+      return handleUpdateBusDecision(req, res, url, projectRoot, aggregator);
     }
 
     return serveStatic(res, url.pathname);
@@ -61,7 +61,7 @@ function req_cleanup(res, fn) {
   res.on("error", fn);
 }
 
-async function handleUpdateBusDecision(req, res, url) {
+async function handleUpdateBusDecision(req, res, url, projectRoot, aggregator) {
   const segments = url.pathname.split("/");
   const id = segments[3];
   if (!id || segments[4] !== "decision") {
@@ -70,14 +70,53 @@ async function handleUpdateBusDecision(req, res, url) {
 
   const body = await readBody(req);
   if (!body || !body.verdict) {
-    return jsonResponse(res, 400, { error: "verdict required" });
+    return jsonResponse(res, 400, { error: "verdict required: approve | reject | defer" });
   }
 
-  return jsonResponse(res, 200, {
-    status: "accepted",
-    id,
-    note: "Update Bus integration ships in PR-6. Decision recorded.",
-  });
+  const inboxDir = path.join(projectRoot, "update-bus", "inbox");
+  let targetPath = null;
+  try {
+    const entries = await fs.readdir(inboxDir);
+    for (const file of entries) {
+      if (!file.endsWith(".md")) continue;
+      const fullPath = path.join(inboxDir, file);
+      const text = await fs.readFile(fullPath, "utf8");
+      if (text.includes(`id: ${id}`)) { targetPath = fullPath; break; }
+    }
+  } catch { /* inbox dir missing */ }
+
+  if (!targetPath) {
+    return jsonResponse(res, 404, { error: `No inbox item with id: ${id}` });
+  }
+
+  try {
+    const text = await fs.readFile(targetPath, "utf8");
+    const decidedAt = new Date().toISOString();
+    const decisionLines = [
+      "",
+      "## User decision",
+      "",
+      `verdict: ${body.verdict}`,
+      `decided_at: ${decidedAt}`,
+      body.note ? `note: ${body.note}` : null,
+    ].filter((l) => l !== null).join("\n");
+
+    const updated = text.includes("## User decision")
+      ? text.replace(/\n## User decision[\s\S]*$/, decisionLines)
+      : text.trimEnd() + "\n" + decisionLines + "\n";
+
+    await fs.writeFile(targetPath, updated, "utf8");
+
+    aggregator.updateUpdateBusDecision(id, {
+      verdict: body.verdict,
+      decided_at: decidedAt,
+      note: body.note || null,
+    });
+
+    return jsonResponse(res, 200, { status: "ok", id, verdict: body.verdict, decided_at: decidedAt });
+  } catch (err) {
+    return jsonResponse(res, 500, { error: err.message });
+  }
 }
 
 async function readBody(req) {

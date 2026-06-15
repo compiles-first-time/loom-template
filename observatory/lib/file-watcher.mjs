@@ -1,17 +1,39 @@
 import { watch, promises as fs, existsSync, statSync } from "node:fs";
 import path from "node:path";
 
+function parseMarkdownFrontmatter(text) {
+  const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!match) return null;
+  const result = {};
+  for (const line of match[1].split(/\r?\n/)) {
+    const kv = line.match(/^([\w-]+):\s*(.+)$/);
+    if (!kv) continue;
+    const key = kv[1];
+    let val = kv[2].trim();
+    if (val.startsWith("[") && val.endsWith("]")) {
+      val = val.slice(1, -1).split(",").map((s) => s.trim().replace(/^['"]|['"]$/g, "")).filter(Boolean);
+    } else if (val === "true") {
+      val = true;
+    } else if (val === "false") {
+      val = false;
+    }
+    result[key] = val;
+  }
+  return Object.keys(result).length ? result : null;
+}
+
 export class FileWatcher {
   constructor({ debounceMs = 150 } = {}) {
     this._watchers = [];
     this._debounceMs = debounceMs;
     this._offsets = new Map();
-    this._listeners = { jsonl: [], file: [] };
+    this._listeners = { jsonl: [], file: [], updateBusItem: [] };
     this._timers = new Map();
   }
 
   onJsonlAppend(fn) { this._listeners.jsonl.push(fn); }
   onFileChange(fn) { this._listeners.file.push(fn); }
+  onUpdateBusItem(fn) { this._listeners.updateBusItem.push(fn); }
 
   watchJsonlDir(dir) {
     if (!existsSync(dir)) return;
@@ -42,6 +64,35 @@ export class FileWatcher {
       this._debounce(full, () => this._emitFileChange(full));
     });
     this._watchers.push(w);
+  }
+
+  watchUpdateBusInbox(dir) {
+    if (!existsSync(dir)) return;
+    const w = watch(dir, { persistent: false }, (_event, filename) => {
+      if (!filename || !filename.endsWith(".md")) return;
+      const full = path.join(dir, filename);
+      this._debounce(full, () => this._parseAndEmitUpdateBusItem(full));
+    });
+    this._watchers.push(w);
+  }
+
+  async replayUpdateBusInbox(dir) {
+    if (!existsSync(dir)) return;
+    const entries = await fs.readdir(dir);
+    for (const file of entries) {
+      if (!file.endsWith(".md")) continue;
+      await this._parseAndEmitUpdateBusItem(path.join(dir, file));
+    }
+  }
+
+  async _parseAndEmitUpdateBusItem(filePath) {
+    try {
+      const text = await fs.readFile(filePath, "utf8");
+      const fm = parseMarkdownFrontmatter(text);
+      if (!fm || !fm.id) return;
+      const item = { ...fm, _file: filePath };
+      for (const fn of this._listeners.updateBusItem) fn(item);
+    } catch { /* file deleted or unreadable */ }
   }
 
   async _tailJsonl(filePath) {

@@ -4,6 +4,7 @@
 server:
   port: 4040
   open_browser: true
+  auto_start: true      # spawn Observatory on every session start; set false to disable
 
 replay:
   days: 7
