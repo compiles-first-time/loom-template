@@ -133,8 +133,7 @@ Use `Bash` with a single-line `echo` redirect (POSIX) or `Add-Content` (PowerShe
 - **ADR-0039** — Observatory architecture (L9 real-time dashboard, zero deps, SSE transport).
 - **ADR-0040** — Observatory projection schemas (8 projections, additive-only evolution).
 - **ADR-0041** — Update Bus → Observatory integration (inbox parsing + decision write-back).
-
-**Recent ADRs (Accepted):** 0003–0010 (batch 01: retrieval + context engineering) · 0011–0016 (v0.2: enforcement runtime, subagents, bootstrap, lessons, doctor, Update Bus stub) · 0017–0030 (v0.3–v1.0: intent classifier, secrets, deploy, discovery, specialists, permissions, HR) · 0031 (handoff policy) · 0032–0033 (deploy terminal states, loom-spec maintenance) · 0034–0036 (v0.3.3: specialist invocation, provisioning specialist, credential collection) · 0037–0038 (v0.3.4: RAG research arc + LR-06, hook capture gap detection).
+**Recent ADRs (Accepted):** 0003–0010 (batch 01: retrieval + context engineering) · 0011–0016 (v0.2: enforcement runtime, subagents, bootstrap, lessons, doctor, Update Bus stub) · 0017–0030 (v0.3–v1.0: intent classifier, secrets, deploy, discovery, specialists, permissions, HR) · 0031 (handoff policy) · 0032–0033 (deploy terminal states, loom-spec maintenance) · 0034–0036 (v0.3.3: specialist invocation, provisioning specialist, credential collection) · 0037–0038 (v0.3.4: RAG research arc + LR-06, hook capture gap detection) · 0042 (credential-setup specialist) · 0043 (cwd-robust project-root resolution).
 
 ---
 

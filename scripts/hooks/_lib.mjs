@@ -11,10 +11,53 @@ import { existsSync, mkdirSync, appendFileSync } from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import os from "node:os";
+import { fileURLToPath } from "node:url";
 
-// Project root = current working directory of the Claude Code session.
-// Claude Code invokes hooks with cwd set to the project root.
-export const PROJECT_ROOT = process.cwd();
+// ── Project-root resolution (ADR-0043) ────────────────────────────────────
+//
+// Priority chain:
+//   1. LOOM_PROJECT_ROOT env var (explicit override)
+//   2. Walk up from this file's location — fixes subdir/cwd-drift (Problem A)
+//   3. process.cwd() fallback + ADR-0038 warning banner at session-start
+//
+// Problem B (launch from a foreign directory) requires launch discipline;
+// see ADR-0043 §Consequences.
+
+const LOOM_MARKERS = [
+  "loom-spec.md",
+  "constitution/kernel-v6.md",
+  ".claude/loom-permissions.yaml",
+];
+
+function isLoomRoot(dir) {
+  return LOOM_MARKERS.every((m) => existsSync(path.join(dir, m)));
+}
+
+function resolveProjectRoot() {
+  // 1. Explicit env override.
+  const envRoot = process.env.LOOM_PROJECT_ROOT;
+  if (envRoot) {
+    const normalized = path.resolve(envRoot);
+    if (isLoomRoot(normalized)) return normalized;
+    process.stderr.write(
+      `[loom-hook] LOOM_PROJECT_ROOT="${envRoot}" is set but contains no Loom markers — ignoring.\n`
+    );
+  }
+
+  // 2. Walk up from this hook file's location (resolves subdir launches).
+  let dir = path.dirname(fileURLToPath(import.meta.url));
+  for (let i = 0; i < 8; i++) {
+    if (isLoomRoot(dir)) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) break; // reached filesystem root
+    dir = parent;
+  }
+
+  // 3. Fallback — cwd. ADR-0038 banner fires at session-start.
+  return process.cwd();
+}
+
+export const PROJECT_ROOT = resolveProjectRoot();
 
 export const EVENT_LOG_DIR = path.join(PROJECT_ROOT, "memory", "event-log");
 export const KERNEL_VERSION = "v6";
@@ -40,6 +83,10 @@ const LOOM_INDICATORS = [
 ];
 
 export function validateProjectRoot(root = PROJECT_ROOT) {
+  // Fast-path: all three ADR-0043 markers present → definitive match.
+  if (isLoomRoot(root)) return { valid: true, found: [...LOOM_MARKERS] };
+
+  // Fallback: ADR-0038 2-of-4 heuristic for partial installs.
   const found = LOOM_INDICATORS.filter((f) => existsSync(path.join(root, f)));
   if (found.length === 0) {
     return {
