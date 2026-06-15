@@ -4,7 +4,7 @@
 
 > Manual additions: write below the `<!-- end-of-generated -->` marker. The auto-generated section above will be overwritten on next run; your manual section will be preserved.
 
-Generated: 2026-05-19T01:19:18.375Z
+Generated: 2026-06-14T23:20:55.049Z
 
 ## MCP servers available to this Claude Code installation
 
@@ -23,15 +23,37 @@ Marketplace / runtime-injected MCPs may not appear in static config files. Add t
 
 | File | Status |
 |---|---|
+| `auth.md` | ✓ in registry (assumed loaded at session start) |
+| `ci.md` | ✓ in registry (assumed loaded at session start) |
 | `constitution-service.md` | ✓ in registry (assumed loaded at session start) |
+| `credential-setup.md` | **STALE** — newer than discovery sentinel; not invokable until Claude Code restart |
 | `critic.md` | ✓ in registry (assumed loaded at session start) |
+| `db-migration.md` | ✓ in registry (assumed loaded at session start) |
+| `deploy.md` | ✓ in registry (assumed loaded at session start) |
 | `eac.md` | ✓ in registry (assumed loaded at session start) |
+| `email.md` | ✓ in registry (assumed loaded at session start) |
+| `error-tracking.md` | **STALE** — newer than discovery sentinel; not invokable until Claude Code restart |
+| `file-storage.md` | **STALE** — newer than discovery sentinel; not invokable until Claude Code restart |
 | `hr.md` | ✓ in registry (assumed loaded at session start) |
 | `human-replica.md` | ✓ in registry (assumed loaded at session start) |
 | `memory-keeper.md` | ✓ in registry (assumed loaded at session start) |
+| `monitoring.md` | **STALE** — newer than discovery sentinel; not invokable until Claude Code restart |
+| `oauth.md` | **STALE** — newer than discovery sentinel; not invokable until Claude Code restart |
+| `payments.md` | **STALE** — newer than discovery sentinel; not invokable until Claude Code restart |
+| `queues.md` | **STALE** — newer than discovery sentinel; not invokable until Claude Code restart |
+| `secrets.md` | **STALE** — newer than discovery sentinel; not invokable until Claude Code restart |
+
+**Action:** Restart Claude Code so the Agent tool can see the newer subagent files. After restarting and confirming the agents work (try `Agent(subagent_type="critic", ...)`), run:
+
+```bash
+touch .claude/agents/.last-discovered-at
+```
+
+to update the sentinel and suppress this nag.
 
 <!-- end-of-generated -->
 
 ## Manual additions
+
 
 _(add marketplace MCPs / project-specific runtime details below)_

@@ -163,6 +163,23 @@ If you're shipping Auth.js / NextAuth Google sign-in (the Ravenwise / typical Lo
 | add-domain (DNS) | — | — | required | [H] | Provider docs | DNS records published at user's registrar; provider verifies. EMAIL-EX-01 handles unpropagated DNS |
 | suppression-list-add | — | — | — | [H] | Provider APIs | HTTP API; some providers have CLI wrappers but they're community-maintained |
 
+## Alpaca (brokerage — paper + live trading)
+
+Used by trading projects (e.g., Sovereign Forge). **Trading API keys are dashboard-only to create**; once issued, account/trading/data is fully automatable via the official `alpaca-mcp-server` or REST. Two distinct Alpaca MCPs exist — keep them apart: the **trading** MCP (`alpaca-mcp-server`, consumes keys) vs the **docs** MCP (`alpaca-us`, `https://docs.alpaca.markets/mcp`, for documentation queries / playbook re-validation).
+
+### Resource disambiguation (read first)
+
+`issuetokens` ≠ API-key creation. Alpaca's [`issuetokens`](https://docs.alpaca.markets/us/reference/issuetokens) is `POST https://authx.alpaca.markets/v1/oauth2/token` — an **OAuth2 access-token** endpoint (`client_credentials` grant) for OAuth apps / Broker-API partners acting on behalf of users. It does **not** mint your own trading keys. Self-service trading keys (Key ID + Secret) are created **only** in the dashboard (Home); the Secret is shown once.
+
+| Action | MCP server | CLI/REST | Human-browser | Confidence | Source | Notes |
+|---|---|---|---|---|---|---|
+| generate-api-keys (own trading keys) | — | — | required (one-time) | [H] | [Alpaca connect guide](https://alpaca.markets/learn/connect-to-alpaca-api) | Dashboard **Home** only; Secret shown once; **no programmatic creation**. This is the `credential-setup` browser-acquisition case (ADR-0042). One-time per account |
+| signup / login | — | — | required | [H] | [signup](https://app.alpaca.markets/signup) | Account creation + password entry are **human-only** (ADR-0042 §Executing-agent constraint); the agent navigates read-only + guides. Paper needs no live-brokerage KYC |
+| get-account / validate | `alpaca-mcp-server` (account tools) | `GET https://paper-api.alpaca.markets/v2/account` + `APCA-API-KEY-ID`/`APCA-API-SECRET-KEY` | — | [M] | [getAccount](https://docs.alpaca.markets/reference/getaccount); [alpaca-mcp-server](https://github.com/alpacahq/alpaca-mcp-server) | Two custom headers (NOT bearer), validated **as a pair**. 401 = wrong key or paper/live mismatch. Collector + `node index.js --status` use the REST path |
+| trading / positions / market-data | `alpaca-mcp-server` (orders, positions, bars, quotes, options, news, indices) | Alpaca REST / `@alpacahq/alpaca-trade-api` SDK | — | [M] | [alpaca-mcp-server](https://github.com/alpacahq/alpaca-mcp-server) | MCP **consumes** existing keys (`ALPACA_API_KEY`/`ALPACA_SECRET_KEY` env, `ALPACA_PAPER_TRADE` default true) — downstream of credential-setup. Sovereign Forge uses the SDK today; MCP migration is a tracked follow-up |
+| oauth-token (client_credentials) | — | `POST https://authx.alpaca.markets/v1/oauth2/token` | — | [M] | [issuetokens](https://docs.alpaca.markets/us/reference/issuetokens) | OAuth2 token for OAuth/Broker partners — **NOT** trading-key creation (see disambiguation) |
+| docs-query / playbook re-validation | `alpaca-us` docs MCP (`https://docs.alpaca.markets/mcp`, http) | — | — | [M] | [Alpaca docs MCP](https://docs.alpaca.markets/mcp) | Documentation MCP. Registered (`enabled: false`) in `tools/mcp-servers/config.yaml`; use for ADR-0035 staleness re-validation of `alpaca.md` |
+
 ---
 
 ## Matrix gaps (rows to add on first need)
@@ -189,4 +206,5 @@ These platforms / actions appeared in PR #26's specialist updates but don't yet 
 
 - **2026-05-21** — Initial population (PR #27 / ADR-0033). 30 rows across 8 platforms. Gaps section enumerates 12 platforms / 40+ actions awaiting first-need.
 - **2026-05-22** — First real-session correction (Ravenwise bootstrap). Supabase `create-project` row corrected: the Management API at `api.supabase.com` was missed in the initial population. Added Google Cloud (OAuth client management) section. Added "One-time vs. recurring browser-gating" guidance + management-API discipline checklist. See [lessons-learned/2026-05-22-browser-gated-provisioning-friction.md](../lessons-learned/2026-05-22-browser-gated-provisioning-friction.md).
+- **2026-06-07** — Added the **Alpaca** section (ADR-0042 credential-setup validation). Documented dashboard-only trading-key creation (no programmatic API), the `issuetokens`/OAuth2 disambiguation, the official `alpaca-mcp-server` (consumes keys; downstream of credential-setup), and the `alpaca-us` docs MCP (registered `enabled: false` in `tools/mcp-servers/config.yaml` for playbook re-validation). Sourced against architect-supplied Alpaca docs.
 - **2026-05-22 (later that day)** — Agent-validated second-pass corrections. The Ravenwise lesson surfaced that no specialist agents had been invoked during the original work; three general-purpose agents were spawned to research-validate the matrix corrections. Findings: (1) **Supabase MCP "account" tool group exists** when launched WITHOUT `--project-ref` (PAT-mode) — `create_project`, `confirm_cost`, `get_cost`, `list_organizations`, `get_organization` — meaning the MCP cell in `create-project` should NOT be `—`. Both the original PR #27 row and the first PR #29 correction missed this. Confidence bumped `[M] → [H]`. (2) **Google Cloud OAuth Client (standard web app) is genuinely Console-only** — verified across 9 sources; agent confirmed the matrix claim with [H] confidence + added the four-resource-class disambiguation (standard-web vs IAP-deprecated vs Workforce vs Identity-Platform) to prevent future agents from being confused by adjacent-but-different APIs.

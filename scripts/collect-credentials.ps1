@@ -1,4 +1,4 @@
-# Loom credential collection — Windows / PowerShell.
+﻿# Loom credential collection — Windows / PowerShell.
 #
 # Per ADR-0036: collects platform PATs and other credentials via terminal
 # stdin (NEVER through chat), validates them via read-only pre-flight calls
@@ -97,6 +97,133 @@ $Platforms = @{
             }
         )
     }
+    alpaca = @{
+        Description  = "Alpaca (paper-trading brokerage)"
+        Setup_url    = "https://app.alpaca.markets/signup"
+        Setup_hint   = "Sign up (or log in), open the Paper Trading dashboard, and generate API keys. The Secret is shown ONCE - copy it now. The credential-setup specialist (ADR-0042) can drive this in the browser with your consent."
+        CustomCollector = "alpaca"   # paired (two-header) validate-before-store; see Invoke-AlpacaPairedCollection
+        Validate_url = "https://paper-api.alpaca.markets/v2/account"
+        Credentials  = @(
+            @{ EnvVar = "ALPACA_KEY_ID";     KeyringAccount = "alpaca-key-id" }
+            @{ EnvVar = "ALPACA_SECRET_KEY"; KeyringAccount = "alpaca-secret-key" }
+        )
+    }
+}
+
+# ── Helpers for custom (paired-validation) collectors ───────────────────
+
+function ConvertFrom-SecureStringPlain {
+    param([System.Security.SecureString]$Secure)
+    if (-not $Secure) { return $null }
+    $bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($Secure)
+    try { return [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr) }
+    finally { [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) }
+}
+
+# Alpaca uses two headers (APCA-API-KEY-ID / APCA-API-SECRET-KEY) validated as
+# a PAIR against GET /v2/account. Unlike the single-bearer platforms, we collect
+# both, validate them together, attest the account, and only THEN store - so a
+# wrong/swapped key is never written to the keyring. Per ADR-0042 section F.
+function Invoke-AlpacaPairedCollection {
+    param(
+        [hashtable]$PlatformConfig,
+        [string]$ServiceKey,
+        [bool]$UseKeyring,
+        [string]$RepoRoot,
+        [string]$NodePath,
+        [bool]$Rotate,
+        [bool]$Force
+    )
+
+    $envFile = "$RepoRoot/.env.local"
+    if ((Test-Path $envFile) -and -not $Rotate -and -not $Force) {
+        $hasKey = (Get-Content $envFile) | Where-Object { $_ -match "^ALPACA_KEY_ID=." }
+        $hasSec = (Get-Content $envFile) | Where-Object { $_ -match "^ALPACA_SECRET_KEY=." }
+        if ($hasKey -and $hasSec) {
+            Write-Host "  Alpaca keys already set in .env.local. Use --rotate to overwrite, --list to inspect." -ForegroundColor DarkGray
+            return
+        }
+    }
+
+    Write-Host "-> ALPACA_KEY_ID + ALPACA_SECRET_KEY (validated together)" -ForegroundColor Cyan
+    $secureKey = Read-Host -Prompt "  Paste your Alpaca API Key ID (input hidden)" -AsSecureString
+    $secureSec = Read-Host -Prompt "  Paste your Alpaca API Secret Key (input hidden)" -AsSecureString
+    $keyId  = ConvertFrom-SecureStringPlain $secureKey
+    $secret = ConvertFrom-SecureStringPlain $secureSec
+    if (-not $keyId -or -not $secret) {
+        Write-Host "  x Both Key ID and Secret are required; nothing stored." -ForegroundColor Red
+        return
+    }
+
+    # Paired validate-before-store + account attestation (closes Ravenwise Root cause 4).
+    $validateUrl = $PlatformConfig.Validate_url
+    if ($validateUrl) {
+        Write-Host "  Validating key pair via $validateUrl..." -ForegroundColor DarkGray
+        $headers = @{ "APCA-API-KEY-ID" = $keyId; "APCA-API-SECRET-KEY" = $secret }
+        try {
+            $resp = Invoke-RestMethod -Uri $validateUrl -Headers $headers -Method GET -ErrorAction Stop
+            Write-Host "  + Key pair valid. Paper account: $($resp.account_number)  Status: $($resp.status)" -ForegroundColor Green
+            Write-Host ""
+            Write-Host "  ATTESTATION REQUIRED" -ForegroundColor Yellow
+            Write-Host "  These keys authenticate Alpaca paper account: " -NoNewline
+            Write-Host "$($resp.account_number) ($($resp.status))" -ForegroundColor Cyan
+            Write-Host "  Is this the intended account for this project? [y/N] " -NoNewline -ForegroundColor Yellow
+            $confirm = Read-Host
+            if ($confirm -notmatch "^[Yy]") {
+                Write-Host "  x Attestation declined. Keys discarded (nothing stored)." -ForegroundColor Red
+                $keyId = $null; $secret = $null
+                return
+            }
+        } catch {
+            Write-Host "  x Validation failed: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "    Keys may be wrong, swapped, or revoked. Nothing stored. (CRED-EX-08)" -ForegroundColor DarkGray
+            $keyId = $null; $secret = $null
+            return
+        }
+    }
+
+    $pairs = @(
+        @{ EnvVar = "ALPACA_KEY_ID";     Account = "alpaca-key-id";     Value = $keyId },
+        @{ EnvVar = "ALPACA_SECRET_KEY"; Account = "alpaca-secret-key"; Value = $secret }
+    )
+    foreach ($p in $pairs) {
+        if ($UseKeyring) {
+            $writeScript = @"
+import('file:///$($RepoRoot.Replace('\','/'))/scripts/lib/keyring.mjs').then(async (m) => {
+  let value = '';
+  for await (const chunk of process.stdin) value += chunk;
+  await m.setCredential('$ServiceKey', '$($p.Account)', value.trimEnd());
+  process.stdout.write('STORED');
+});
+"@
+            $write = $p.Value | & $NodePath -e $writeScript 2>&1
+            if ($write -ne "STORED") {
+                Write-Host "  x Keyring write failed for $($p.EnvVar): $write" -ForegroundColor Red
+                continue
+            }
+            $envValue = "keyring:$ServiceKey/$($p.Account)"
+            Write-Host "  + $($p.EnvVar) stored in OS keyring; reference: $envValue" -ForegroundColor Green
+        } else {
+            $envValue = $p.Value
+            Write-Host "  + $($p.EnvVar) will be written literally to .env.local (no keyring)" -ForegroundColor Yellow
+        }
+
+        if (-not (Test-Path $envFile)) {
+            if (Test-Path "$RepoRoot/.env.example") { Copy-Item "$RepoRoot/.env.example" $envFile }
+            else { New-Item -Path $envFile -ItemType File -Force | Out-Null }
+        }
+        $content = Get-Content $envFile -Raw
+        if ($content -match "(?m)^$($p.EnvVar)=.*$") {
+            $newContent = $content -replace "(?m)^$($p.EnvVar)=.*$", "$($p.EnvVar)=$envValue"
+        } else {
+            $newContent = $content.TrimEnd() + "`n$($p.EnvVar)=$envValue`n"
+        }
+        Set-Content -Path $envFile -Value $newContent -NoNewline -Encoding utf8
+    }
+
+    # Scrub local copies.
+    $keyId = $null; $secret = $null
+    foreach ($p in $pairs) { $p.Value = $null }
 }
 
 function Show-PlatformList {
@@ -208,6 +335,15 @@ Write-Host ""
 
 # ── Collect each credential for the platform ───────────────────────────
 
+# Custom collectors (platforms needing paired / combined validation)
+if ($platformConfig.CustomCollector -eq "alpaca") {
+    Invoke-AlpacaPairedCollection -PlatformConfig $platformConfig -ServiceKey $serviceKey -UseKeyring ([bool]$useKeyring) -RepoRoot $repoRoot -NodePath $nodePath -Rotate ([bool]$Rotate) -Force ([bool]$Force)
+    Write-Host ""
+    Write-Host "Done. .env.local updated for platform '$Platform'." -ForegroundColor Green
+    Write-Host "Run again with --rotate to refresh a credential." -ForegroundColor DarkGray
+    exit 0
+}
+
 foreach ($cred in $platformConfig.Credentials) {
     Write-Host ""
     Write-Host "→ $($cred.EnvVar)" -ForegroundColor Cyan
@@ -259,7 +395,9 @@ foreach ($cred in $platformConfig.Credentials) {
                 foreach ($part in ($cred.Account_field -split "\.")) {
                     $first = $first.$part
                 }
-                $accountForAttestation = $first + " (and $($resp.Count - 1) other$([int]($resp.Count -gt 2) -ne 0 ? 's' : ''))"
+                $otherPlural = ''
+                if (($resp.Count - 1) -gt 1) { $otherPlural = 's' }
+                $accountForAttestation = "$first (and $($resp.Count - 1) other$otherPlural)"
             }
             Write-Host "  ✓ Credential is valid. Authenticated as: $accountForAttestation" -ForegroundColor Green
         } catch {

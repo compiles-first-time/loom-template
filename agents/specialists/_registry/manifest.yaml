@@ -163,3 +163,15 @@ specialists:
       keywords: []
     context_budget: 16000
     eval_source: observability/eval-suite/subagents/ci.md
+
+  - name: credential-setup
+    summary: "Acquires web-gated credentials via browser automation — register, login, 2FA, API-key retrieval — with per-step consent. Hands secret to collect-credentials; never captures it."
+    skill_md: _registry/credential-setup/SKILL.md
+    tier: bundled
+    triggers:
+      patterns:
+        - "\\b(?:register (?:for|an account)|sign[- ]?up for|create an account|get (?:me )?(?:an? )?API keys?|retrieve (?:my )?API key|2FA|two[- ]?factor|verification code|log ?in (?:to|and))\\b"
+      tools: []
+      keywords: []
+    context_budget: 22000
+    eval_source: observability/eval-suite/subagents/credential-setup.md

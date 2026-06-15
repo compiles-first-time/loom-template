@@ -138,3 +138,31 @@ categories:
       - never_in_args: "The credential VALUE must not appear in tool args (LR-03; hook redacts HIGH-confidence shapes)"
       - oauth_preferred: "If the service offers OAuth (provider-issued, short-lived) — prefer it over a long-lived API key"
     enforcement: "soft"  # PreToolUse emits credential_action_attempted event; secrets-doctor catches retroactively
+
+  # ── browser_credential_automation ─────────────────────────────────────────
+  # Tool calls that drive a third-party web UI to ACQUIRE a credential on the
+  # user's behalf — account registration, login, 2FA, API-key generation via
+  # browser automation (Claude in Chrome MCP). Per ADR-0042 + the
+  # credential-setup specialist. Distinct from `credentials` (a secret the user
+  # already has): this category is the browser-driven ACQUISITION that precedes
+  # storage. Every state-changing browser step is consent-gated (Kernel Rule 8
+  # + LR-04); the secret is handed to collect-credentials (stdin), never
+  # captured into context (LR-03).
+  browser_credential_automation:
+    triggers:
+      mcp_patterns:
+        - "mcp__.*[Cc]hrome.*__(?:navigate|form_input|computer|click|fill|file_upload)"
+        - "mcp__.*[Bb]rowser.*__(?:navigate|form_input|click|fill|type)"
+      command_patterns:
+        - "\\bcollect-credentials\\b"
+      keywords:
+        - "register an account"
+        - "sign up for"
+        - "verification code"
+    required_protocol:
+      - present_action: "Which browser step (URL + what it submits) and on which service?"
+      - consent_per_step: "Explicit user approval BEFORE each state-changing step (account creation, ToS acceptance, key generation); never auto-accept (Kernel Rule 8)"
+      - smallest_scope: "Narrowest account tier / key scope for the goal (paper-only, read-only, single-project)"
+      - secret_handoff: "Secret goes to collect-credentials stdin (keyring) — never screenshotted, read, or placed in tool args (LR-03; ADR-0042)"
+      - decline_triggers: "CAPTCHA / KYC / payment / ToS-prohibited automation: stop and hand to the user; never bypass (CRED-EX-01/02/06)"
+    enforcement: "soft"  # PreToolUse emits browser_credential_automation_attempted; consent gates observable in the event log
