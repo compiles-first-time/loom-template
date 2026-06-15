@@ -15,6 +15,23 @@
 | 4 | Episodic event log | [`../memory/event-log/`](../memory/event-log/) | Append-only JSONL (or Nostr if multi-party) | active — audit trail per Kernel Rule 22 |
 | 5 | Procedural skill library | [`../memory/skills/`](../memory/skills/) | Voyager-style markdown + manifest | active |
 
+## Memory tier selection
+
+> **Added 2026-06-15.** Grounded in: CoALA cognitive architectures (Sumers et al. 2023, arXiv:2309.02427, ACM Computing Surveys 2024 `[primary][H]`); MemGPT (Packer et al. 2023, arXiv:2310.08560 `[primary][H]`); LLM autonomous agents survey (Wang et al. 2024, arXiv:2308.11432 `[primary][H]`). Full analysis: [`../lessons-learned/2026-06-15-agent-memory-tier-selection.md`](../lessons-learned/2026-06-15-agent-memory-tier-selection.md).
+
+The stateless-session-with-file-write pattern (each agent reads files, does work, writes back) is valid for coordination and audit but insufficient for tasks requiring cross-session learning. The deciding criterion is **session horizon**.
+
+| Tier | Pattern | When sufficient | When NOT sufficient |
+|---|---|---|---|
+| **Tier A — Coordination** | Stateless: read files → work → write files. Next session picks up from files. | Audit trail, handoff, agent coordination, placeholder tracking, short-horizon tasks. | Tasks requiring comparison or learning from outcomes across multiple prior sessions. |
+| **Tier B — Episodic** | Structured retrieval over prior session records: vector index → semantic search → context assembly. | Long-horizon tasks with outcome feedback: trading cycles, eval evolution, incremental research. | Pure coordination tasks — adds retrieval overhead for no gain. |
+
+**Decision rule:** if a task re-invokes across sessions and must reason about prior *outcomes* (not just prior *state*), it requires Tier B. Knowing *what happened* → Tier A. Reasoning about *what worked* → Tier B.
+
+**CoALA taxonomy alignment** (Sumers et al. 2024): four memory components for language agents — working (in-context), episodic (past session records), semantic (general facts), procedural (skills). Loom currently covers working (context assembly per [L5](./L5-orchestration.md#context-engineering)), Tier A episodic (JSONL event log), and procedural (skill library). Semantic and Tier B episodic are the gap for long-horizon tasks.
+
+**Sovereign Forge implication:** the trading cycle is long-horizon. Add Tier B (vector store over `memory/trade-log/`) after the first 5 live cycles when enough history exists for retrieval to be meaningful. See [Open work](#open-work-for-this-layer).
+
 ## Retrieval pipeline
 
 > **Canonical default per [ADR-0003](../adr/0003-retrieval-pipeline.md).** "Retrieve from the vector index" is not a design; this is. Every project gets this pipeline by default.
@@ -136,3 +153,4 @@ Retrieved or externally-ingested content (web search, tool output, third-party f
 - [ ] Implement the trust-boundary quarantine for externally-ingested content per [ADR-0007](../adr/0007-content-trust-boundary.md)
 - [ ] At discovery: evaluate whether project query patterns warrant GraphRAG complement per [ADR-0037](../adr/0037-retrieval-pipeline-evidence-review.md) §A
 - [ ] If iterative retrieval adopted: declare exit condition + cost model per [LR-06](../constitution/local-rules.md#lr-06)
+- [ ] After 5+ Sovereign Forge trading cycles: stand up Tier B episodic memory (vector store over `memory/trade-log/`) — see [Memory tier selection](#memory-tier-selection) and [`lessons-learned/2026-06-15-agent-memory-tier-selection.md`](../lessons-learned/2026-06-15-agent-memory-tier-selection.md)

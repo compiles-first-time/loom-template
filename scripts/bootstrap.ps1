@@ -178,6 +178,16 @@ if ((Test-Path $discoverScript) -and (Get-Command node -ErrorAction SilentlyCont
 # --- 4. Credential collection via keyring (ADR-0036 §E) -------------------------
 # Gated on -SetupCredentials to avoid hanging on prompts during auto-bootstrap
 # (SessionStart hook calls bootstrap without this flag).
+#
+# Keyring resolver patterns (for consuming credentials in project code):
+#   Async (Node entry points / Next.js instrumentation.ts):
+#     import { loadEnv } from "./scripts/lib/load-env.mjs";
+#     await loadEnv({ root: projectDir });   // resolves keyring: refs into process.env
+#   Sync (config loaders that can't await):
+#     import { resolveKeyringRefSync } from "./scripts/lib/keyring.mjs";
+#     const val = resolveKeyringRefSync(process.env.MY_KEY, projectDir);
+#   Subdir layouts: set LOOM_KEYRING_PROJECT_DIR to the dir with node_modules.
+#   Full docs: agents/specialists/_registry/secrets/SKILL.md §Keyring resolver patterns
 
 if ($SetupCredentials) {
     Write-Host ""

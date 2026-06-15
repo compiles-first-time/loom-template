@@ -6,8 +6,8 @@
 //   1  one or more hard checks failed
 //
 // Per ADR-0015 (foundational), extended by ADR-0017 (LR-02 / constitution
-// coverage), ADR-0022 (template conformance), and ADR-0023 (bidirectional
-// ADR links).
+// coverage), ADR-0022 (template conformance), ADR-0023 (bidirectional
+// ADR links), and ADR-0044 (skill-verifier-declared).
 
 import { promises as fs, existsSync } from "node:fs";
 import path from "node:path";
@@ -41,6 +41,7 @@ async function main() {
   await checkPlaybookFreshness();
   await checkSkeleton();
   await checkPs1Bom();
+  await checkSkillVerifiers();
 
   report();
 }
@@ -436,6 +437,44 @@ async function checkPs1Bom() {
       "ps1-bom",
       false,
       `${flagged.length} .ps1 file(s) have non-ASCII bytes but no UTF-8 BOM (will fail under PS 5.1): ${flagged.join(", ")}. Fix: prepend EF BB BF.`
+    );
+  }
+}
+
+async function checkSkillVerifiers() {
+  // Soft check (ADR-0044): every SKILL.md under agents/specialists/_registry/
+  // and agents/specialists/ (project-local) must declare a verifier_type: field
+  // in its YAML frontmatter.
+  const dirs = [
+    path.join(ROOT, "agents", "specialists", "_registry"),
+    path.join(ROOT, "agents", "specialists"),
+  ];
+  const missing = [];
+  for (const dir of dirs) {
+    if (!existsSync(dir)) continue;
+    let entries;
+    try {
+      entries = await fs.readdir(dir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      const skillPath = path.join(dir, entry.name, "SKILL.md");
+      if (!existsSync(skillPath)) continue;
+      const text = await fs.readFile(skillPath, "utf8");
+      if (!/^verifier_type:\s*\S+/m.test(text)) {
+        missing.push(path.relative(ROOT, path.join(dir, entry.name, "SKILL.md")).replace(/\\/g, "/"));
+      }
+    }
+  }
+  if (missing.length === 0) {
+    soft("skill-verifier-declared", true, "all SKILL.md files declare verifier_type");
+  } else {
+    soft(
+      "skill-verifier-declared",
+      false,
+      `${missing.length} SKILL.md file(s) missing verifier_type (ADR-0044): ${missing.join(", ")}. Add verifier_type: <exit_code|schema_check|test_suite|human_gate|surrogate> to frontmatter.`
     );
   }
 }

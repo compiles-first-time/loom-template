@@ -1,6 +1,6 @@
-# Local Rules — Project-Specific Constitutional Extensions
+﻿# Local Rules — Project-Specific Constitutional Extensions
 
-> **Project:** `<PROJECT_NAME>`
+> **Project:** `loom-template`
 > **Parent kernel:** [Trajectory Kernel V6](./kernel-v6.md)
 > **Rule of relation:** This file may **extend** the kernel with project-local rules. It may **not contradict** it. If a local rule conflicts with the kernel, the kernel wins.
 
@@ -178,6 +178,27 @@ Unbounded iterative LLM calls — loops with no declared exit condition and no c
 **Enforcement:** ADR template (structural — `Cost model` section); event log (runtime — `loop_cost_summary` event); Critic monthly audit; `loom doctor` (advisory, deferred). This rule is **discipline-class** (like LR-05), not enforcement-class. It does not prescribe numeric thresholds — those vary by use case and are project-specific. If Track C evidence hardens (specific patterns shown to be consistently dangerous), an amendment may add enforcement-class clauses with numeric bounds.
 
 Per [ADR-0037](../adr/0037-retrieval-pipeline-evidence-review.md).
+
+### LR-07 — Trust boundary scoping: narrowest credential at each agent hop
+
+**Status:** Active
+**Date:** 2026-06-15
+**Extends:** Kernel Rule 20 (temporal weighting — credential exposure is often irreversible); Kernel Rule 22 (epistemic transparency — scope used must be auditable); Kernel Rule 2 (consent — agent-to-agent delegation requires explicit principal authorization)
+**Author:** Builder (literature validation arc 2026-06-15) — approved by Nick
+
+**Rule:** Any agent task that crosses a trust boundary to an external API or a downstream agent must use the **narrowest credential scope sufficient** for that task. The executing agent resolves its own scoped credential from the OS keyring at call time; it does not receive or forward credentials from its caller. Per-hop scoping is necessary but not sufficient — pair with pre-action input validation and constitution-service escalation for high-privilege actions per LR-02.
+
+**Why:** Per-hop credential narrowing is the normative security pattern for multi-agent delegation chains (RFC 8693 OAuth 2.0 Token Exchange `[normative][H]`; OWASP LLM06:2025 Excessive Agency `[normative][H]`). A compromised or misconfigured agent with broad inherited scope can take irreversible actions far outside its intended role. Narrowing at each hop bounds the blast radius to the minimal scope for that task. Note: per-hop scoping does not prevent all privilege escalation — a legitimately-scoped token can still be requested for a malicious purpose (HDP arXiv:2604.04522 `[primary][M]`; OWASP LLM01:2025 Prompt Injection). Pairing with input validation and constitution-service escalation closes this gap.
+
+**How to apply:**
+- Each agent resolves its own credential from the OS keyring (`scripts/lib/load-env.mjs` or the sync keyring resolver for synchronous loaders). Credentials are **never passed between agents** as arguments or tool return values — LR-03 redaction catches this, but the architectural norm makes it explicit.
+- SKILL.md declares a `credential_scope:` field (keyring service name + scope) so the Critic can audit scope-at-each-hop during monthly reviews.
+- External API calls emit `tool_call` events via hooks — audit trail for scope-at-each-hop. The credential itself is redacted per LR-03.
+- For high-privilege external actions (write, deploy, financial transaction): constitution-service escalation required per LR-02.
+
+**Enforcement:** LR-03 (secrets-in-args prevention); LR-02 (constitution-service for high-privilege external calls); Critic monthly audit (checks `tool_call` events for cross-agent credential passing patterns); `loom doctor` (advisory — `credential_scope:` field check deferred to a future doctor PR).
+
+Per literature validation 2026-06-15. Reference implementation: Sovereign Forge Alpaca keyring integration (2026-06-07). See [L2 §Trust boundary protocol](../layers/L2-agents.md#trust-boundary-protocol).
 
 <!--
 Template:

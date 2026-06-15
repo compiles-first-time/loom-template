@@ -1,4 +1,4 @@
-# Project Self-Knowledge
+﻿# Project Self-Knowledge
 
 > Each agent has its own self-knowledge file in `agents/<name>/self-knowledge.md`. This file is the **project-level** self-knowledge — shared facts, project identity, working agreements.
 
@@ -8,10 +8,10 @@
 
 *(fill in when bootstrapping)*
 
-- **Name:** `<PROJECT_NAME>`
+- **Name:** `loom-template`
 - **Description:** *(one paragraph)*
-- **Initialized:** `<YYYY-MM-DD>`
-- **Author:** `<USER_NAME>`
+- **Initialized:** `2026-06-14`
+- **Author:** `14134`
 - **Data tier (default):** T0 (PUBLIC) unless otherwise noted
 
 ## Goals

@@ -1,10 +1,10 @@
-# CLAUDE.md — Project Index
+﻿# CLAUDE.md — Project Index
 
-> **Project:** `<PROJECT_NAME>` *(replace at bootstrap)*
+> **Project:** `loom-template` *(replace at bootstrap)*
 > **Description:** `<one-sentence description>` *(replace at bootstrap)*
 > **Loom version:** 0.2.0
 > **Kernel version:** v6
-> **Initialized:** `<YYYY-MM-DD>`
+> **Initialized:** `2026-06-14`
 
 This file is the **primary entry point** for Claude (chat) and Claude Code into this project. Keep it small — hard cap ~10 KB. Detail belongs in [`layers/`](./layers/), not here.
 
@@ -91,6 +91,7 @@ Always be ready to answer: **"What would raise confidence to 95%?"**
 - **Provenance tags `[source][confidence]`** on every non-trivial claim, per Kernel Rule 22.
 - **Token-cost awareness.** Per [LR-06](./constitution/local-rules.md#lr-06): before running multi-agent operations, estimate the cost and surface it to the architect. Prefer targeted agents over workflow fan-outs. Run a canary agent before fleet fan-out. Use the cheapest model sufficient for mechanical tasks. See [L5 §Token-cost-aware orchestration](./layers/L5-orchestration.md#token-cost-aware-orchestration) for the full discipline.
 - **RAG-aware guidance.** When the project involves retrieval (search, knowledge base, document QA), consult [L3 §Retrieval pipeline](./layers/L3-memory.md#retrieval-pipeline) for the default pipeline, confidence gating, reranker alternatives, GraphRAG decision tree, and iterative pattern cost guidance. All drawn from peer-reviewed evidence per [ADR-0037](./adr/0037-retrieval-pipeline-evidence-review.md).
+- **Workflow redesign is the investment.** Agent capability gains materialize only after workflow redesign, not just tool adoption — the productivity J-curve (Brynjolfsson et al., AEJ:Macro 2021 `[H]`). Budget for the dip; track workflow changes in lessons-learned with tag `[workflow-redesign]`.
 
 ## Pre-PR checklist (applies to loom-template itself)
 
@@ -133,7 +134,7 @@ Use `Bash` with a single-line `echo` redirect (POSIX) or `Add-Content` (PowerShe
 - **ADR-0039** — Observatory architecture (L9 real-time dashboard, zero deps, SSE transport).
 - **ADR-0040** — Observatory projection schemas (8 projections, additive-only evolution).
 - **ADR-0041** — Update Bus → Observatory integration (inbox parsing + decision write-back).
-**Recent ADRs (Accepted):** 0003–0010 (batch 01: retrieval + context engineering) · 0011–0016 (v0.2: enforcement runtime, subagents, bootstrap, lessons, doctor, Update Bus stub) · 0017–0030 (v0.3–v1.0: intent classifier, secrets, deploy, discovery, specialists, permissions, HR) · 0031 (handoff policy) · 0032–0033 (deploy terminal states, loom-spec maintenance) · 0034–0036 (v0.3.3: specialist invocation, provisioning specialist, credential collection) · 0037–0038 (v0.3.4: RAG research arc + LR-06, hook capture gap detection) · 0042 (credential-setup specialist) · 0043 (cwd-robust project-root resolution).
+**Recent ADRs (Accepted):** 0003–0010 (batch 01: retrieval + context engineering) · 0011–0016 (v0.2: enforcement runtime, subagents, bootstrap, lessons, doctor, Update Bus stub) · 0017–0030 (v0.3–v1.0: intent classifier, secrets, deploy, discovery, specialists, permissions, HR) · 0031 (handoff policy) · 0032–0033 (deploy terminal states, loom-spec maintenance) · 0034–0036 (v0.3.3: specialist invocation, provisioning specialist, credential collection) · 0037–0038 (v0.3.4: RAG research arc + LR-06, hook capture gap detection) · 0042 (credential-setup specialist) · 0043 (cwd-robust project-root resolution) · 0044 (verifier gates for agent tasks).
 
 ---
 

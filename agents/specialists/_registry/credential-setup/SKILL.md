@@ -4,6 +4,9 @@ summary: Acquires web-gated credentials via browser automation — account regis
 tier: bundled
 context_budget: 22000
 tools: [Read, Glob, Grep, Bash]
+verifier_type: human_gate
+verifier_note: "Two verifiers must both pass: (1) collect-credentials exits 0 with a validated attestation (exit_code); (2) the user explicitly approves each consequential step via the consent protocol (human_gate). Per ADR-0044."
+credential_scope: "keyring service resolved per platform playbook (e.g., loom-sovereign-forge for Alpaca). Narrowest scope sufficient for the target service."
 ---
 
 # credential-setup specialist
