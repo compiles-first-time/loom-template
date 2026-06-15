@@ -12,6 +12,7 @@
 #   bash scripts/collect-credentials.sh supabase
 #   bash scripts/collect-credentials.sh --rotate supabase
 #   bash scripts/collect-credentials.sh --list
+#   bash scripts/collect-credentials.sh --project-dir src supabase
 #
 # Sister script for Windows / PowerShell: scripts/collect-credentials.ps1
 
@@ -29,15 +30,17 @@ FORCE=0
 LIST=0
 NO_KEYRING=0
 PLATFORM=""
+PROJECT_DIR=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --rotate)     ROTATE=1; shift ;;
-        --force)      FORCE=1; shift ;;
-        --list)       LIST=1; shift ;;
-        --no-keyring) NO_KEYRING=1; shift ;;
+        --rotate)       ROTATE=1; shift ;;
+        --force)        FORCE=1; shift ;;
+        --list)         LIST=1; shift ;;
+        --no-keyring)   NO_KEYRING=1; shift ;;
+        --project-dir)  PROJECT_DIR="$2"; shift 2 ;;
         -h|--help)
-            sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'
+            sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'
             exit 0
             ;;
         --*)
@@ -49,6 +52,10 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+# Resolve project dir (for .env.local / node_modules in a subdir like src/).
+PROJECT_DIR="${PROJECT_DIR:-$REPO_ROOT}"
+export LOOM_KEYRING_PROJECT_DIR="$PROJECT_DIR"  # tells keyring.mjs where to resolve @napi-rs/keyring
 
 # ── Platform registry ───────────────────────────────────────────────────
 # Format per platform (newline-separated rows):
@@ -137,7 +144,7 @@ import('file://$REPO_ROOT/scripts/lib/keyring.mjs').then(async (m) => {
 }
 
 collect_alpaca() {
-    local env_file="$REPO_ROOT/.env.local"
+    local env_file="$PROJECT_DIR/.env.local"
     local validate_url="https://paper-api.alpaca.markets/v2/account"
 
     if [[ -f "$env_file" && $ROTATE -eq 0 && $FORCE -eq 0 ]]; then
@@ -239,7 +246,7 @@ fi
 get_service_key() {
     "$NODE" -e "
 import('file://$REPO_ROOT/scripts/lib/keyring.mjs').then(async (m) => {
-  const svc = await m.getServiceKey('$REPO_ROOT');
+  const svc = await m.getServiceKey('$PROJECT_DIR');
   process.stdout.write(svc);
 });
 " 2>/dev/null
@@ -255,8 +262,8 @@ if [[ $LIST -eq 1 ]]; then
     echo "Service key: $SVC"
     echo ""
     echo "Stored credentials (via .env.local keyring: references):"
-    if [[ -f "$REPO_ROOT/.env.local" ]]; then
-        grep -oE '^[A-Z_]+=keyring:' "$REPO_ROOT/.env.local" | sed 's/=keyring:$//' | sed 's/^/  - /' || echo "  (none)"
+    if [[ -f "$PROJECT_DIR/.env.local" ]]; then
+        grep -oE '^[A-Z_]+=keyring:' "$PROJECT_DIR/.env.local" | sed 's/=keyring:$//' | sed 's/^/  - /' || echo "  (none)"
     else
         echo "  (no .env.local found)"
     fi
@@ -300,7 +307,7 @@ echo ""
 
 # ── Collect each credential ────────────────────────────────────────────
 
-ENV_FILE="$REPO_ROOT/.env.local"
+ENV_FILE="$PROJECT_DIR/.env.local"
 
 # Custom collectors (platforms needing paired / combined validation)
 if [[ "$PLATFORM" == "alpaca" ]]; then
@@ -414,8 +421,8 @@ import('file://$REPO_ROOT/scripts/lib/keyring.mjs').then(async (m) => {
 
     # Update .env.local
     if [[ ! -f "$ENV_FILE" ]]; then
-        if [[ -f "$REPO_ROOT/.env.example" ]]; then
-            cp "$REPO_ROOT/.env.example" "$ENV_FILE"
+        if [[ -f "$PROJECT_DIR/.env.example" ]]; then
+            cp "$PROJECT_DIR/.env.example" "$ENV_FILE"
         else
             touch "$ENV_FILE"
         fi

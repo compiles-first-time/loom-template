@@ -1,4 +1,4 @@
-# `loom discover` — PowerShell wrapper.
+﻿# `loom discover` — PowerShell wrapper.
 # See scripts/lib/discover.mjs and adr/0025-discovery-scaffolding.md.
 
 param(

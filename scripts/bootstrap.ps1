@@ -1,4 +1,4 @@
-# Loom v0.1 manual bootstrap helper (PowerShell)
+﻿# Loom v0.1 manual bootstrap helper (PowerShell)
 #
 # At v0.1 the bootstrap is manual. This script performs the deterministic steps
 # (placeholder substitution, smoke checks) but leaves agent decisions to you.

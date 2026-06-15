@@ -1,4 +1,4 @@
-# Loom Observatory — launch script (Windows)
+﻿# Loom Observatory — launch script (Windows)
 # Usage: pwsh scripts/observatory.ps1
 
 $ErrorActionPreference = "Stop"

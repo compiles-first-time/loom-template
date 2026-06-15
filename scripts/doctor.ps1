@@ -1,4 +1,4 @@
-# `loom doctor` — PowerShell wrapper around the Node checker.
+﻿# `loom doctor` — PowerShell wrapper around the Node checker.
 # See scripts/lib/doctor.mjs and adr/0015-loom-doctor.md.
 
 param(

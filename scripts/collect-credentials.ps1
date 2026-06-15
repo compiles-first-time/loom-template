@@ -10,8 +10,9 @@
 # Usage:
 #   pwsh scripts/collect-credentials.ps1 <platform>
 #   pwsh scripts/collect-credentials.ps1 supabase
-#   pwsh scripts/collect-credentials.ps1 --rotate supabase   (re-prompt + overwrite)
-#   pwsh scripts/collect-credentials.ps1 --list              (show stored credential names, no values)
+#   pwsh scripts/collect-credentials.ps1 --rotate supabase          (re-prompt + overwrite)
+#   pwsh scripts/collect-credentials.ps1 --list                     (show stored credential names, no values)
+#   pwsh scripts/collect-credentials.ps1 --project-dir src supabase (app in a subdir, e.g. src/)
 #
 # Sister script for POSIX shells: scripts/collect-credentials.sh
 
@@ -21,11 +22,16 @@ param(
     [switch]$Rotate,
     [switch]$List,
     [switch]$Force,
-    [switch]$NoKeyring   # forces .env.local literal storage even if keyring is available
+    [switch]$NoKeyring,       # forces .env.local literal storage even if keyring is available
+    [string]$ProjectDir = ""  # target app dir when .env.local/node_modules live in a subdir (e.g. "src")
 )
 
 $ErrorActionPreference = "Stop"
 $repoRoot = (Get-Location).Path
+# $projectDir: where the app's .env.local / package.json / node_modules live.
+# Defaults to $repoRoot; set --project-dir for monorepo/subdir layouts (e.g. src/).
+$projectDir = if ($ProjectDir) { (Resolve-Path $ProjectDir -ErrorAction Stop).Path } else { $repoRoot }
+$env:LOOM_KEYRING_PROJECT_DIR = $projectDir   # tells keyring.mjs which dir to resolve @napi-rs/keyring from
 $nodePath = if ($env:NODE_PATH) { $env:NODE_PATH } else { (Get-Command node -ErrorAction SilentlyContinue).Source }
 if (-not $nodePath) {
     Write-Host "ERROR: node not found on PATH. Install Node 22+ first." -ForegroundColor Red
@@ -130,12 +136,14 @@ function Invoke-AlpacaPairedCollection {
         [string]$ServiceKey,
         [bool]$UseKeyring,
         [string]$RepoRoot,
+        [string]$ProjectDir,   # app dir for .env.local; falls back to RepoRoot if empty
         [string]$NodePath,
         [bool]$Rotate,
         [bool]$Force
     )
 
-    $envFile = "$RepoRoot/.env.local"
+    $appDir = if ($ProjectDir) { $ProjectDir } else { $RepoRoot }
+    $envFile = "$appDir/.env.local"
     if ((Test-Path $envFile) -and -not $Rotate -and -not $Force) {
         $hasKey = (Get-Content $envFile) | Where-Object { $_ -match "^ALPACA_KEY_ID=." }
         $hasSec = (Get-Content $envFile) | Where-Object { $_ -match "^ALPACA_SECRET_KEY=." }
@@ -209,7 +217,7 @@ import('file:///$($RepoRoot.Replace('\','/'))/scripts/lib/keyring.mjs').then(asy
         }
 
         if (-not (Test-Path $envFile)) {
-            if (Test-Path "$RepoRoot/.env.example") { Copy-Item "$RepoRoot/.env.example" $envFile }
+            if (Test-Path "$appDir/.env.example") { Copy-Item "$appDir/.env.example" $envFile }
             else { New-Item -Path $envFile -ItemType File -Force | Out-Null }
         }
         $content = Get-Content $envFile -Raw
@@ -278,7 +286,7 @@ if ($List) {
     }
     $listProbe = @"
 import('file:///$($repoRoot.Replace('\','/'))/scripts/lib/keyring.mjs').then(async (m) => {
-  const svc = await m.getServiceKey('$($repoRoot.Replace('\','/').Replace("'", "\\'"))');
+  const svc = await m.getServiceKey('$($projectDir.Replace('\','/').Replace("'", "\\'"))');
   process.stdout.write('SERVICE_KEY=' + svc);
 });
 "@
@@ -286,14 +294,14 @@ import('file:///$($repoRoot.Replace('\','/'))/scripts/lib/keyring.mjs').then(asy
     Write-Host "Service key: $svc"
     Write-Host ""
     Write-Host "Stored credentials are listed via .env.local 'keyring:<service>/<account>' references." -ForegroundColor DarkGray
-    if (Test-Path "$repoRoot/.env.local") {
-        Get-Content "$repoRoot/.env.local" | Where-Object { $_ -match "keyring:" } | ForEach-Object {
+    if (Test-Path "$projectDir/.env.local") {
+        Get-Content "$projectDir/.env.local" | Where-Object { $_ -match "keyring:" } | ForEach-Object {
             if ($_ -match "^([A-Z_]+)=keyring:") {
                 Write-Host ("  - {0}" -f $matches[1])
             }
         }
     } else {
-        Write-Host "  (no .env.local found)"
+        Write-Host "  (no .env.local found at $projectDir)"
     }
     exit 0
 }
@@ -322,7 +330,7 @@ $serviceKey = $null
 if ($useKeyring) {
     $svcProbe = @"
 import('file:///$($repoRoot.Replace('\','/'))/scripts/lib/keyring.mjs').then(async (m) => {
-  const svc = await m.getServiceKey('$($repoRoot.Replace('\','/').Replace("'", "\\'"))');
+  const svc = await m.getServiceKey('$($projectDir.Replace('\','/').Replace("'", "\\'"))');
   process.stdout.write(svc);
 });
 "@
@@ -337,7 +345,7 @@ Write-Host ""
 
 # Custom collectors (platforms needing paired / combined validation)
 if ($platformConfig.CustomCollector -eq "alpaca") {
-    Invoke-AlpacaPairedCollection -PlatformConfig $platformConfig -ServiceKey $serviceKey -UseKeyring ([bool]$useKeyring) -RepoRoot $repoRoot -NodePath $nodePath -Rotate ([bool]$Rotate) -Force ([bool]$Force)
+    Invoke-AlpacaPairedCollection -PlatformConfig $platformConfig -ServiceKey $serviceKey -UseKeyring ([bool]$useKeyring) -RepoRoot $repoRoot -ProjectDir $projectDir -NodePath $nodePath -Rotate ([bool]$Rotate) -Force ([bool]$Force)
     Write-Host ""
     Write-Host "Done. .env.local updated for platform '$Platform'." -ForegroundColor Green
     Write-Host "Run again with --rotate to refresh a credential." -ForegroundColor DarkGray
@@ -350,8 +358,8 @@ foreach ($cred in $platformConfig.Credentials) {
 
     # Check if already set; respect --force / --rotate
     $existingRef = $null
-    if (Test-Path "$repoRoot/.env.local") {
-        $line = (Get-Content "$repoRoot/.env.local") | Where-Object { $_ -match "^$($cred.EnvVar)=" } | Select-Object -First 1
+    if (Test-Path "$projectDir/.env.local") {
+        $line = (Get-Content "$projectDir/.env.local") | Where-Object { $_ -match "^$($cred.EnvVar)=" } | Select-Object -First 1
         if ($line) {
             $existingRef = $line -replace "^$($cred.EnvVar)=", ""
             if ($existingRef -and -not $Rotate -and -not $Force) {
@@ -450,10 +458,10 @@ import('file:///$($repoRoot.Replace('\','/'))/scripts/lib/keyring.mjs').then(asy
     }
 
     # Update .env.local
-    $envFile = "$repoRoot/.env.local"
+    $envFile = "$projectDir/.env.local"
     if (-not (Test-Path $envFile)) {
-        if (Test-Path "$repoRoot/.env.example") {
-            Copy-Item "$repoRoot/.env.example" $envFile
+        if (Test-Path "$projectDir/.env.example") {
+            Copy-Item "$projectDir/.env.example" $envFile
         } else {
             New-Item -Path $envFile -ItemType File -Force | Out-Null
         }

@@ -1,4 +1,4 @@
-# `loom skeleton-amend` — PowerShell wrapper.
+﻿# `loom skeleton-amend` — PowerShell wrapper.
 # See scripts/lib/skeleton-amend.mjs and adr/0026-discovery-gate.md.
 
 param(
