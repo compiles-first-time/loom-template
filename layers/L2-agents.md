@@ -93,6 +93,23 @@ Before an agent runs, its **assembled context** is checked by the Critic for:
 
 Failures **escalate**; they do not silently run.
 
+## Trust boundary protocol
+
+> **Canonical default per [LR-07](../constitution/local-rules.md#lr-07).** Grounded in: RFC 8693 OAuth 2.0 Token Exchange `[normative][H]`; HDP delegation provenance (arXiv:2604.04522 `[primary][M]`); OWASP LLM01:2025 Prompt Injection + LLM06:2025 Excessive Agency `[normative][H]`.
+
+A **trust boundary** is any hop where the acting principal changes or credential scope could expand: agent → external API, orchestrator → specialist with external side effects, or any call that crosses from a Loom-governed context into an external system.
+
+### Rules
+
+1. **Narrowest credential scope at each hop.** Each agent resolves its own scoped credential from the OS keyring at call time — not received from its caller. Per [LR-03](../constitution/local-rules.md#lr-03) and [LR-07](../constitution/local-rules.md#lr-07).
+2. **Log the scope used.** Each external API call emits a `tool_call` event via hooks. The credential is redacted; the tool name and endpoint are the audit trail for scope-at-each-hop.
+3. **Per-hop scoping is necessary but not sufficient.** A legitimately-scoped token can still be requested for a malicious purpose by a compromised upstream agent. Pair with: (a) input validation before acting on upstream instructions, (b) `constitution-service` escalation for high-privilege actions per [LR-02](../constitution/local-rules.md#lr-02).
+4. **SKILL.md declares `credential_scope:`** — the keyring service name and key scope the specialist uses. Enables the Critic to audit scope-at-each-hop during monthly reviews.
+
+### Reference implementation
+
+Sovereign Forge Alpaca integration (2026-06-07): the OS keyring holds scoped paper-trading keys (`loom-sovereign-forge` service). Each agent resolves its own credential from the keyring at call time; the orchestrator does not receive or forward the credential. This is the canonical Loom pattern for trust boundary scoping.
+
 ## Confidence calibration
 
 Every agent reports confidence on every claim — see thresholds in [`../CLAUDE.md`](../CLAUDE.md). Every agent must be able to answer **"what would raise this to 95%?"**

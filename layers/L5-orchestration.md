@@ -92,6 +92,31 @@ The runtime-specific command is **not** hard-coded into Loom. It lives in `tools
 
 These numbers are from the 2026-05-31 research arc. Use them to estimate before proposing expensive operations to the architect.
 
+## Verifier contract
+
+> **Canonical default per [ADR-0044](../adr/0044-verifier-gates-for-agent-tasks.md).** Grounded in: DeepSeek-R1/RLVR (arXiv:2501.12948 `[H]`), Lightman et al. process rewards (arXiv:2305.20050 `[H]`), τ-bench reliability ceiling (arXiv:2406.12045 `[H]`).
+
+Every agent task dispatched by the supervisor must declare an explicit verifier — a binary signal confirming correct completion. Tasks without verifiers compound errors silently and cannot be caught by the progress ledger.
+
+### Verifier types (declare one in SKILL.md `verifier_type:`)
+
+| Value | Meaning | Example |
+|---|---|---|
+| `exit_code` | Terminal command exits 0 on success | `collect-credentials`, any script-backed specialist |
+| `schema_check` | Output conforms to a declared schema | ADR frontmatter, manifest.yaml, event-log record |
+| `test_suite` | A test suite passes | `npm test`, eval-suite rubric |
+| `human_gate` | A human explicitly approves before task closes | credential-setup consent protocol, consequential ADRs |
+| `surrogate` | Proxy metric approximating success | Position-size ≤5% NAV, drawdown limit (trading) |
+
+A task may declare more than one (e.g., `exit_code + human_gate`); both must pass.
+
+### Rules
+
+1. **Every SKILL.md must declare `verifier_type:`** in its frontmatter. `loom doctor` soft-warns on missing files (`skill-verifier-declared` check).
+2. **Surrogate verifiers count** for domains where ground truth is not available at runtime. Declare the surrogate metric explicitly — an undeclared surrogate is not a verifier.
+3. **Open-ended instructions without a declared verifier are a doc violation.** "Manage the portfolio" → rejected. "Review open positions, emit a recommendation, human approves" → accepted (`human_gate`).
+4. **The verifier IS the exit condition** for iterative tasks, per [LR-06](../constitution/local-rules.md#lr-06). Declaring both is not redundant — they are the same concept at different levels of abstraction.
+
 ## Failure patterns to avoid
 
 - *"A major retailer spent 18 months building a perfect system that was obsolete on launch"* — countered by incremental v0.1 → v0.2 cycles
