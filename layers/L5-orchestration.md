@@ -117,6 +117,34 @@ A task may declare more than one (e.g., `exit_code + human_gate`); both must pas
 3. **Open-ended instructions without a declared verifier are a doc violation.** "Manage the portfolio" → rejected. "Review open positions, emit a recommendation, human approves" → accepted (`human_gate`).
 4. **The verifier IS the exit condition** for iterative tasks, per [LR-06](../constitution/local-rules.md#lr-06). Declaring both is not redundant — they are the same concept at different levels of abstraction.
 
+## Iterative improvement discipline
+
+> **Grounded in:** scientific method applied to agent loops (practitioner convergence across auto-research experiments and agentic trading systems `[practitioner][M]`). Validated by fractal-search RSI experiments showing agents plateau on local optima without structural intervention (arXiv:2501.12948 §3.2 `[primary][H]`).
+
+When an agent loop is tasked with improving a metric over multiple cycles (trading strategy, model performance, eval score, retrieval quality), apply these two rules:
+
+### Single-variable discipline (scientific method)
+
+**Change one parameter per cycle.** Hold everything else constant. Establish a new baseline only when the change demonstrably improves the target metric. If multiple variables change simultaneously and the metric improves, you cannot attribute the gain — and the system cannot learn from it.
+
+- Log every cycle to a structured ledger (`memory/strategy-log/` or equivalent): what changed, what the metric was before, what it is after.
+- "Baseline" is the last configuration that produced a measured improvement, not the initial configuration.
+- Each SKILL.md for an iterative-improvement specialist must declare `iteration_log:` (path to the ledger) in frontmatter.
+
+### Exploration forcing
+
+**Every N cycles without metric improvement, force a structurally different approach.** Agents naturally exploit known-good regions of the solution space (local minimum). Without an explicit exploration budget, they will hyperfocus on fine-tuning the same algorithm indefinitely — a plateau masquerading as convergence.
+
+| Plateau length | Required action |
+|---|---|
+| N = 3 cycles | Try a different hyperparameter region within the current approach |
+| N = 5 cycles | Try a structurally different approach (different algorithm, different data source, different model architecture) |
+| N = 10 cycles | Escalate to human — the agent has exhausted its known solution space |
+
+The exploration budget is an **exit condition** and must be declared per [LR-06](../constitution/local-rules.md#lr-06). Example: `exit_condition: "10 cycles without improvement OR Sharpe ≥ 2.0, whichever comes first"`.
+
+**Anti-pattern to avoid:** the agent reports "no further improvements possible" before exhausting the exploration budget. This is almost always false — it means the agent has found a local minimum, not a global one. Require explicit exploration attempts before accepting a plateau as final.
+
 ## Failure patterns to avoid
 
 - *"A major retailer spent 18 months building a perfect system that was obsolete on launch"* — countered by incremental v0.1 → v0.2 cycles

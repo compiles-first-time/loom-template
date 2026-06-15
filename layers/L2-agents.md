@@ -110,6 +110,40 @@ A **trust boundary** is any hop where the acting principal changes or credential
 
 Sovereign Forge Alpaca integration (2026-06-07): the OS keyring holds scoped paper-trading keys (`loom-sovereign-forge` service). Each agent resolves its own credential from the keyring at call time; the orchestrator does not receive or forward the credential. This is the canonical Loom pattern for trust boundary scoping.
 
+## Multi-agent consensus pattern
+
+> **Grounded in:** multi-agent signal aggregation in agentic trading systems (practitioner convergence `[practitioner][M]`). Validated by insider-trading surveillance research showing independent-source diversity is the key variable — same source queried by multiple agents does not count as independent consensus.
+
+When multiple agents must agree before a consequential action executes, use a **majority-vote consensus layer** rather than having the orchestrator aggregate directly.
+
+### Structure
+
+```
+N scouts (each pulling a DISTINCT data source)
+    ↓  (individual signals)
+Consensus agent (votes ≥ threshold → proceed)
+    ↓  (approved signal or silence)
+Action agent (executes only on approved signal)
+```
+
+### Rules
+
+1. **Each scout must pull a structurally distinct data source.** Two scouts reading the same API with different query parameters do not constitute independent signal. Diversity at the source level is the property that makes consensus meaningful.
+2. **Default threshold: ⌈N/2⌉ + 1 (simple majority plus one).** For 5 scouts: 3 of 5. For 3 scouts: 2 of 3. A stricter threshold (e.g., 4 of 5) reduces false positives at the cost of sensitivity.
+3. **Silence is the safe default.** If the consensus threshold is not met, the consensus agent emits nothing. The action agent never acts on ambiguous signal.
+4. **Signal magnitude from consensus:** direction = majority vote; magnitude (position size, confidence, etc.) = mean of agreeing scouts' scores, not the full pool's mean.
+5. **Each scout declares `data_source:` in SKILL.md frontmatter** — the Critic can then audit source diversity before dispatch.
+
+### Anti-patterns
+
+- **Echo chamber**: all scouts are implemented as the same agent with the same prompt, just re-run N times. Produces correlated noise, not independent signal.
+- **Aggregator as judge**: the orchestrator accumulates all N outputs and decides itself, without a dedicated consensus agent. Loses the audit trail of who agreed and why.
+- **Threshold drift**: consensus threshold lowered under time pressure ("just 2 of 5 this time"). Hardcode the threshold in the consensus agent's SKILL.md.
+
+### Reference implementation
+
+Agentum investment platform (bootstrap prompt at `docs/bootstrap-prompt-investment-platform.md`): 5 scout agents (SEC Form 4, 13F filings, Fed speech sentiment, on-chain whale movements, portfolio drift), consensus agent requires 3 of 5 before generating a trade signal. Signal = `P(bull) − P(bear)`; sign = direction, magnitude = conviction.
+
 ## Confidence calibration
 
 Every agent reports confidence on every claim — see thresholds in [`../CLAUDE.md`](../CLAUDE.md). Every agent must be able to answer **"what would raise this to 95%?"**
