@@ -75,6 +75,36 @@ When invoked, returns:
 - Failure-mode IDs (SEC-EX-*) the design guards against
 - **Never** in the return: a credential value, even redacted
 
+## Keyring resolver patterns (Loom built-in)
+
+Loom provides two built-in helpers for resolving `keyring:<service>/<account>` refs at runtime. This specialist references them when advising on OS-keyring credential storage.
+
+### Async path — `loadEnv()` (preferred for Node entry points)
+
+```js
+import { loadEnv } from "./scripts/lib/load-env.mjs";
+await loadEnv({ root: projectDir }); // reads .env.local, resolves keyring: refs into process.env
+```
+
+`loadEnv` reads `.env.local`, detects any `keyring:<service>/<account>` values, and resolves them via `@napi-rs/keyring` before they land in `process.env`. Zero credential leakage — the resolved value is written directly into the environment, never into a file or tool arg. Use this in: Next.js `instrumentation.ts`, plain Node entry files, any async startup path.
+
+### Sync path — `resolveKeyringRefSync()` (for synchronous config loaders)
+
+```js
+import { resolveKeyringRefSync } from "./scripts/lib/keyring.mjs";
+const apiKey = resolveKeyringRefSync(process.env.MY_KEY, projectDir);
+// process.env.MY_KEY may be "keyring:loom-sovereign-forge/ANTHROPIC_API_KEY"
+// resolveKeyringRefSync returns the live secret; non-keyring values pass through unchanged
+```
+
+`resolveKeyringRefSync` is the synchronous counterpart. Reference implementation: `sovereign-forge/src/config/index.js`. It resolves `keyring:<service>/<account>` strings from the OS keyring; if the value is not a keyring ref, it returns it unchanged.
+
+### `LOOM_KEYRING_PROJECT_DIR` env var
+
+In subdir project layouts where `node_modules` is not at the repo root, set `LOOM_KEYRING_PROJECT_DIR` to the directory containing the project's `node_modules` before calling either helper. This controls how `@napi-rs/keyring` is resolved. Both helpers respect this env var; the sync helper also accepts `projectDir` as a second argument (see function signature in `scripts/lib/keyring.mjs`).
+
+**Full implementation:** `scripts/lib/keyring.mjs` (`resolveKeyringRefSync` at line 218, `getServiceKey` for deriving `loom-<name>` service names); `scripts/lib/load-env.mjs` (async canonical path). Operates per [LR-07](../../../../constitution/local-rules.md#lr-07): narrowest credential scope, resolved at call time, never forwarded.
+
 ## Decline triggers
 
 - **HSM / custom KMS integration** → escalate to EAC. Hardware-backed key management is project-specific and needs a deeper research pass.
