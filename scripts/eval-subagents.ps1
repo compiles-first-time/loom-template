@@ -1,4 +1,4 @@
-# `loom eval-subagents` — PowerShell wrapper.
+﻿# `loom eval-subagents` — PowerShell wrapper.
 # See scripts/lib/eval-subagents.mjs and adr/0021-subagent-evals.md.
 
 param(

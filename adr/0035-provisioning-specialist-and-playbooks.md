@@ -1,6 +1,6 @@
 # ADR-0035: Provisioning specialist + playbook schema + staleness validation
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-05-25
 **Author:** Architect (Nick) — surfaced by Ravenwise lesson + 2026-05-25 architecture-design conversation; drafted by Claude
 **Confidence:** [H]

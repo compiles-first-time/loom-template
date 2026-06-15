@@ -1,4 +1,4 @@
-# `loom update-bus tick` — PowerShell wrapper around the Node stub.
+﻿# `loom update-bus tick` — PowerShell wrapper around the Node stub.
 # v0.2 no-op; v0.3 polls real feeds. See scripts/lib/update-bus-tick.mjs and
 # adr/0016-update-bus-stub.md.
 

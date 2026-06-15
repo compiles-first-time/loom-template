@@ -1,4 +1,4 @@
-# `loom discover-runtime` — PowerShell wrapper.
+﻿# `loom discover-runtime` — PowerShell wrapper.
 # See scripts/lib/discover-runtime.mjs and adr/0020-runtime-discovery.md.
 
 param(

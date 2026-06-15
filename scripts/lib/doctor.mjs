@@ -40,6 +40,7 @@ async function main() {
   await checkHandoffFreshness();
   await checkPlaybookFreshness();
   await checkSkeleton();
+  await checkPs1Bom();
 
   report();
 }
@@ -409,6 +410,34 @@ async function checkSkeleton() {
   const missing = required.filter((rel) => !existsSync(path.join(ROOT, rel)));
   if (missing.length === 0) hard("skeleton-intact", true, "core files present");
   else hard("skeleton-intact", false, `missing: ${missing.join(", ")}`);
+}
+
+async function checkPs1Bom() {
+  // Soft check (R2): flag any .ps1 in scripts/ containing non-ASCII bytes without a UTF-8 BOM.
+  // Files that are pure ASCII parse fine under PS 5.1 regardless; non-ASCII without BOM fail.
+  const scriptsDir = path.join(ROOT, "scripts");
+  if (!existsSync(scriptsDir)) return soft("ps1-bom", true, "no scripts/ directory (skipped)");
+  const files = (await fs.readdir(scriptsDir)).filter((f) => f.endsWith(".ps1"));
+  if (files.length === 0) return soft("ps1-bom", true, "no .ps1 files in scripts/ (skipped)");
+
+  const flagged = [];
+  for (const f of files) {
+    const buf = await fs.readFile(path.join(scriptsDir, f));
+    const hasBom = buf.length >= 3 && buf[0] === 0xef && buf[1] === 0xbb && buf[2] === 0xbf;
+    if (hasBom) continue;
+    const hasNonAscii = buf.some((b) => b > 127);
+    if (hasNonAscii) flagged.push(f);
+  }
+
+  if (flagged.length === 0) {
+    soft("ps1-bom", true, `${files.length} .ps1 file(s) checked — no non-ASCII bytes without BOM`);
+  } else {
+    soft(
+      "ps1-bom",
+      false,
+      `${flagged.length} .ps1 file(s) have non-ASCII bytes but no UTF-8 BOM (will fail under PS 5.1): ${flagged.join(", ")}. Fix: prepend EF BB BF.`
+    );
+  }
 }
 
 // ── Report ───────────────────────────────────────────────────────────────

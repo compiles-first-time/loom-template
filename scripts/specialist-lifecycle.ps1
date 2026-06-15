@@ -1,4 +1,4 @@
-# `loom specialist-lifecycle` — PowerShell wrapper.
+﻿# `loom specialist-lifecycle` — PowerShell wrapper.
 # See scripts/lib/specialist-lifecycle.mjs and adr/0030-specialist-lifecycle.md.
 
 param(

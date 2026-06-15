@@ -1,4 +1,4 @@
-# `loom hr-work-graph` — PowerShell wrapper.
+﻿# `loom hr-work-graph` — PowerShell wrapper.
 # See scripts/lib/hr-work-graph.mjs and adr/0029-hr-work-graph.md.
 
 param(

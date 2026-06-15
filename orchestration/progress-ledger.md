@@ -18,3 +18,14 @@
 - `confidence` follows the calibration in [`../CLAUDE.md`](../CLAUDE.md): `<60 / 60–80 / 80–95 / >95`
 - `valid_from` / `valid_to` form the bi-temporal range — when a row is superseded, `valid_to` is stamped and a new row is added
 - `blockers` is a free-text list; if non-empty, status in the task ledger should be `blocked`
+
+---
+
+## Session log
+
+> Closing-the-books checkpoint per [L5](../layers/L5-orchestration.md). One row per Claude Code session, written by the Stop hook.
+
+| session_id | started | ended | tool_calls | errors | note |
+|---|---|---|---|---|---|
+| 64b7b6f5-04c9-49d8-8e18-64bb1ccf2144 | 2026-06-14T23:20:54.792Z | 2026-06-14T23:22:22.885Z | 7 | 0 | — |
+| 64b7b6f5-04c9-49d8-8e18-64bb1ccf2144 | 2026-06-15T00:04:56.807Z | 2026-06-15T00:07:25.715Z | 18 | 0 | — |

@@ -1,4 +1,4 @@
-# `loom deploy` — PowerShell wrapper.
+﻿# `loom deploy` — PowerShell wrapper.
 # See scripts/lib/deploy.mjs and adr/0019-deploy-primitive.md.
 
 param(

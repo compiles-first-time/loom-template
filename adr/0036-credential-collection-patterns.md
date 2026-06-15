@@ -1,6 +1,6 @@
 # ADR-0036: Credential collection patterns (`@napi-rs/keyring` primary + `.env.local` fallback)
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-05-25
 **Author:** Architect (Nick) — chose OS keyring direction in 2026-05-25 conversation; drafted by Claude
 **Confidence:** [H]

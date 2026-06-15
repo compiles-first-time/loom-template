@@ -1,4 +1,4 @@
-# Loom playbook re-validation — Windows / PowerShell.
+﻿# Loom playbook re-validation — Windows / PowerShell.
 #
 # Per ADR-0035 §C layer 3. Sister script to validate-playbook.sh; same purpose.
 

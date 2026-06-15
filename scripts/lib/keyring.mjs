@@ -36,7 +36,8 @@ async function loadKeyring() {
     // file path (not a directory) so Node treats it as the importer location;
     // it doesn't have to actually exist — only the directory's resolution
     // chain matters.
-    const anchor = path.join(process.cwd(), "noop.js");
+    const anchorDir = process.env.LOOM_KEYRING_PROJECT_DIR || process.cwd();
+    const anchor = path.join(anchorDir, "noop.js");
     const requireFromUserProject = createRequire(anchor);
     const resolvedPath = requireFromUserProject.resolve("@napi-rs/keyring");
     _keyringModule = await import(pathToFileURL(resolvedPath).href);
@@ -199,6 +200,54 @@ export async function getServiceKey(projectRoot = process.cwd()) {
 
   // Last resort — use the directory name.
   return `loom-${path.basename(projectRoot)}`;
+}
+
+// Synchronous keyring-ref resolver — for entry points that cannot be async.
+// Per ADR-0036 §C + R3: use this when your config loader runs synchronously
+// (e.g., a plain CJS require chain). For async entry points, use loadEnv()
+// from scripts/lib/load-env.mjs instead — it resolves keyring: refs into
+// process.env non-destructively at startup.
+//
+// Usage:
+//   import { resolveKeyringRefSync } from "./scripts/lib/keyring.mjs";
+//   const apiKey = resolveKeyringRefSync(process.env.MY_KEY, __dirname);
+//
+// Literal values (non-keyring: strings) pass through unchanged.
+// Throws KEYRING_NOT_INSTALLED, KEYRING_ENTRY_MISSING, or KEYRING_BACKEND_ERROR.
+// LR-03 invariant: never log the return value.
+export function resolveKeyringRefSync(ref, projectDir = process.cwd()) {
+  const m = String(ref || "").match(/^keyring:([^/]+)\/(.+)$/);
+  if (!m) return ref; // literal value — pass through
+  const [, service, account] = m;
+
+  let Entry;
+  try {
+    const anchor = path.join(projectDir, "noop.js");
+    Entry = createRequire(anchor)("@napi-rs/keyring").Entry;
+  } catch (e) {
+    const err = new Error(
+      `resolveKeyringRefSync: @napi-rs/keyring not found.\nInstall in your project: npm install --save-optional @napi-rs/keyring\nResolved from: ${projectDir}\nUnderlying: ${e.message}`
+    );
+    err.code = "KEYRING_NOT_INSTALLED";
+    throw err;
+  }
+
+  let password;
+  try {
+    password = new Entry(service, account).getPassword();
+  } catch (e) {
+    const err = new Error(`resolveKeyringRefSync: keyring read failed for ${service}/${account}: ${e.message}`);
+    err.code = "KEYRING_BACKEND_ERROR";
+    throw err;
+  }
+  if (password == null) {
+    const err = new Error(
+      `resolveKeyringRefSync: no keyring entry for ${service}/${account}. Re-run: pwsh scripts/collect-credentials.ps1 <platform>`
+    );
+    err.code = "KEYRING_ENTRY_MISSING";
+    throw err;
+  }
+  return password;
 }
 
 // ─── helpers ─────────────────────────────────────────────────────────────

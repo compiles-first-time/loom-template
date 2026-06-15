@@ -1,4 +1,4 @@
-# `loom secrets-doctor` — PowerShell wrapper.
+﻿# `loom secrets-doctor` — PowerShell wrapper.
 # See scripts/lib/secrets-doctor.mjs and adr/0018-secrets-handling.md.
 
 param(
