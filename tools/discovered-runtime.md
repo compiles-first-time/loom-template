@@ -4,7 +4,7 @@
 
 > Manual additions: write below the `<!-- end-of-generated -->` marker. The auto-generated section above will be overwritten on next run; your manual section will be preserved.
 
-Generated: 2026-06-14T23:20:55.049Z
+Generated: 2026-06-15T13:31:29.062Z
 
 ## MCP servers available to this Claude Code installation
 
@@ -54,6 +54,7 @@ to update the sentinel and suppress this nag.
 <!-- end-of-generated -->
 
 ## Manual additions
+
 
 
 _(add marketplace MCPs / project-specific runtime details below)_

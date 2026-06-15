@@ -1,4 +1,4 @@
-# Runtime configuration — used by scripts/deploy.{sh,ps1}.
+﻿# Runtime configuration — used by scripts/deploy.{sh,ps1}.
 #
 # Per ADR-0019, extended by ADR-0032 §A (wait-for-deploy integration).
 # The deploy primitive reads this file to know what command to run, what
@@ -8,7 +8,7 @@
 # Stamped by scripts/bootstrap.{sh,ps1}; fill in the values for your runtime.
 
 version: "1.0"
-project: "<PROJECT_NAME>"
+project: "loom-template"
 
 deploy:
   # The command to run. Examples by runtime:

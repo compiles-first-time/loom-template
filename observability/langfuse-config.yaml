@@ -1,10 +1,10 @@
-# Langfuse Configuration
+﻿# Langfuse Configuration
 #
 # Self-hosted Langfuse for tracing, evals, and OTel GenAI ingest.
 # See ../layers/L6-observability.md for design rationale.
 
 version: "1.0"
-project: "<PROJECT_NAME>"
+project: "loom-template"
 
 # Langfuse server (default: local self-hosted)
 server:
@@ -16,7 +16,7 @@ server:
 otel:
   exporter: "otlp"
   endpoint: "http://localhost:4318/v1/traces"
-  service_name: "<PROJECT_NAME>"
+  service_name: "loom-template"
 
 # Required trace fields (per Kernel Rule 22)
 required_fields:

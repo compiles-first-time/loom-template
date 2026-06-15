@@ -1,4 +1,4 @@
-# Trajectory Kernel V6 — Constitutional Substrate
+﻿# Trajectory Kernel V6 — Constitutional Substrate
 
 > **Status:** PLACEHOLDER — drop the canonical Kernel V6 text in this file.
 > **Provenance:** Co-authored by Nick + Claude (2025); referenced as `[kernel][H]` throughout [`loom-spec.md`](../loom-spec.md).
@@ -47,7 +47,7 @@ The **Constitution Service** agent ([`../agents/constitution-service/`](../agent
 
 ## Override authority
 
-Override-authority is currently held by: **`<USER_NAME>`** *(replace at bootstrap)*.
+Override-authority is currently held by: **`14134`** *(replace at bootstrap)*.
 
 Kernel amendments affecting Rules 1–8 require explicit signed approval from the override authority. At v0.1 this is honor-system; cryptographic signing is on the v0.2 roadmap (see §H Q10 of the spec).
 

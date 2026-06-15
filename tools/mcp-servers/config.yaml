@@ -1,4 +1,4 @@
-# MCP Server Configuration
+﻿# MCP Server Configuration
 #
 # Configures the Model Context Protocol servers this project exposes to its agents.
 # See ../../layers/L4-tooling.md for design rationale.
@@ -7,7 +7,7 @@
 # secrets manager and reference them as ${VAR_NAME}.
 
 version: "1.0"
-project: "<PROJECT_NAME>"
+project: "loom-template"
 
 # Required Loom default set
 servers:

@@ -1,6 +1,6 @@
-# AGENTS.md — Agent Roster Quick Reference
+﻿# AGENTS.md — Agent Roster Quick Reference
 
-> **Project:** `<PROJECT_NAME>`
+> **Project:** `loom-template`
 > **Agent set:** `full-6` *(or `minimal-3`; see §E.2 of the spec)*
 > **Hard cap:** ~5 KB. Detail goes in each agent's `agents/<name>/SKILL.md`.
 
