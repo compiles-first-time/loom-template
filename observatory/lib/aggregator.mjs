@@ -1,7 +1,8 @@
 import { redact } from "./redactor.mjs";
 
 export class Aggregator {
-  constructor() {
+  constructor({ costRates = {} } = {}) {
+    this._costRates = costRates;
     this._sseClients = new Set();
     this.state = {
       sessions: { active: [], history: [] },
@@ -25,12 +26,30 @@ export class Aggregator {
   ingestEvent(record) {
     const safe = redact(record);
     const handler = EVENT_HANDLERS[safe.event_type];
-    if (handler) handler(this.state, safe);
+    if (handler) handler(this.state, safe, this._costRates);
     this._broadcast("delta", { event_type: safe.event_type, payload: safe });
   }
 
   ingestFileChange(filePath) {
     this._broadcast("file_changed", { path: filePath });
+  }
+
+  ingestUpdateBusItem(item) {
+    const idx = this.state.update_bus.inbox.findIndex((i) => i.id === item.id);
+    if (idx >= 0) {
+      this.state.update_bus.inbox[idx] = item;
+    } else {
+      this.state.update_bus.inbox.push(item);
+    }
+    this._broadcast("delta", { event_type: "update_bus_item", payload: item });
+  }
+
+  updateUpdateBusDecision(id, decision) {
+    const item = this.state.update_bus.inbox.find((i) => i.id === id);
+    if (item) {
+      item.user_decision = decision;
+      this._broadcast("delta", { event_type: "update_bus_decision", payload: { id, decision } });
+    }
   }
 
   _broadcast(event, data) {
@@ -39,6 +58,18 @@ export class Aggregator {
       try { client.write(msg); } catch { this._sseClients.delete(client); }
     }
   }
+}
+
+function calcUsd(inputTokens, outputTokens, model, costRates) {
+  let rates = model ? costRates[model] : undefined;
+  if (!rates && model) {
+    for (const [k, v] of Object.entries(costRates)) {
+      if (model.includes(k) || k.includes(model)) { rates = v; break; }
+    }
+  }
+  if (!rates) rates = costRates["claude-sonnet-4"] || null;
+  if (!rates) return 0;
+  return (inputTokens / 1_000_000) * rates.input + (outputTokens / 1_000_000) * rates.output;
 }
 
 const EVENT_HANDLERS = {
@@ -163,16 +194,18 @@ const EVENT_HANDLERS = {
     });
   },
 
-  loop_cost_summary(state, ev) {
+  loop_cost_summary(state, ev, costRates = {}) {
     const sid = ev.session_id || "unknown";
     if (!state.cost.by_session[sid]) {
-      state.cost.by_session[sid] = { input_tokens: 0, output_tokens: 0, loops: [] };
+      state.cost.by_session[sid] = { input_tokens: 0, output_tokens: 0, estimated_usd: 0, loops: [] };
     }
     const s = state.cost.by_session[sid];
     const inp = ev.estimated_input_tokens || 0;
     const out = ev.estimated_output_tokens || 0;
+    const usd = calcUsd(inp, out, ev.model, costRates);
     s.input_tokens += inp;
     s.output_tokens += out;
+    s.estimated_usd += usd;
     s.loops.push({
       loop_id: ev.loop_id,
       pattern: ev.pattern,
@@ -180,11 +213,13 @@ const EVENT_HANDLERS = {
       agents: ev.agent_count,
       input_tokens: inp,
       output_tokens: out,
+      estimated_usd: usd,
       wall_clock_ms: ev.wall_clock_ms,
       exit_reason: ev.exit_reason,
     });
     state.cost.cumulative.input_tokens += inp;
     state.cost.cumulative.output_tokens += out;
+    state.cost.cumulative.estimated_usd += usd;
   },
 
   subagent_suggestion(state, ev) {

@@ -17,9 +17,10 @@ import {
   warn,
   PROJECT_ROOT,
 } from "./_lib.mjs";
-import { spawnSync } from "node:child_process";
+import { spawnSync, spawn } from "node:child_process";
 import path from "node:path";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import net from "node:net";
 
 const event = await readStdinJson();
 
@@ -133,6 +134,55 @@ if (placeholders.length > 0) {
       );
     } else {
       warn(`auto-bootstrap stamped project as "${projectName}" (user="${userName}")`);
+    }
+  }
+}
+
+// Observatory auto-launch (L9, ADR-0039)
+// Reads auto_start from observatory/config.yaml; probes the port; spawns the
+// server as a detached background process if not already running.
+{
+  const configPath = path.join(PROJECT_ROOT, "observatory", "config.yaml");
+  const serverPath = path.join(PROJECT_ROOT, "observatory", "server.mjs");
+
+  if (existsSync(configPath) && existsSync(serverPath)) {
+    let autoStart = true;
+    let port = 4040;
+    try {
+      const text = readFileSync(configPath, "utf8");
+      const autoMatch = text.match(/auto_start:\s*(true|false)/);
+      const portMatch = text.match(/port:\s*(\d+)/);
+      if (autoMatch) autoStart = autoMatch[1] === "true";
+      if (portMatch) port = parseInt(portMatch[1], 10);
+    } catch { /* use defaults */ }
+
+    const listening = await new Promise((resolve) => {
+      const sock = net.createConnection({ port, host: "127.0.0.1" });
+      sock.setTimeout(300);
+      sock.on("connect", () => { sock.destroy(); resolve(true); });
+      sock.on("error", () => { sock.destroy(); resolve(false); });
+      sock.on("timeout", () => { sock.destroy(); resolve(false); });
+    });
+
+    if (listening) {
+      warn(`[observatory] already running → http://127.0.0.1:${port}`);
+    } else if (autoStart) {
+      const child = spawn("node", [serverPath], {
+        detached: true,
+        stdio: "ignore",
+        cwd: PROJECT_ROOT,
+        env: { ...process.env, LOOM_PROJECT_ROOT: PROJECT_ROOT },
+      });
+      child.unref();
+      appendEvent(
+        mechanicalRecord("observatory_auto_started", {
+          session_id: event.session_id || process.env.CLAUDE_SESSION_ID || `local-${Date.now()}`,
+          port,
+        })
+      );
+      warn(`[observatory] started → http://127.0.0.1:${port}  (set auto_start: false in observatory/config.yaml to disable)`);
+    } else {
+      warn(`[observatory] not running — start with: pwsh scripts/observatory.ps1  or  bash scripts/observatory.sh`);
     }
   }
 }

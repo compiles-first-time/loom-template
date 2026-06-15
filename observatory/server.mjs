@@ -12,22 +12,40 @@ import { createRouter } from "./lib/router.mjs";
 const PROJECT_ROOT = process.env.LOOM_PROJECT_ROOT || process.cwd();
 const CONFIG_PATH = path.join(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1")), "config.yaml");
 
+function parseCostRates(text) {
+  const rates = {};
+  const re = /^\s+([\w.-]+):\s*\{\s*input:\s*([\d.]+),\s*output:\s*([\d.]+)\s*\}/gm;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    rates[m[1]] = { input: parseFloat(m[2]), output: parseFloat(m[3]) };
+  }
+  return rates;
+}
+
 function loadConfig() {
-  const defaults = { server: { port: 4040, open_browser: true }, replay: { days: 7 }, theme: "dark" };
+  const defaults = {
+    server: { port: 4040, open_browser: true, auto_start: true },
+    replay: { days: 7 },
+    theme: "dark",
+    cost_rates: {},
+  };
   if (!existsSync(CONFIG_PATH)) return defaults;
   try {
     const text = readFileSync(CONFIG_PATH, "utf8");
     const port = text.match(/port:\s*(\d+)/);
     const open = text.match(/open_browser:\s*(true|false)/);
+    const autoStart = text.match(/auto_start:\s*(true|false)/);
     const days = text.match(/days:\s*(\d+)/);
     const theme = text.match(/theme:\s*(\w+)/);
     return {
       server: {
         port: port ? parseInt(port[1], 10) : defaults.server.port,
         open_browser: open ? open[1] === "true" : defaults.server.open_browser,
+        auto_start: autoStart ? autoStart[1] === "true" : defaults.server.auto_start,
       },
       replay: { days: days ? parseInt(days[1], 10) : defaults.replay.days },
       theme: theme ? theme[1] : defaults.theme,
+      cost_rates: parseCostRates(text),
     };
   } catch {
     return defaults;
@@ -35,9 +53,9 @@ function loadConfig() {
 }
 
 const config = loadConfig();
-const aggregator = new Aggregator();
+const aggregator = new Aggregator({ costRates: config.cost_rates });
 const watcher = new FileWatcher();
-const router = createRouter(aggregator);
+const router = createRouter(aggregator, { projectRoot: PROJECT_ROOT });
 
 const EVENT_LOG_DIR = path.join(PROJECT_ROOT, "memory", "event-log");
 const ORCHESTRATION_DIR = path.join(PROJECT_ROOT, "orchestration");
@@ -45,6 +63,7 @@ const UPDATE_BUS_INBOX = path.join(PROJECT_ROOT, "update-bus", "inbox");
 
 watcher.onJsonlAppend((record) => aggregator.ingestEvent(record));
 watcher.onFileChange((filePath) => aggregator.ingestFileChange(filePath));
+watcher.onUpdateBusItem((item) => aggregator.ingestUpdateBusItem(item));
 
 const server = http.createServer(router);
 
@@ -53,6 +72,7 @@ async function start() {
   console.log(`[observatory] replaying ${config.replay.days} days of event log...`);
 
   await watcher.replayJsonlFiles(EVENT_LOG_DIR, config.replay.days);
+  await watcher.replayUpdateBusInbox(UPDATE_BUS_INBOX);
 
   const s = aggregator.state;
   const eventCount =
@@ -61,11 +81,12 @@ async function start() {
     s.failures.errors.length +
     s.deploys.history.length +
     s.compliance.destructive_ops.length;
-  console.log(`[observatory] replayed state: ${eventCount} events ingested`);
+  const inboxCount = s.update_bus.inbox.length;
+  console.log(`[observatory] replayed state: ${eventCount} events, ${inboxCount} update-bus items`);
 
   watcher.watchJsonlDir(EVENT_LOG_DIR);
   watcher.watchDir(ORCHESTRATION_DIR, (f) => f.endsWith(".json") || f.endsWith(".md"));
-  watcher.watchDir(UPDATE_BUS_INBOX, (f) => f.endsWith(".md"));
+  watcher.watchUpdateBusInbox(UPDATE_BUS_INBOX);
 
   const port = config.server.port;
   server.listen(port, "127.0.0.1", () => {
