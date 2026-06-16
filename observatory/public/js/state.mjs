@@ -13,14 +13,6 @@ export function setState(newState) {
   }
 }
 
-export function applyDelta(delta) {
-  if (!currentState) return;
-  notify("*");
-  if (delta.event_type) {
-    notify(delta.event_type);
-  }
-}
-
 export function subscribe(key, fn) {
   if (!subscribers.has(key)) subscribers.set(key, new Set());
   subscribers.get(key).add(fn);

@@ -1,5 +1,5 @@
 import { SSEClient } from "./components/sse-client.mjs";
-import { setState, applyDelta, subscribe, getState } from "./state.mjs";
+import { setState, getState } from "./state.mjs";
 
 const main = document.getElementById("main-content");
 const nav = document.getElementById("nav");
@@ -28,17 +28,41 @@ themeToggle.addEventListener("click", () => {
   applyTheme(current === "dark" ? "light" : "dark");
 });
 
+// ─── Live state sync ─────────────────────────────────────────
+// The SSE stream sends a full state snapshot on connect (state_init) and a
+// lightweight delta per event thereafter. Rather than re-implement the
+// server's aggregation on the client (the old applyDelta was a no-op — it
+// notified subscribers but never merged the delta, so the dashboard never
+// updated live), we treat any delta as a signal to re-pull the authoritative
+// full state from /api/state, debounced so a burst of tool-call events
+// collapses into a single refresh. (observatory live-data fix)
+let refreshTimer = null;
+async function refreshState() {
+  try {
+    const res = await fetch("/api/state", { cache: "no-store" });
+    if (!res.ok) return;
+    setState(await res.json());
+    renderPanel(activePanel);
+  } catch { /* transient — the next delta triggers another refresh */ }
+}
+function scheduleRefresh() {
+  if (refreshTimer) return; // a refresh is already pending; coalesce into it
+  refreshTimer = setTimeout(() => {
+    refreshTimer = null;
+    refreshState();
+  }, 200);
+}
+
 const sse = new SSEClient("/api/events/stream", {
   onInit(data) {
     setState(data);
     renderPanel(activePanel);
   },
-  onDelta(data) {
-    applyDelta(data);
-    renderPanel(activePanel);
+  onDelta() {
+    scheduleRefresh();
   },
   onFileChanged() {
-    renderPanel(activePanel);
+    scheduleRefresh();
   },
   onConnect() {
     statusDot.classList.add("connected");
@@ -180,6 +204,48 @@ const PANELS = {
           </tbody>
         </table>
       ` : ""}
+    `;
+  },
+
+  // ─── Activity ───────────────────────────────────────────────
+  activity(s) {
+    const feed = (s.activity && s.activity.feed) ? s.activity.feed.slice().reverse() : [];
+    const kindBadge = (k) => {
+      const map = {
+        tool: "badge-info", error: "badge-danger", session: "badge-muted",
+        destructive: "badge-warning", tokens: "badge-info", test: "badge-success",
+      };
+      return `<span class="badge ${map[k] || "badge-muted"}">${esc(k)}</span>`;
+    };
+    const counts = feed.reduce((acc, e) => { acc[e.kind] = (acc[e.kind] || 0) + 1; return acc; }, {});
+
+    return `
+      <div class="panel-title">Session Activity</div>
+      <div class="card-sub" style="margin-bottom:1rem">Live feed of Claude Code tool calls, file edits, runs, and lifecycle events as the session hooks fire. Most recent ${feed.length} shown.</div>
+
+      ${feed.length > 0 ? `
+        <div class="card-grid" style="margin-bottom:1.5rem">
+          <div class="card"><div class="card-label">Tool Calls</div><div class="card-value">${counts.tool || 0}</div></div>
+          <div class="card" style="${(counts.error || 0) > 0 ? "border-color:var(--danger)" : ""}"><div class="card-label">Errors</div><div class="card-value">${counts.error || 0}</div></div>
+          <div class="card" style="${(counts.destructive || 0) > 0 ? "border-color:var(--warning)" : ""}"><div class="card-label">Destructive</div><div class="card-value">${counts.destructive || 0}</div></div>
+          <div class="card"><div class="card-label">Test Runs</div><div class="card-value">${counts.test || 0}</div></div>
+        </div>
+
+        <table class="data-table">
+          <thead><tr><th>Time</th><th>Kind</th><th>Tool</th><th>Detail</th><th>Session</th></tr></thead>
+          <tbody>
+            ${feed.map((e) => `
+              <tr>
+                <td>${formatTime(e.timestamp)}</td>
+                <td>${kindBadge(e.kind)}</td>
+                <td>${esc(e.tool || "-")}</td>
+                <td><code>${esc(truncate(e.detail, 72))}</code></td>
+                <td><code>${esc(truncate(e.session_id, 8))}</code></td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      ` : `<div class="empty-state"><div class="empty-state-icon">&#9889;</div><div class="empty-state-text">No activity captured yet. Tool calls, file edits, and bash runs appear here live as the session hooks fire. If this stays empty during an active session, the Observatory may be watching a different project root.</div></div>`}
     `;
   },
 
@@ -593,16 +659,65 @@ const PANELS = {
 
   // ─── Testing ────────────────────────────────────────────────
   testing(s) {
+    const t = s.testing || { last_run: null, runs: [], results: [] };
+    const lr = t.last_run;
+    const testBadge = (st) =>
+      st === "pass" ? `<span class="badge badge-success">pass</span>`
+      : st === "fail" ? `<span class="badge badge-danger">fail</span>`
+      : st === "skip" ? `<span class="badge badge-muted">skip</span>`
+      : `<span class="badge badge-warning">${esc(st || "?")}</span>`;
+
+    const liveSection = lr ? `
+      <h3 style="font-size:0.9rem;color:var(--text-muted);margin-bottom:0.75rem">LAST TEST RUN &mdash; ${formatTime(lr.timestamp)}</h3>
+      <div class="card-grid" style="margin-bottom:1rem">
+        <div class="card">
+          <div class="card-label">Passed</div>
+          <div class="card-value">${lr.passed}/${lr.total}</div>
+          <div class="card-sub">asserts</div>
+        </div>
+        <div class="card" style="${lr.failed > 0 ? "border-color:var(--danger)" : ""}">
+          <div class="card-label">Failed</div>
+          <div class="card-value">${lr.failed}</div>
+          <div class="card-sub">${lr.files_failed ?? 0} of ${lr.files} files</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Files</div>
+          <div class="card-value">${lr.files}</div>
+          <div class="card-sub">${lr.files_passed ?? 0} passed</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Duration</div>
+          <div class="card-value">${lr.duration_ms != null ? (lr.duration_ms / 1000).toFixed(1) + "s" : "-"}</div>
+          <div class="card-sub">node --test</div>
+        </div>
+      </div>
+      ${(lr.results || []).length > 0 ? `
+        <table class="data-table" style="margin-bottom:1.5rem">
+          <thead><tr><th>Suite</th><th>Status</th><th>Asserts</th><th>Duration</th><th>Error</th></tr></thead>
+          <tbody>
+            ${lr.results.map((r) => `
+              <tr>
+                <td><code>${esc(r.suite || r.name || "-")}</code></td>
+                <td>${testBadge(r.status)}</td>
+                <td>${r.asserts_passed != null ? `${r.asserts_passed}/${(r.asserts_passed || 0) + (r.asserts_failed || 0)}` : "-"}</td>
+                <td>${r.duration_ms != null ? (r.duration_ms / 1000).toFixed(2) + "s" : "-"}</td>
+                <td>${r.error_preview ? esc(truncate(r.error_preview, 60)) : "-"}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      ` : ""}
+    ` : `
+      <div class="empty-state" style="margin-bottom:1.5rem">
+        <div class="empty-state-icon">&#10003;</div>
+        <div class="empty-state-text">No <code>node --test</code> runs recorded yet. Run <code>npm test</code> (or <code>node scripts/test.mjs</code>) to populate live results here.</div>
+      </div>
+    `;
+
     return `
       <div class="panel-title">Testing</div>
 
-      <div class="card-grid" style="margin-bottom:1.5rem">
-        <div class="card">
-          <div class="card-label">Eval Categories</div>
-          <div class="card-value">6</div>
-          <div class="card-sub">smoke, capability, drift, adversarial, retrieval, subagent</div>
-        </div>
-      </div>
+      ${liveSection}
 
       <h3 style="font-size:0.9rem;color:var(--text-muted);margin-bottom:0.75rem">EVAL SUITE STATUS</h3>
       <table class="data-table">
@@ -688,6 +803,18 @@ window.postDecision = async function(id, verdict) {
 };
 
 // ─── Helpers ──────────────────────────────────────────────────
+
+// Escape for safe interpolation into innerHTML. Activity detail and test
+// errors carry shell commands / arg summaries that frequently contain
+// <, >, & — escaping prevents broken rendering and injection.
+function esc(s) {
+  if (s == null) return "-";
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
 
 function formatTokens(n) {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
