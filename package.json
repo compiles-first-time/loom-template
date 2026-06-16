@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "test": "node scripts/test.mjs",
+    "test:raw": "node --test"
+  },
   "dependencies": {
     "exceljs": "^4.4.0"
   }

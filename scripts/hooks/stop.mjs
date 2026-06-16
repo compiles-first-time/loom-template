@@ -19,6 +19,7 @@ import {
   todayLogPath,
   PROJECT_ROOT,
 } from "./_lib.mjs";
+import { summarizeTranscriptTokens, findTranscript } from "./_transcript.mjs";
 import { promises as fs } from "node:fs";
 import { existsSync } from "node:fs";
 import path from "node:path";
@@ -87,6 +88,30 @@ appendEvent(
     destructive_patterns: [...summary.destructive_patterns],
   })
 );
+
+// ── Token usage summary (observatory live-data fix) ─────────────────────
+//
+// Hook payloads carry no token counts, so the observatory's cost/token panels
+// were structurally always zero during Claude Code sessions. The transcript
+// records per-turn usage; summarize it here (Stop fires per turn) and emit a
+// session-cumulative token event. Best-effort — never fail Stop over it.
+try {
+  const transcriptPath = event.transcript_path || (await findTranscript(sessionId));
+  const usage = await summarizeTranscriptTokens(transcriptPath);
+  if (usage && (usage.input_tokens > 0 || usage.output_tokens > 0)) {
+    appendEvent(
+      mechanicalRecord("session_token_usage", {
+        session_id: sessionId,
+        input_tokens: usage.input_tokens,
+        output_tokens: usage.output_tokens,
+        model: usage.model,
+        assistant_messages: usage.assistant_messages,
+      })
+    );
+  }
+} catch {
+  // Best-effort; token capture must never break the Stop hook.
+}
 
 // ── Update progress-ledger.md (Session log table) ───────────────────────
 

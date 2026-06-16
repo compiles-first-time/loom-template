@@ -1,7 +1,17 @@
 import { watch, promises as fs, existsSync, statSync } from "node:fs";
 import path from "node:path";
 
+// Strip a leading UTF-8 BOM (U+FEFF). Windows writers — notably PowerShell's
+// Out-File / Set-Content — prepend a BOM by default, which breaks the
+// frontmatter regex below (`^---` no longer matches) and JSON.parse of the
+// first JSONL line. Update-bus proposals written by such a tool would silently
+// fail to appear in the dashboard. (observatory live-data fix)
+function stripBom(s) {
+  return typeof s === "string" && s.charCodeAt(0) === 0xfeff ? s.slice(1) : s;
+}
+
 function parseMarkdownFrontmatter(text) {
+  text = stripBom(text);
   const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (!match) return null;
   const result = {};
@@ -107,7 +117,7 @@ export class FileWatcher {
       await fh.close();
       this._offsets.set(filePath, stat.size);
 
-      const text = buf.toString("utf8");
+      const text = stripBom(buf.toString("utf8"));
       const lines = text.split("\n").filter(Boolean);
       for (const line of lines) {
         try {
@@ -148,7 +158,7 @@ export class FileWatcher {
       if (dateStr < cutoffStr) continue;
 
       const fullPath = path.join(dir, file);
-      const text = await fs.readFile(fullPath, "utf8");
+      const text = stripBom(await fs.readFile(fullPath, "utf8"));
       const lines = text.split("\n").filter(Boolean);
       for (const line of lines) {
         try {
