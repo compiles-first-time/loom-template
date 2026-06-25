@@ -58,6 +58,35 @@ Anthropic's prompt caching applies automatically to stable content. For maximum 
 
 **Constraint — LiteLLM requires Docker:** A no-Docker alternative is available (`pip install litellm && litellm --config tools/litellm/config.yaml`), documented in `scripts/router.ps1` and `scripts/router.sh`.
 
+## Evidence basis
+
+- **Primary:** Anthropic prompt caching documentation (docs.anthropic.com/en/docs/build-with-claude/prompt-caching, 2025) — cache reads at 0.1× base input cost (90% reduction), cache writes 1.25×/2× for 5-min/1-hour TTL; designed explicitly for agentic tool-definition reuse. `[primary][H]`
+- **Primary:** arXiv 2601.06007 (Lam et al., 2025) — prompt caching reduces total API cost 41–80% on long-horizon agentic tasks; TTFT improvement 13–31% across providers. `[primary][H]`
+- **Primary:** LiteLLM documentation (litellm.ai/docs, 2025) — MIT-licensed proxy with 100+ provider support, cost tracking, fallback chains, Docker deployment. `[primary][H]`
+- **Corroborating:** Model pricing differentials (Anthropic console, 2026-06-25) — Haiku input/output costs approximately 20× cheaper than Opus per token; Sonnet approximately 4× cheaper. `[primary][H]`
+- **Supporting:** RouteLLM (arXiv:2406.18665, LMSYS 2024) — automatic complexity routing achieves ~40% cost reduction at negligible quality loss on benchmark tasks. Deferred pending GPU availability and call-volume training data. `[primary][M]`
+- **Supporting:** LLMLingua-2 (arXiv:2403.12968, Microsoft 2024) — 20× compression at ~1.5-point performance loss on downstream tasks; 5–10× compression near-lossless. `[primary][M]`
+- **What would change this call:** Evidence that Haiku quality is insufficient for governance agents (constitution-service misclassifying rule violations) would require upgrading those agents to Sonnet. Monitor via `loom doctor` `constitution-coverage` check.
+
+## Affects / Affected by
+
+**This ADR affects:**
+- [`layers/L4-tooling.md`](../layers/L4-tooling.md) — two new sections: per-agent model tiers + LiteLLM proxy
+- [`scripts/lib/doctor.mjs`](../scripts/lib/doctor.mjs) — new `checkAgentModelTiers` soft check
+- `.claude/agents/*.md` (19 files) — `model:` frontmatter field added to each
+
+**This ADR is affected by:**
+- [ADR-0012](./0012-base-subagents.md) — base subagent definitions; model tier follows from each agent's declared role
+- [ADR-0015](./0015-loom-doctor.md) — loom doctor extension protocol; new check follows the soft-warning convention
+- [LR-06](../constitution/local-rules.md#lr-06) — token-cost awareness; per-agent tiers are the operational implementation
+- [ADR-0044](./0044-verifier-gates-for-agent-tasks.md) — verifier gates; `checkAgentModelTiers` follows the same soft-check pattern as `checkSkillVerifiers`
+
+## References
+
+- [ADR-0045 implementation commit](https://github.com/compiles-first-time/loom-template/commit/be20029)
+- [`tools/litellm/config.yaml`](../tools/litellm/config.yaml) — LiteLLM proxy configuration
+- [`scripts/router.ps1`](../scripts/router.ps1) / [`scripts/router.sh`](../scripts/router.sh) — start/stop wrapper
+
 ## Alternatives considered
 
 - **RouteLLM automatic complexity routing:** rejected for v1 — requires GPU inference for the routing classifier and Loom-specific training data. Revisit after accumulating ≥1,000 call samples and validating routing accuracy on the observed prompt distribution.
