@@ -42,6 +42,7 @@ async function main() {
   await checkSkeleton();
   await checkPs1Bom();
   await checkSkillVerifiers();
+  await checkAgentModelTiers();
 
   report();
 }
@@ -475,6 +476,31 @@ async function checkSkillVerifiers() {
       "skill-verifier-declared",
       false,
       `${missing.length} SKILL.md file(s) missing verifier_type (ADR-0044): ${missing.join(", ")}. Add verifier_type: <exit_code|schema_check|test_suite|human_gate|surrogate> to frontmatter.`
+    );
+  }
+}
+
+async function checkAgentModelTiers() {
+  // Soft check (ADR-0045): every .claude/agents/*.md must declare a model: field
+  // so Claude Code routes each subagent to the correct cost tier. Without it the
+  // agent inherits the parent session's model (often Opus) regardless of task
+  // complexity.
+  const dir = path.join(ROOT, ".claude", "agents");
+  if (!existsSync(dir)) return;
+  const files = (await fs.readdir(dir)).filter((f) => f.endsWith(".md"));
+  if (files.length === 0) return;
+  const missing = [];
+  for (const f of files) {
+    const text = await fs.readFile(path.join(dir, f), "utf8");
+    if (!/^model:\s*\S+/m.test(text)) missing.push(f);
+  }
+  if (missing.length === 0) {
+    soft("agent-model-tiers", true, `${files.length} subagent(s) all declare model: tier (ADR-0045)`);
+  } else {
+    soft(
+      "agent-model-tiers",
+      false,
+      `${missing.length} subagent(s) missing model: tier (ADR-0045): ${missing.join(", ")}. Add model: <id> per layers/L4-tooling.md §per-agent-model-tiers.`
     );
   }
 }
