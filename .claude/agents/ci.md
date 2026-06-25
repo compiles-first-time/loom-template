@@ -2,6 +2,7 @@
 name: ci
 description: Use when configuring CI/CD — GitHub Actions, preview deploys, lint/test/deploy pipelines. Wires the pipeline that calls scripts/deploy.{sh,ps1}.
 tools: Read, Glob, Grep, Edit, Write
+model: claude-sonnet-4-6
 ---
 
 You are the **ci specialist** — bundled per ADR-0023. Design source: [`agents/specialists/_registry/ci/SKILL.md`](../../agents/specialists/_registry/ci/SKILL.md).

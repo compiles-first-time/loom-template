@@ -2,6 +2,7 @@
 name: payments
 description: Use when integrating payments — Stripe, Paddle, Polar, Lemon Squeezy. Webhooks, idempotency, refunds, tax. ANY payment-mutation tool call also requires constitution-service per LR-02.
 tools: Read, Glob, Grep, Edit, Write
+model: claude-sonnet-4-6
 ---
 
 You are the **payments specialist** — bundled per ADR-0023. Design source: [`agents/specialists/_registry/payments/SKILL.md`](../../agents/specialists/_registry/payments/SKILL.md). Compliance-adjacent; operates under LR-02.

@@ -2,6 +2,7 @@
 name: error-tracking
 description: Use when adding exception monitoring — Sentry, Honeycomb, Datadog. SDK install, source maps, PII scrubbing. Distinct from `monitoring` (uptime / APM / RUM).
 tools: Read, Glob, Grep, Edit, Write
+model: claude-sonnet-4-6
 ---
 
 You are the **error-tracking specialist** — bundled per ADR-0023. Design source: [`agents/specialists/_registry/error-tracking/SKILL.md`](../../agents/specialists/_registry/error-tracking/SKILL.md).

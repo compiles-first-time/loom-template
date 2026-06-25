@@ -56,6 +56,39 @@ This decision is itself an ADR. Revisable; see [`../adr/0002-orchestration-frame
 
 **Critical:** All routing decisions logged. No model grades its own output (information-theoretic collapse — `[LLM-A][H]`).
 
+## Per-agent model tiers (v0.4, ADR-0045)
+
+> Model IDs must be validated at `loom init` — they are stale within months. See open work below.
+
+Each base agent and specialist carries a `model:` field in its `.claude/agents/<name>.md` frontmatter. Claude Code routes subagent invocations to the declared tier automatically.
+
+| Tier | Model | Agents |
+|---|---|---|
+| **Haiku** | claude-haiku-4-5 | constitution-service, hr, human-replica |
+| **Sonnet** | claude-sonnet-4-6 | critic, memory-keeper, all 12 specialists |
+| **Opus** | claude-opus-4-8 | eac |
+
+Governance agents (constitution-service, hr) perform rule lookup and CRUD — Haiku is sufficient and ~20× cheaper than Opus per token. Specialists do focused engineering work — Sonnet handles these reliably. EAC requires frontier reasoning for deep domain synthesis — Opus only. See [ADR-0045](../adr/0045-per-agent-model-routing.md).
+
+## LiteLLM proxy (v0.4, ADR-0045)
+
+For code that calls LLMs directly (LangGraph.js orchestration, custom tools), route through the Loom LiteLLM proxy at `http://localhost:4000`. Configuration: [`../tools/litellm/config.yaml`](../tools/litellm/config.yaml).
+
+| Alias | Primary | Fallback chain |
+|---|---|---|
+| `loom-haiku` | claude-haiku-4-5 | gpt-4o-mini → loom-local |
+| `loom-sonnet` | claude-sonnet-4-6 | gpt-4o |
+| `loom-opus` | claude-opus-4-8 | o1-preview → loom-sonnet |
+
+**Start:** `scripts/router.ps1 start` (Windows) or `scripts/router.sh start` (Linux/macOS).
+
+**Prompt caching convention:** Place the system prompt and tool schemas before any dynamic content. Anthropic caches the static prefix automatically — cache reads cost 0.1× base input (90% savings on that portion). No code changes needed beyond prefix stability.
+
+**Deferred (implement when direct API call sites exist):**
+- **LLMLingua compression** — 5–10× document compression via `pip install llmlingua`; wire as LiteLLM middleware. Negligible quality loss at ≤10×.
+- **Anthropic Batch API** — 50% cost reduction for async 24-hour-SLA tasks (progress-ledger summaries, lessons-learned, eval-suite runs).
+- **RouteLLM** — automatic complexity-based routing (Haiku vs Opus) via a trained classifier. Requires GPU + ≥1,000 call samples to calibrate; revisit post-production.
+
 ## Credential-source hierarchy (v0.6)
 
 > Per [LR-04](../constitution/local-rules.md#lr-04--permissions-protocol-meta-rule-subsuming-lr-02--lr-03) + [ADR-0028](../adr/0028-oauth-preference.md).
@@ -121,3 +154,6 @@ When the matrix lacks a row, the specialist notes the gap in its return and prop
 - [ ] Set provider API keys via env vars (never commit secrets)
 - [ ] Validate concrete model identifiers (Claude / GPT / Gemini / local) against current vendor catalogs at `loom init`; do not rely on the role-based names above as version strings
 - [ ] Record per-model effective-context multipliers used by the router (per [ADR-0005](../adr/0005-effective-context-routing.md))
+- [ ] Add `loom doctor` check `model-id-current` — flag agent files whose `model:` value is no longer a current release identifier (per ADR-0045 consequences)
+- [ ] Wire LLMLingua as LiteLLM middleware when LangGraph.js orchestration is implemented
+- [ ] Wire Anthropic Batch API for async tasks once call sites are identified (eval-suite, ledger summaries)
