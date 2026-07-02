@@ -425,7 +425,7 @@ const PANELS = {
             </tbody>
           </table>
         ` : ""}
-      ` : `<div class="empty-state"><div class="empty-state-text">No loop_cost_summary events recorded yet. Cost tracking populates as iterative patterns (CRAG, self-RAG, fan-out) execute.</div></div>`}
+      ` : `<div class="empty-state"><div class="empty-state-text">No token usage recorded yet. Cost tracking populates from two sources: <strong>session_token_usage</strong> events (emitted by the Stop hook after each Claude Code turn) and <strong>loop_cost_summary</strong> events (emitted by iterative workflow runs). If a session is in progress, cost data appears after the first turn completes.</div></div>`}
     `;
   },
 
