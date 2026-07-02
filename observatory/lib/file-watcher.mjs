@@ -99,7 +99,18 @@ export class FileWatcher {
     try {
       const text = await fs.readFile(filePath, "utf8");
       const fm = parseMarkdownFrontmatter(text);
-      if (!fm || !fm.id) return;
+      if (!fm) {
+        process.stderr.write(
+          `[observatory] update-bus: ${path.basename(filePath)} has no YAML frontmatter block (expected ---\\n...\\n---) — item will not appear in dashboard\n`
+        );
+        return;
+      }
+      if (!fm.id) {
+        process.stderr.write(
+          `[observatory] update-bus: ${path.basename(filePath)} is missing the required "id:" field — item will not appear in dashboard\n`
+        );
+        return;
+      }
       const item = { ...fm, _file: filePath };
       for (const fn of this._listeners.updateBusItem) fn(item);
     } catch { /* file deleted or unreadable */ }

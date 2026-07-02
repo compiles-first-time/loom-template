@@ -2,7 +2,7 @@
 
 import http from "node:http";
 import path from "node:path";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, mkdirSync } from "node:fs";
 import { exec } from "node:child_process";
 
 import { Aggregator } from "./lib/aggregator.mjs";
@@ -68,6 +68,12 @@ watcher.onUpdateBusItem((item) => aggregator.ingestUpdateBusItem(item));
 const server = http.createServer(router);
 
 async function start() {
+  // Ensure watched directories exist so the watcher doesn't bail early on a
+  // fresh checkout where memory/event-log/ or update-bus/inbox/ haven't been
+  // created yet by the first hook run.
+  mkdirSync(EVENT_LOG_DIR, { recursive: true });
+  mkdirSync(UPDATE_BUS_INBOX, { recursive: true });
+
   console.log(`[observatory] project root: ${PROJECT_ROOT}`);
   console.log(`[observatory] replaying ${config.replay.days} days of event log...`);
 
