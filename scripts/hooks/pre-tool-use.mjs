@@ -19,6 +19,7 @@ import {
 import { classifyProductionMutation } from "./_classify.mjs";
 import { loadPermissions, classifyToolCall } from "../lib/permissions-classifier.mjs";
 import { detectOauthPreferenceMisses } from "../lib/oauth-preference.mjs";
+import { decideDestructiveAction, toHookOutput } from "../lib/destructive-guard.mjs";
 
 const event = await readStdinJson();
 const sessionId = event.session_id || process.env.CLAUDE_SESSION_ID || "unknown";
@@ -49,10 +50,11 @@ if (prodMutation) {
 
 // LR-04 unified permissions classifier (PR-P / ADR-0027). Subsumes LR-02 +
 // LR-03 as specializations of the permissions framework.
+let classifierHits = [];
 try {
   const perms = await loadPermissions();
-  const hits = classifyToolCall({ tool: toolName, input: toolInput, permissions: perms });
-  for (const h of hits) {
+  classifierHits = classifyToolCall({ tool: toolName, input: toolInput, permissions: perms });
+  for (const h of classifierHits) {
     appendEvent(
       mechanicalRecord(`${h.category}_attempted`, {
         session_id: sessionId,
@@ -119,6 +121,39 @@ try {
   // Best-effort.
 }
 
-// Exit 0 — hook does not block the tool call. Blocking remains the existing
-// destructive-op behavior of the model + Critic subagent review (read-only).
+// ── BR_01 (ADR-0047): hook-enforced confirmation for destructive actions ──
+// Act on the classification above instead of only logging it. Risk-proportionate
+// tiers (deny / ask / allow) mapped to reversibility × blast-radius (Rule 20):
+//   deny  — immutable (kernel rules 1-8) / hook-managed files / force-push to a
+//           protected branch;
+//   ask   — the destructive class (rare → confirmation stays meaningful);
+//   allow — destructive op contained inside a worktree (Rule 8: trust the scope).
+// The permissionDecision is written to stdout (honored by Claude Code); the audit
+// event is still logged. Fail-open: any error falls through to exit 0 (today's
+// log-only behavior) so a guard fault never breaks a tool call.
+try {
+  const guard = decideDestructiveAction({
+    tool: toolName,
+    input: toolInput,
+    hits: classifierHits,
+  });
+  if (guard.decision !== "none") {
+    appendEvent(
+      mechanicalRecord("destructive_action_decision", {
+        session_id: sessionId,
+        tool: toolName,
+        decision: guard.decision,
+        tier: guard.tier,
+        matched_on: guard.matched_on,
+        reason: guard.reason,
+        rule: "ADR-0047",
+      })
+    );
+    const output = toHookOutput(guard);
+    if (output) process.stdout.write(JSON.stringify(output) + "\n");
+  }
+} catch {
+  // Fail-open — never break a tool call on a guard fault.
+}
+
 process.exit(0);

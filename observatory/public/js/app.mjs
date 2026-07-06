@@ -738,6 +738,82 @@ const PANELS = {
     `;
   },
 
+  // ─── Requirements & Exceptions (ADR-0046) ───────────────────
+  requirements(s) {
+    const r = s.requirements || { cases: [], by_requirement: {} };
+    const cases = r.cases || [];
+    const byReq = r.by_requirement || {};
+
+    const total = cases.length;
+    const pass = cases.filter((c) => c.status === "pass").length;
+    const fail = cases.filter((c) => c.status === "fail").length;
+    const pendingOrBlocked = cases.filter((c) => c.status === "pending" || c.status === "blocked").length;
+
+    const typeBadge = (t) => {
+      const cls = t === "BR" ? "badge-success" : t === "SE" ? "badge-danger"
+        : t === "BE" ? "badge-warning" : "badge-muted";
+      return `<span class="badge ${cls}">${esc(t || "-")}</span>`;
+    };
+    const statusBadge = (st) =>
+      st === "pass" ? `<span class="badge badge-success">pass</span>`
+      : st === "fail" ? `<span class="badge badge-danger">fail</span>`
+      : st === "blocked" ? `<span class="badge badge-warning">blocked</span>`
+      : `<span class="badge badge-muted">${esc(st || "pending")}</span>`;
+
+    const cell = (v) => (v != null && v !== "" ? `<code>${esc(truncate(String(v), 40))}</code>` : "-");
+
+    if (total === 0) {
+      return `
+        <div class="panel-title">Requirements &amp; Exceptions</div>
+        <div class="empty-state">
+          <div class="empty-state-icon">&#8801;</div>
+          <div class="empty-state-text">No test cases recorded yet. Author a requirement with <code>/testcase</code> (emits <code>test_case</code> events), or see <code>observability/eval-suite/requirements/</code>. Each row traces a Business Requirement (BR) to its solution steps and their Business/System Exceptions (BE/SE), with expected vs actual I/O per ADR-0046.</div>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="panel-title">Requirements &amp; Exceptions</div>
+      <div class="card-grid" style="margin-bottom:1rem">
+        <div class="card"><div class="card-label">Cases</div><div class="card-value">${total}</div><div class="card-sub">${Object.keys(byReq).length} requirement(s)</div></div>
+        <div class="card"><div class="card-label">Pass</div><div class="card-value">${pass}</div><div class="card-sub">validated</div></div>
+        <div class="card" style="${fail > 0 ? "border-color:var(--danger)" : ""}"><div class="card-label">Fail</div><div class="card-value">${fail}</div><div class="card-sub">regressions</div></div>
+        <div class="card"><div class="card-label">Pending</div><div class="card-value">${pendingOrBlocked}</div><div class="card-sub">pending / blocked</div></div>
+      </div>
+
+      <h3 style="font-size:0.9rem;color:var(--text-muted);margin-bottom:0.75rem">BY REQUIREMENT</h3>
+      <table class="data-table" style="margin-bottom:1.5rem">
+        <thead><tr><th>Requirement</th><th>Total</th><th>Pass</th><th>Fail</th><th>Pending</th></tr></thead>
+        <tbody>
+          ${Object.entries(byReq).map(([id, c]) => `
+            <tr><td><code>${esc(id)}</code></td><td>${c.total}</td><td>${c.pass}</td><td>${c.fail}</td><td>${(c.pending || 0) + (c.blocked || 0)}</td></tr>
+          `).join("")}
+        </tbody>
+      </table>
+
+      <h3 style="font-size:0.9rem;color:var(--text-muted);margin-bottom:0.75rem">TEST CASES</h3>
+      <div style="overflow-x:auto">
+      <table class="data-table">
+        <thead><tr><th>ID</th><th>Type</th><th>Expected In</th><th>Expected Out</th><th>Actual In</th><th>Actual Out</th><th>Why</th><th>Status</th></tr></thead>
+        <tbody>
+          ${cases.map((c) => `
+            <tr>
+              <td><code>${esc(c.id || "-")}</code>${c.parent_id ? `<div class="card-sub">&#8627; ${esc(c.parent_id)}</div>` : ""}</td>
+              <td>${typeBadge(c.type)}</td>
+              <td>${cell(c.expected_input)}</td>
+              <td>${cell(c.expected_output)}</td>
+              <td>${cell(c.actual_input)}</td>
+              <td>${cell(c.actual_output)}</td>
+              <td>${c.justification ? esc(truncate(c.justification, 60)) : "-"}</td>
+              <td>${statusBadge(c.status)}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+      </div>
+    `;
+  },
+
   // ─── Systems ────────────────────────────────────────────────
   systems(s) {
     const toolCounts = {};

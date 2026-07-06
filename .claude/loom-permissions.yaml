@@ -112,6 +112,7 @@ categories:
       - rollback_path: "Is rollback possible at all? If not, the action is irreversible — Kernel Rule 20 weight applies"
       - constitution_service: "required"  # constitution-service claim must precede the call
     enforcement: "hard"  # PreToolUse hook emits constitution_check_missing event; deploy gates on it
+    decision: "ask"  # ADR-0047 (BR_01): PreToolUse returns permissionDecision:ask for this class. The guard hard-DENIES the immutable/catastrophic subset (kernel rules 1-8, hook-managed files, force-push to a protected branch) and ALLOWS ops contained inside a worktree. Set to "deny" to hard-block all destructive ops.
 
   # ── credentials ──────────────────────────────────────────────────────────
   # Tool calls that handle credentials. Subsumes LR-03 (secrets in chat /

@@ -14,6 +14,7 @@ export class Aggregator {
       compliance: { constitution_checks: [], redaction_hits: 0, destructive_ops: [] },
       update_bus: { inbox: [] },
       testing: { last_run: null, runs: [], results: [] },
+      requirements: { cases: [], by_requirement: {} },
       activity: { feed: [] },
     };
   }
@@ -171,10 +172,36 @@ function recordActivity(state, ev) {
         detail: `${ev.passed || 0}/${ev.total || 0} passed${ev.failed ? `, ${ev.failed} failed` : ""}`,
       });
       break;
+    case "test_case":
+      pushActivity(state, {
+        timestamp: ev.timestamp, session_id: ev.session_id,
+        kind: "test_case", tool: ev.type || "test_case",
+        detail: `${ev.id || "case"} [${ev.status || "pending"}]${ev.parent_id ? ` → ${ev.parent_id}` : ""}`,
+      });
+      break;
     default:
       // Governance/attempt events have their own panels; keep the feed focused.
       break;
   }
+}
+
+// ── Requirements & Exceptions Test-Case Registry (ADR-0046) ───────────────
+// `test_case` events carry the ADR-0022+ register schema (BR/TR/BE/SE types,
+// expected + ACTUAL input/output, status, justification). Cases are upserted by
+// stable `id` so a re-run updates the same row — the registry is the regression
+// surface. `by_requirement` rolls status counts up to each parent BR.
+
+const REQUIREMENTS_MAX = 500;
+
+function rollupRequirements(cases) {
+  const out = {};
+  for (const c of cases) {
+    const key = c.parent_id || c.id || "unassigned";
+    if (!out[key]) out[key] = { total: 0, pass: 0, fail: 0, pending: 0, blocked: 0 };
+    out[key].total++;
+    if (out[key][c.status] != null) out[key][c.status]++;
+  }
+  return out;
 }
 
 const EVENT_HANDLERS = {
@@ -388,6 +415,35 @@ const EVENT_HANDLERS = {
     if (state.testing.runs.length > 25) {
       state.testing.runs = state.testing.runs.slice(-25);
     }
+  },
+
+  // Requirements & Exceptions Test-Case Registry (ADR-0046). One event per test
+  // case; upserted by stable `id` so re-runs update the same row (regression
+  // view = current status of every case). Carries expected + actual I/O + why.
+  test_case(state, ev) {
+    const c = {
+      timestamp: ev.timestamp,
+      session_id: ev.session_id,
+      id: ev.id || null,
+      parent_id: ev.parent_id || null,
+      type: ev.type || "---",
+      title: ev.title || ev.usecase || "",
+      framework_location: ev.framework_location || null,
+      expected_input: ev.expected_input ?? null,
+      expected_output: ev.expected_output ?? null,
+      actual_input: ev.actual_input ?? null,
+      actual_output: ev.actual_output ?? null,
+      status: ev.status || "pending",
+      justification: ev.justification || ev.why || "",
+    };
+    const cases = state.requirements.cases;
+    const idx = c.id ? cases.findIndex((x) => x.id === c.id) : -1;
+    if (idx >= 0) cases[idx] = c;
+    else cases.push(c);
+    if (cases.length > REQUIREMENTS_MAX) {
+      state.requirements.cases = cases.slice(-REQUIREMENTS_MAX);
+    }
+    state.requirements.by_requirement = rollupRequirements(state.requirements.cases);
   },
 
   subagent_suggestion(state, ev) {
