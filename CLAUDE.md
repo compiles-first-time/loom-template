@@ -8,7 +8,7 @@
 
 This file is the **primary entry point** for Claude (chat) and Claude Code into this project. Keep it small — hard cap ~10 KB. Detail belongs in [`layers/`](./layers/), not here.
 
-> **Fresh Claude instance? Read [`handoff/2026-06-04-observatory-context.md`](./handoff/2026-06-04-observatory-context.md) first (what changed since v0.3.3; the v0.3.4 merge + L9 Observatory), THEN [`handoff/2026-05-20-loom-v1.0-context.md`](./handoff/2026-05-20-loom-v1.0-context.md) for foundational collaboration conventions.** See [`handoff/README.md`](./handoff/README.md) for the dated-snapshot convention.
+> **Fresh Claude instance? Read [`handoff/2026-07-05-research-evaluation.md`](./handoff/2026-07-05-research-evaluation.md) first (current state + research-evaluation task), THEN [`handoff/2026-06-04-observatory-context.md`](./handoff/2026-06-04-observatory-context.md) for Observatory context, THEN [`handoff/2026-05-20-loom-v1.0-context.md`](./handoff/2026-05-20-loom-v1.0-context.md) for foundational collaboration conventions.** See [`handoff/README.md`](./handoff/README.md) for the dated-snapshot convention.
 
 ---
 
