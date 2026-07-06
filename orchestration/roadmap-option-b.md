@@ -23,11 +23,11 @@
 
 | ID | Task | Status | Depends | Notes |
 |---|---|---|---|---|
-| OB-P1-01 | Formalize the Claude Code **adapter** boundary: document that `.claude/`, `scripts/hooks/`, settings wiring = the adapter | ☐ | P0-03 | Docs + manifest; physical move deferred to avoid breaking live wiring |
-| OB-P1-02 | Migrate constitution + LR-04 + BR_01 tiers to **policy-as-data** in `spec/policy/` | ◐ | P0-04 | v1 = declarative data + zero-dep evaluator |
-| OB-P1-03 | **Evaluate OPA/Rego** vs the Loom-native evaluator (dependency + WASM/binary friction vs formal policy language) | ☐ | P1-02 | Decision ADR-0049; respect zero-dep ethos |
-| OB-P1-04 | **Conformance suite** skeleton: assertions an adapter must pass ("enforces deny/ask/allow", "emits audit", "honors policy") | ☐ | P1-02 | Defines "Loom-compliant adapter" |
-| OB-P1-05 | Run the Claude Code adapter against the conformance suite | ☐ | P1-04 | First adapter passes |
+| OB-P1-01 | Formalize the Claude Code **adapter** boundary | ☑ | P0-03 | `adapters/claude-code/README.md` + `spec/MANIFEST.md`; physical move still deferred |
+| OB-P1-02 | Migrate constitution + LR-04 + BR_01 tiers to **policy-as-data** in `spec/policy/` | ◐ | P0-04 | destructive-actions extracted; consolidating LR-04/constitution guards is ongoing |
+| OB-P1-03 | **Evaluate OPA/Rego** vs the Loom-native evaluator | ☑ | P1-02 | **ADR-0049**: native-first; OPA triggered by a non-JS adapter (Phase 2) |
+| OB-P1-04 | **Conformance suite** — the runtime-neutral adapter contract | ☑ | P1-02 | `spec/conformance/` (8 scenarios + runner); the OB-P2-03 yardstick |
+| OB-P1-05 | Run the Claude Code adapter against the conformance suite | ☑ | P1-04 | passes (13 assertions); provides HARD enforcement |
 
 ## Phase 2 — Second adapter = the agnosticism proof ★
 
