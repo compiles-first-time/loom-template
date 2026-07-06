@@ -84,6 +84,7 @@ export function parsePermissionsYaml(text) {
         triggers: { command_patterns: [], mcp_patterns: [], keywords: [] },
         required_protocol: [],
         enforcement: "soft",
+        decision: null,
       };
       currentTriggerKey = null;
       continue;
@@ -97,6 +98,11 @@ export function parsePermissionsYaml(text) {
       const [, key, val] = fieldMatch;
       if (key === "enforcement") {
         out.categories[currentCategory].enforcement = unquote(val.trim());
+      } else if (key === "decision") {
+        // ADR-0047 (BR_01): PreToolUse permissionDecision for this category —
+        // "ask" | "deny" | "allow". Optional; the pre-tool-use guard derives a
+        // default from `enforcement` when absent.
+        out.categories[currentCategory].decision = unquote(val.trim());
       } else if (key === "triggers" || key === "required_protocol") {
         // Block follows on indented lines
         currentTriggerKey = key;
@@ -238,6 +244,7 @@ export function classifyToolCall({ tool, input, permissions }) {
       hits.push({
         category: name,
         enforcement: cat.enforcement || "soft",
+        decision: cat.decision || null,
         matched_on: matched.matched_on,
         matched_via: matched.matched_via,
         requires_pre_flight_quota: matched.requires_pre_flight_quota,

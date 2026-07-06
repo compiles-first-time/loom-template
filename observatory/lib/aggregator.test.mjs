@@ -319,6 +319,70 @@ console.log("\nrobustness");
   assert(Array.isArray(state.sessions?.active),       "getState includes sessions.active");
 }
 
+// ─── test_case registry (ADR-0046) ──────────────────────────────────────────
+console.log("\ntest_case (requirements registry)");
+{
+  const agg = new Aggregator();
+  agg.ingestEvent(ev("test_case", {
+    id: "BR-01_ForcePushMain_SE-01", parent_id: "BR_01", type: "SE",
+    title: "force-push to main", framework_location: "PreToolUse",
+    expected_input: "git push --force origin main", expected_output: "deny",
+    actual_input: "git push --force origin main", actual_output: "deny",
+    status: "pass", justification: "Rule 20 — irreversible history rewrite",
+  }));
+  const c = agg.state.requirements.cases[0];
+  assert(agg.state.requirements.cases.length === 1,     "test_case adds a case");
+  assert(c.id === "BR-01_ForcePushMain_SE-01",          "case id captured");
+  assert(c.parent_id === "BR_01",                       "parent_id (traceability) captured");
+  assert(c.type === "SE",                               "type captured");
+  assert(c.expected_output === "deny" && c.actual_output === "deny", "expected + actual output captured");
+  assert(c.status === "pass",                           "status captured");
+  assert(c.justification.includes("Rule 20"),           "justification (why) captured");
+  assert(agg.state.requirements.by_requirement.BR_01.total === 1, "by_requirement rolls up total");
+  assert(agg.state.requirements.by_requirement.BR_01.pass === 1,  "by_requirement rolls up pass count");
+  assert(agg.state.activity.feed.some(e => e.kind === "test_case"), "test_case appears in activity feed");
+}
+
+// upsert by id: re-emitting the same id updates in place (regression view)
+{
+  const agg = new Aggregator();
+  agg.ingestEvent(ev("test_case", { id: "X-1", parent_id: "BR_01", type: "SE", status: "fail" }));
+  agg.ingestEvent(ev("test_case", { id: "X-1", parent_id: "BR_01", type: "SE", status: "pass" }));
+  assert(agg.state.requirements.cases.length === 1,     "re-emitting same id does not duplicate");
+  assert(agg.state.requirements.cases[0].status === "pass", "latest run wins (status updated)");
+  assert(agg.state.requirements.by_requirement.BR_01.pass === 1, "rollup reflects updated status");
+  assert(agg.state.requirements.by_requirement.BR_01.fail === 0, "rollup drops stale fail count");
+}
+
+// distinct ids accumulate; rollup groups by parent
+{
+  const agg = new Aggregator();
+  agg.ingestEvent(ev("test_case", { id: "A", parent_id: "BR_01", type: "BR", status: "pass" }));
+  agg.ingestEvent(ev("test_case", { id: "B", parent_id: "BR_01", type: "SE", status: "fail" }));
+  agg.ingestEvent(ev("test_case", { id: "C", parent_id: "BR_02", type: "BE", status: "pending" }));
+  assert(agg.state.requirements.cases.length === 3,          "distinct ids accumulate");
+  assert(agg.state.requirements.by_requirement.BR_01.total === 2, "BR_01 groups 2 cases");
+  assert(agg.state.requirements.by_requirement.BR_01.fail === 1,  "BR_01 counts the failing case");
+  assert(agg.state.requirements.by_requirement.BR_02.pending === 1, "BR_02 counts the pending case");
+}
+
+// cap enforcement
+{
+  const agg = new Aggregator();
+  for (let i = 0; i < 520; i++) agg.ingestEvent(ev("test_case", { id: `case-${i}`, parent_id: "BR_X", status: "pass" }));
+  assert(agg.state.requirements.cases.length === 500, "cases capped at 500");
+  assert(agg.state.requirements.cases[0].id === "case-20", "cap keeps the most recent 500");
+}
+
+// defaults + getState exposure
+{
+  const agg = new Aggregator();
+  agg.ingestEvent(ev("test_case", { id: "D" }));
+  assert(agg.state.requirements.cases[0].type === "---",     "type defaults to ---");
+  assert(agg.state.requirements.cases[0].status === "pending", "status defaults to pending");
+  assert(Array.isArray(agg.getState().requirements?.cases),  "getState exposes requirements.cases");
+}
+
 // ─── Report ──────────────────────────────────────────────────────────────────
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);
