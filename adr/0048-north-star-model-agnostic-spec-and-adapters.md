@@ -1,8 +1,8 @@
 # ADR-0048: North star — Loom as a model-agnostic governance spec + adapters
 
-**Status:** Proposed
+**Status:** Accepted (Nick, 2026-07-06)
 **Date:** 2026-07-06
-**Author:** Builder (Opus 4.8) — proposed to Nick (direction greenlit 2026-07-06)
+**Author:** Builder (Opus 4.8) — approved by Nick
 **Confidence:** [H] on the architecture choice; [M] on specific component picks (revisit per adapter)
 
 ---
