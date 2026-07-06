@@ -383,6 +383,57 @@ console.log("\ntest_case (requirements registry)");
   assert(Array.isArray(agg.getState().requirements?.cases),  "getState exposes requirements.cases");
 }
 
+// ─── ticket / kanban (ADR-0048 OB-X-01) ─────────────────────────────────────
+console.log("\nticket (kanban)");
+{
+  const agg = new Aggregator();
+  agg.ingestEvent(ev("ticket", { id: "OB-P0-05", title: "Kanban foundation", parent_id: "BR_01", state: "todo" }));
+  const t = agg.state.kanban.tickets[0];
+  assert(agg.state.kanban.tickets.length === 1,      "ticket adds to kanban");
+  assert(t.id === "OB-P0-05" && t.title === "Kanban foundation", "ticket id/title captured");
+  assert(t.parent_id === "BR_01",                    "ticket links to requirement (parent_id)");
+  assert(t.state === "todo",                         "ticket state captured");
+  assert(agg.state.kanban.by_state.todo === 1,       "by_state rollup counts todo");
+  assert(agg.state.activity.feed.some(e => e.kind === "ticket"), "ticket appears in activity feed");
+}
+
+// time-in-state accrues across transitions
+{
+  const agg = new Aggregator();
+  const t0 = "2026-07-06T00:00:00.000Z";
+  const t1 = "2026-07-06T00:01:00.000Z"; // +60s
+  const t2 = "2026-07-06T00:03:00.000Z"; // +120s after t1
+  agg.ingestEvent(ev("ticket", { id: "T1", state: "backlog", timestamp: t0 }));
+  agg.ingestEvent(ev("ticket", { id: "T1", state: "in_progress", timestamp: t1 }));
+  agg.ingestEvent(ev("ticket", { id: "T1", state: "done", timestamp: t2 }));
+  const t = agg.state.kanban.tickets[0];
+  assert(agg.state.kanban.tickets.length === 1,      "same ticket id upserts, no dup");
+  assert(t.state === "done",                         "latest state wins");
+  assert(t.time_in_state.backlog === 60000,          "time_in_state: 60s in backlog");
+  assert(t.time_in_state.in_progress === 120000,     "time_in_state: 120s in in_progress");
+  assert(t.transitions.length === 3,                 "all 3 transitions recorded");
+}
+
+// same-state re-emit: no phantom transition, but mutable fields update
+{
+  const agg = new Aggregator();
+  agg.ingestEvent(ev("ticket", { id: "T2", state: "todo", timestamp: "2026-07-06T00:00:00.000Z" }));
+  agg.ingestEvent(ev("ticket", { id: "T2", state: "todo", title: "renamed", timestamp: "2026-07-06T00:05:00.000Z" }));
+  const t = agg.state.kanban.tickets[0];
+  assert(t.transitions.length === 1,                 "same-state re-emit adds no transition");
+  assert(t.title === "renamed",                      "same-state re-emit still updates mutable fields");
+}
+
+// no-id ignored; getState exposure; cap
+{
+  const agg = new Aggregator();
+  agg.ingestEvent(ev("ticket", { state: "todo" }));
+  assert(agg.state.kanban.tickets.length === 0,      "ticket without id is ignored");
+  assert(Array.isArray(agg.getState().kanban?.tickets), "getState exposes kanban.tickets");
+  for (let i = 0; i < 520; i++) agg.ingestEvent(ev("ticket", { id: `k-${i}`, state: "backlog" }));
+  assert(agg.state.kanban.tickets.length === 500,    "kanban tickets capped at 500");
+}
+
 // ─── Report ──────────────────────────────────────────────────────────────────
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);

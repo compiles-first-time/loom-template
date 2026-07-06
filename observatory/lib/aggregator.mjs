@@ -15,6 +15,7 @@ export class Aggregator {
       update_bus: { inbox: [] },
       testing: { last_run: null, runs: [], results: [] },
       requirements: { cases: [], by_requirement: {} },
+      kanban: { tickets: [], by_state: {} },
       activity: { feed: [] },
     };
   }
@@ -179,6 +180,13 @@ function recordActivity(state, ev) {
         detail: `${ev.id || "case"} [${ev.status || "pending"}]${ev.parent_id ? ` → ${ev.parent_id}` : ""}`,
       });
       break;
+    case "ticket":
+      pushActivity(state, {
+        timestamp: ev.timestamp, session_id: ev.session_id,
+        kind: "ticket", tool: ev.state || "ticket",
+        detail: `${ev.id || "ticket"} → ${ev.state || "backlog"}${ev.parent_id ? ` (${ev.parent_id})` : ""}`,
+      });
+      break;
     default:
       // Governance/attempt events have their own panels; keep the feed focused.
       break;
@@ -200,6 +208,25 @@ function rollupRequirements(cases) {
     if (!out[key]) out[key] = { total: 0, pass: 0, fail: 0, pending: 0, blocked: 0 };
     out[key].total++;
     if (out[key][c.status] != null) out[key][c.status]++;
+  }
+  return out;
+}
+
+// ── Kanban action items (ADR-0048 OB-X-01) ────────────────────────────────
+const KANBAN_MAX = 500;
+
+function msBetween(aIso, bIso) {
+  const a = Date.parse(aIso);
+  const b = Date.parse(bIso);
+  if (Number.isNaN(a) || Number.isNaN(b)) return 0;
+  return Math.max(0, b - a);
+}
+
+function rollupKanban(tickets) {
+  const out = {};
+  for (const t of tickets) {
+    const k = t.state || "backlog";
+    out[k] = (out[k] || 0) + 1;
   }
   return out;
 }
@@ -444,6 +471,50 @@ const EVENT_HANDLERS = {
       state.requirements.cases = cases.slice(-REQUIREMENTS_MAX);
     }
     state.requirements.by_requirement = rollupRequirements(state.requirements.cases);
+  },
+
+  // Kanban action items (ADR-0048 OB-X-01). Upsert by id; accumulate
+  // time-in-state across transitions; link to a requirement via parent_id so a
+  // board card can surface that requirement's exceptions.
+  ticket(state, ev) {
+    const id = ev.id;
+    if (!id) return;
+    const ts = ev.timestamp;
+    const newState = ev.state || "backlog";
+    const tickets = state.kanban.tickets;
+    let t = tickets.find((x) => x.id === id);
+    if (!t) {
+      t = {
+        id,
+        title: ev.title || "",
+        parent_id: ev.parent_id || null,
+        assignee: ev.assignee || null,
+        state: newState,
+        created_at: ts,
+        updated_at: ts,
+        entered_at: ts,
+        time_in_state: { [newState]: 0 },
+        transitions: [{ state: newState, at: ts }],
+      };
+      tickets.push(t);
+    } else {
+      if (newState !== t.state) {
+        // Close out the time spent in the prior state, then enter the new one.
+        t.time_in_state[t.state] = (t.time_in_state[t.state] || 0) + msBetween(t.entered_at, ts);
+        t.state = newState;
+        t.entered_at = ts;
+        if (t.time_in_state[newState] == null) t.time_in_state[newState] = 0;
+        t.transitions.push({ state: newState, at: ts });
+      }
+      if (ev.title) t.title = ev.title;
+      if (ev.parent_id) t.parent_id = ev.parent_id;
+      if (ev.assignee) t.assignee = ev.assignee;
+      t.updated_at = ts;
+    }
+    if (tickets.length > KANBAN_MAX) {
+      state.kanban.tickets = tickets.slice(-KANBAN_MAX);
+    }
+    state.kanban.by_state = rollupKanban(state.kanban.tickets);
   },
 
   subagent_suggestion(state, ev) {
