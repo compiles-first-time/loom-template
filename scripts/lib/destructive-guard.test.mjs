@@ -130,6 +130,27 @@ console.log("\ntoHookOutput()");
   assert(toHookOutput(null) === null, "null result → null");
 }
 
+// ─── Policy override (decoupling proof, ADR-0048) ───────────────────────────
+// Behavior must follow the spec DATA, not hardcode — that IS the decoupling.
+console.log("\npolicy override (spec/policy is data-driven)");
+{
+  const strict = { immutableFiles: [], hookManagedFiles: [], protectedBranches: ["main"], containedScopeSegments: [".worktrees/"], destructiveDefault: "deny" };
+  assert(decideDestructiveAction({ tool: "Bash", input: { command: "rm -rf x" }, hits: [destructiveHit("rm -rf")], policy: strict }).decision === "deny",
+    "destructiveDefault:deny → whole destructive class hard-blocks");
+
+  const custom = { immutableFiles: [], hookManagedFiles: [], protectedBranches: ["release"], containedScopeSegments: [], destructiveDefault: "ask" };
+  assert(decideDestructiveAction({ tool: "Bash", input: { command: "git push --force origin release" }, hits: [], policy: custom }).decision === "deny",
+    "custom protectedBranches: force-push to 'release' → deny");
+  assert(decideDestructiveAction({ tool: "Bash", input: { command: "git push --force origin main" }, hits: [destructiveHit("git push --force")], policy: custom }).decision === "ask",
+    "with 'main' not in custom protected list → force-push main is ask, not deny");
+
+  const immut = { immutableFiles: ["secrets/master.key"], hookManagedFiles: [], protectedBranches: [], containedScopeSegments: [], destructiveDefault: "ask" };
+  assert(decideDestructiveAction({ tool: "Edit", input: { file_path: "secrets/master.key" }, hits: [], policy: immut }).decision === "deny",
+    "custom immutableFiles: editing it → deny");
+  assert(decideDestructiveAction({ tool: "Edit", input: { file_path: "constitution/kernel-v6.md" }, hits: [], policy: immut }).decision === "none",
+    "kernel NOT in custom immutable list → editing it is none (policy data is the source of truth)");
+}
+
 // ─── BR_01 canonical register cases (data-driven assert + emit) ─────────────
 // Each case is asserted against the guard AND emitted as a test_case event, so
 // the Observatory Requirements panel + regression history populate on each run
