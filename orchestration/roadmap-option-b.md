@@ -33,9 +33,9 @@
 
 | ID | Task | Status | Depends | Notes |
 |---|---|---|---|---|
-| OB-P2-01 | Pick the second host: **LangGraph** (rich seams, production-relevant) vs **Gemini API** (bare model, tests advisory path) | ☐ | P1-05 | ADR-0050 |
-| OB-P2-02 | Build the minimal second adapter (policy eval at its seams; emit audit) | ☐ | P2-01 | |
-| OB-P2-03 | **Second adapter passes conformance** → "model-agnostic" becomes fact, not claim | ☐ | P2-02 | THE milestone |
+| OB-P2-01 | Pick the second host: **LangGraph** (rich seams, JS) vs Gemini API | ☑ | P1-05 | **ADR-0050** — LangGraph chosen; Gemini-direct deferred (bare/advisory + OPA trigger) |
+| OB-P2-02 | Build the second adapter (policy eval at its seam; map to interrupt/block/proceed) | ☑ | P2-01 | `adapters/langgraph/guard.mjs` + live `example.run.mjs` (ran vs a real StateGraph + fake model) |
+| OB-P2-03 | **Second adapter passes conformance** → "model-agnostic" becomes fact | ☑ | P2-02 | **DONE** — 20 assertions + live graph run. *Host-agnostic proven; cross-language (Python/OPA) is the next depth (OB-P1-03 trigger)* |
 
 ## Phase 3 — Observability migration (vendor-neutral audit)
 
