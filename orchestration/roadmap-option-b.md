@@ -64,6 +64,7 @@
 | ID | Task | Status | Notes |
 |---|---|---|---|
 | OB-X-01 | **Kanban board** (action items + state + time-in-state + link to BR/requirement + its exceptions) | ◐ | foundation this session; polish tracked |
-| OB-X-02 | Test-case registry per requirement (ADR-0046) — one register per BR, exceptions enumerated | ◐ | BR_01 done; ongoing per requirement |
+| OB-X-02 | Test-case registry per requirement (ADR-0046) — one register per BR, exceptions enumerated | ☑ | BR_01–BR_05 registered + emitting; `requirements/README.md` index |
 | OB-X-03 | Standing research gates: "does the host already provide this?" + "spec or adapter?" | ☑ | ADR-0048 §7 |
-| OB-X-04 | Two open PRs awaiting Nick's merge: #52 (BR_01/registry) then B-foundation (this) | ◐ | self-merge blocked by guardrail |
+| OB-X-04 | PRs #52 / #54 / #55 merged to main | ☑ | Option-B foundation + Phase 1 + Phase 2 all landed |
+| OB-X-05 | **Flaky test:** `permissions-classifier.test.mjs` intermittently reports 52 vs 60 asserts (0 failures — skips ~8 asserts, never fails). Pre-existing (identical to main). | ☐ | Dedicated root-cause pass (likely a swallowed try/catch or timing skip); undermines "always-green" reliability |
