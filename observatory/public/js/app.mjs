@@ -814,6 +814,64 @@ const PANELS = {
     `;
   },
 
+  // ─── Kanban (ADR-0048 OB-X-01) ──────────────────────────────
+  kanban(s) {
+    const k = s.kanban || { tickets: [], by_state: {} };
+    const tickets = k.tickets || [];
+    const reqs = (s.requirements && s.requirements.cases) || [];
+    const COLUMNS = ["backlog", "todo", "in_progress", "blocked", "review", "done"];
+
+    if (tickets.length === 0) {
+      return `
+        <div class="panel-title">Kanban</div>
+        <div class="empty-state">
+          <div class="empty-state-icon">&#9776;</div>
+          <div class="empty-state-text">No action items yet. Emit <code>ticket</code> events (<code>scripts/lib/ticket.mjs</code> or the <code>/ticket</code> skill). Each card links to its requirement (BR) and surfaces that requirement's exceptions; time-in-state accrues across transitions.</div>
+        </div>`;
+    }
+
+    const fmt = (ms) => {
+      if (!ms || ms < 1000) return "0s";
+      const sec = Math.floor(ms / 1000), m = Math.floor(sec / 60), h = Math.floor(m / 60), d = Math.floor(h / 24);
+      if (d) return `${d}d ${h % 24}h`;
+      if (h) return `${h}h ${m % 60}m`;
+      if (m) return `${m}m`;
+      return `${sec}s`;
+    };
+    const totalTracked = (t) => Object.values(t.time_in_state || {}).reduce((a, b) => a + (b || 0), 0);
+    const exSummary = (parentId) => {
+      if (!parentId) return "";
+      const ex = reqs.filter((c) => c.parent_id === parentId && (c.type === "SE" || c.type === "BE"));
+      if (!ex.length) return "";
+      const se = ex.filter((e) => e.type === "SE").length;
+      const be = ex.filter((e) => e.type === "BE").length;
+      const fails = ex.filter((e) => e.status === "fail").length;
+      return `<div class="card-sub">${ex.length} exception(s): ${se} SE / ${be} BE${fails ? ` · <span style="color:var(--danger)">${fails} failing</span>` : ""}</div>`;
+    };
+    const known = new Set(COLUMNS);
+    const cols = COLUMNS.concat([...new Set(tickets.map((t) => t.state).filter((st) => !known.has(st)))]);
+
+    return `
+      <div class="panel-title">Kanban</div>
+      <div style="display:flex;gap:1rem;overflow-x:auto;padding-bottom:1rem">
+        ${cols.map((col) => {
+          const items = tickets.filter((t) => (t.state || "backlog") === col);
+          return `
+            <div style="min-width:220px;flex:0 0 220px">
+              <h3 style="font-size:0.8rem;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.5rem">${esc(col.replace(/_/g, " "))} <span class="badge badge-muted">${items.length}</span></h3>
+              ${items.map((t) => `
+                <div class="card" style="margin-bottom:0.5rem;text-align:left">
+                  <div style="font-weight:600">${esc(t.title || t.id)}</div>
+                  <div class="card-sub"><code>${esc(t.id)}</code>${t.parent_id ? ` &rarr; <code>${esc(t.parent_id)}</code>` : ""}</div>
+                  ${exSummary(t.parent_id)}
+                  <div class="card-sub">&#9201; ${fmt(totalTracked(t))} tracked${t.assignee ? ` · ${esc(t.assignee)}` : ""}</div>
+                </div>
+              `).join("") || `<div class="card-sub" style="opacity:0.4">&mdash;</div>`}
+            </div>`;
+        }).join("")}
+      </div>`;
+  },
+
   // ─── Systems ────────────────────────────────────────────────
   systems(s) {
     const toolCounts = {};
