@@ -29,4 +29,8 @@ The **second** Loom adapter ([ADR-0050](../../adr/0050-second-adapter-langgraph.
 
 - ✅ **Host-agnosticism**: the same policy governs Claude Code hooks *and* a LangGraph graph, via different enforcement seams.
 - ✅ **Model-agnostic governance**: the guard sits at the tool-call seam, independent of the model — so a LangGraph graph bound to Gemini / OpenAI / Ollama (via LangChain integrations or LiteLLM) is governed identically.
-- ❌ **Cross-language portability** (a Python host) — both adapters are JS reusing the one evaluator. That's the separate ADR-0049 trigger for OPA, and a future proof.
+- ✅ **Cross-language portability** — now proven: the Python evaluator (`adapters/python/`) reaches identical decisions from the same policy JSON (`spec/conformance/cross-language.test.mjs`, live). OPA remains the future option only if a *third* language or complex policy composition arrives (ADR-0049).
+
+## Durable execution (ADR-0052)
+
+`durable.mjs` runs a **checkpointer-backed** graph: when the guard returns `ask` on a destructive op, it calls the real LangGraph **`interrupt()`** (execution pauses, state **persisted**), then resumes via **`Command({ resume })`** with the human's decision — `approve` executes, `reject` skips. Verified live (`durable.test.mjs`; `node durable.run.mjs` for the demo). `MemorySaver` in the demo; a persistent saver (Sqlite/Postgres) is the drop-in for crash-recovery in production.
