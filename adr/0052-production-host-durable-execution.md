@@ -16,7 +16,7 @@
 **Governed durable execution on LangGraph via a checkpointer + real `interrupt()`/`Command(resume)`.**
 
 - `adapters/langgraph/durable.mjs` — a checkpointer-backed `StateGraph`. When the Loom guard returns **`ask`** for a destructive op, the graph calls the real LangGraph **`interrupt(payload)`**: execution pauses and state is **persisted to the checkpointer**. It resumes via **`Command({ resume })`** carrying the human decision — `approve` → the op executes; `reject` → it's skipped. Same Loom policy (`preToolGuard`) that governs the Claude Code + Python paths.
-- **Checkpointer:** `MemorySaver` for the demo/tests; a persistent saver (Sqlite/Postgres) is the drop-in for real deployments (state survives process restart → crash-recovery).
+- **Checkpointer:** `MemorySaver` for the demo/tests — it is in-process, so it proves pause/resume **within a run** but **not** crash-recovery (a process crash destroys it). A persistent saver (Sqlite/Postgres) is the drop-in that adds cross-restart crash-recovery — **not yet tested here**.
 - **Temporal** (cross-service durable workflows, retries, timers) remains the **heavier option, deferred** — it needs a Temporal server, so it's an adopt-on-trigger for multi-service production, not the template default.
 
 ## Evidence basis
