@@ -99,7 +99,7 @@ Each ADR (this one included) ships with an **Affects / Affected by** section lis
 - `agents/specialists/_registry/README.md` — specialist authoring checklist references the failure-modes section
 - `scripts/lib/doctor.mjs` — `checkAdrTemplateConformance` + `checkBidirectionalAdrLinks` soft checks enforce this
 - `adr/0023-specialist-registry.md` — PR-M's specialists ship in this format
-- `adr/0025-discovery-scaffolding.md` *(planned)* — `discovery/risk-register.md` uses this format
+- `adr/0025-discovery-scaffolding.md` *(planned)* — `discovery/risk-register.md` uses this format (generated at bootstrap/runtime — absent in a template repo)
 
 **This ADR is affected by** *(upstream)*:
 

@@ -56,6 +56,8 @@ Specialists live under [`agents/specialists/<name>/`](./agents/specialists/) and
 | **Reconcile** | At end of session, agent writes its updates to markdown self-knowledge + episodic event log |
 | **Retire** | HR-Agent removes from roster; lessons-learned promoted; agent directory archived |
 
+> **Reputation-aware dispatch:** per [ADR-0053](./adr/0053-agent-reputation-and-dispatch.md), the supervisor weights specialist selection and retire / re-spawn calls by each agent's recorded reputation (verifier pass-rate, task outcomes).
+
 ---
 
 *Detail per agent lives in `agents/<name>/SKILL.md`. This file is the index.*

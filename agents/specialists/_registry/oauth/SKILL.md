@@ -4,6 +4,7 @@ summary: OAuth 2.1 / OIDC integration with external providers (Google, GitHub, M
 tier: bundled
 context_budget: 24000
 tools: [Read, Glob, Grep, WebFetch, Edit, Write]
+verifier_type: test_suite
 ---
 
 # oauth specialist

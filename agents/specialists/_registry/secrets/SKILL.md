@@ -10,7 +10,7 @@ verifier_note: "Storage decisions and resulting config (.env.example entries, .g
 
 # secrets specialist
 
-> Bundled registry entry per [ADR-0023](../../../../adr/0023-specialist-registry.md). Failure modes follow the [xlsx convention](../../../../adr/0022-xlsx-docs-convention.md) (ADR-0022). Operationalizes [LR-03](../../../../constitution/local-rules.md) — secrets never appear in chat input or tool args.
+> Bundled registry entry per [ADR-0023](../../../../adr/0023-specialist-registry.md). Failure modes follow the [xlsx convention](../../../../adr/0022-xlsx-docs-convention.md) (ADR-0022). Operationalizes [LR-03](../../../../constitution/local-rules.md) — secrets never appear in chat input or tool args. Interoperates with credential collection ([ADR-0036](../../../../adr/0036-credential-collection-patterns.md)) and the `provisioning` specialist ([ADR-0035](../../../../adr/0035-provisioning-specialist-and-playbooks.md)); consults the [MCP-vs-CLI capability matrix](../../../../tools/mcp-cli-capability-matrix.md) ([ADR-0033](../../../../adr/0033-mcp-vs-cli-capability-matrix.md)) before driving secret-manager CLIs.
 
 ## Role + scope
 

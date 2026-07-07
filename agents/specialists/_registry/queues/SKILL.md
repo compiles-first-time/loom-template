@@ -4,6 +4,7 @@ summary: Background jobs — BullMQ, Inngest, Trigger.dev, AWS SQS. Idempotency,
 tier: bundled
 context_budget: 16000
 tools: [Read, Glob, Grep, Edit, Write]
+verifier_type: test_suite
 ---
 
 # queues specialist

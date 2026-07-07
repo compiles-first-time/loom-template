@@ -14,9 +14,9 @@
 | Metrics | Prometheus + Grafana | Integration target | TBD |
 | Logs | Local filesystem + rotation | Filesystem ships; rotation per L3 (90-day hot) | OS-default |
 | Alerting | Grafana alerts or ntfy.sh | Integration target | TBD |
-| OTel GenAI semantic conventions | OTLP exporter → Langfuse | Integration target | per Langfuse config |
+| OTel GenAI semantic conventions | OTLP exporter → Langfuse | Integration target ([ADR-0051](../adr/0051-opentelemetry-otlp-audit.md)) | per Langfuse config |
 
-OTel GenAI alignment satisfies Kernel Rules 22–23 simultaneously. v0.2 ships the JSONL event log as the **primary observability artifact**; Langfuse / OTel are honest integration targets, not shipped infrastructure. Don't promise what we don't deliver.
+OTel GenAI alignment satisfies Kernel Rules 22–23 simultaneously. v0.2 ships the JSONL event log as the **primary observability artifact**; Langfuse / OTel are honest integration targets, not shipped infrastructure. Don't promise what we don't deliver. Under the model-agnostic north star ([ADR-0048](../adr/0048-north-star-model-agnostic-spec-and-adapters.md)), these audit events conform to a host-neutral event schema that each adapter emits at the host's action seam.
 
 ## Dashboard signals
 
@@ -120,7 +120,7 @@ Lives in [`../observability/eval-suite/`](../observability/eval-suite/). Require
 | Adversarial evals (prompt injection, jailbreak, kernel-violation provocations) | Pre-release |
 | **Retrieval evals** (faithfulness / groundedness, retrieval recall, retrieval precision against a fixed golden set) `[research-p1][H]` per [ADR-0006](../adr/0006-retrieval-evaluation.md) | Nightly |
 
-Loom ships a starter set; projects extend.
+Loom ships a starter set; projects extend. Requirement-level pass / exception test cases are tracked separately in the requirements & exceptions test-case registry per [ADR-0046](../adr/0046-requirements-exceptions-testcase-registry.md) — the eval harness and the Critic's monthly audit consume it.
 
 ---
 

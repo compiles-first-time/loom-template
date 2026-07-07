@@ -92,7 +92,7 @@ Discovery is iterative. Quick scan → initial skeleton → full discovery → p
 - `discovery/README.md` + `discovery/{quick-scan,requirements,risk-register,open-questions}.md`
 - `layers/L8-discovery.md` — layer doc
 - `adr/0026-discovery-gate.md` *(planned, PR-O)* — deploy gate + Critic review + skeleton amendments
-- `adr/0029-hr-work-graph.md` *(planned, PR-R)* — HR consumes `requirements.md`
+- `adr/0029-hr-work-graph.md` *(planned, PR-R)* — HR consumes `requirements.md` (generated at bootstrap/runtime — absent in a template repo)
 
 **This ADR is affected by** *(upstream)*:
 

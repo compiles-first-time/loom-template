@@ -4,6 +4,7 @@ summary: Application authentication — session cookies, password hashing, MFA s
 tier: bundled
 context_budget: 24000
 tools: [Read, Glob, Grep, Edit, Write]
+verifier_type: test_suite
 ---
 
 # auth specialist

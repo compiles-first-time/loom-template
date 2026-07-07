@@ -4,6 +4,7 @@ summary: Uptime + APM + RUM — Better Stack, Datadog, Vercel Analytics, OpenTel
 tier: bundled
 context_budget: 16000
 tools: [Read, Glob, Grep, Edit, Write]
+verifier_type: exit_code
 ---
 
 # monitoring specialist

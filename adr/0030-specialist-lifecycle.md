@@ -80,7 +80,7 @@ v1.0 finding (D) third bullet: "Specialists get spawned per work item, retired o
 - `agents/specialists/<name>/SKILL.md` *(created on spawn)*
 - `agents/specialists/<name>/.retired/<ts>-SKILL.md` *(created on retire)*
 - `lessons-learned/.propagation/<id>.md` *(created on promote-lessons)*
-- `orchestration/work-graph.json` *(WI status updated on spawn)*
+- `orchestration/work-graph.json` *(generated at bootstrap/runtime — absent in a template repo; WI status updated on spawn)*
 
 **This ADR is affected by** *(upstream)*:
 

@@ -4,6 +4,7 @@ summary: Idempotent platform-resource provisioning via management APIs. Drives S
 tier: bundled
 context_budget: 24000
 tools: [Read, Glob, Grep, Edit, Write, WebFetch]
+verifier_type: human_gate
 ---
 
 # provisioning specialist

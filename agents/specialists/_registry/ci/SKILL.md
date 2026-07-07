@@ -4,6 +4,7 @@ summary: CI/CD pipelines — GitHub Actions, Vercel/Netlify preview deploys. Tes
 tier: bundled
 context_budget: 16000
 tools: [Read, Glob, Grep, Edit, Write]
+verifier_type: test_suite
 ---
 
 # ci specialist

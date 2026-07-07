@@ -24,7 +24,7 @@ import net from "node:net";
 
 const event = await readStdinJson();
 
-// ── CWD validation (ADR-0034 §C, hook-capture-gap fix) ─────────────────
+// ── CWD validation (ADR-0034 §C + ADR-0038 hook-capture-gap detection) ──
 //
 // Check that the session's CWD looks like a Loom project before doing
 // anything else. If it doesn't, the entire hook system is running against

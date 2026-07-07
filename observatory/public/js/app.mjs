@@ -1,3 +1,4 @@
+// Observatory frontend — renders the projections defined by ADR-0040.
 import { SSEClient } from "./components/sse-client.mjs";
 import { setState, getState } from "./state.mjs";
 
