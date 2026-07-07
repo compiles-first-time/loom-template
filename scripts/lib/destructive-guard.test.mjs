@@ -96,9 +96,14 @@ console.log("\nBR_01 — contained scope → allow (tier 3)");
   const wt = decideDestructiveAction({ tool: "Bash", input: { command: "rm -rf .worktrees/bd-12/tmp" }, hits: [destructiveHit("rm -rf")] });
   assert(wt.decision === "allow" && wt.tier === 3, "rm -rf inside .worktrees/ → allow");
   assert(/[Cc]ontained/.test(wt.reason), "allow reason mentions contained scope");
-  // Edit of a file inside a worktree that somehow carries a destructive hit → allow.
-  const wtEdit = decideDestructiveAction({ tool: "Bash", input: { command: "cd repo/.worktrees/bd-3 && git clean -fd" }, hits: [destructiveHit("git clean -fd")] });
-  assert(wtEdit.decision === "allow", "git clean -fd inside .worktrees/ → allow");
+  // SECURITY (critic C1): a COMPOUND command is NOT contained even if it mentions
+  // .worktrees/ — its destructive segment may target elsewhere. Falls to ask.
+  const wtChained = decideDestructiveAction({ tool: "Bash", input: { command: "cd repo/.worktrees/bd-3 && git clean -fd" }, hits: [destructiveHit("git clean -fd")] });
+  assert(wtChained.decision === "ask", "chained cmd mentioning .worktrees/ → ask (not allow)");
+  assert(decideDestructiveAction({ tool: "Bash", input: { command: "rm -rf /var/data && cd .worktrees/x" }, hits: [destructiveHit("rm -rf")] }).decision === "ask",
+    "BYPASS blocked: rm outside worktree + '&& cd .worktrees' → ask, NOT allow");
+  assert(decideDestructiveAction({ tool: "Bash", input: { command: "rm -rf /var/data #.worktrees/x" }, hits: [destructiveHit("rm -rf")] }).decision === "ask",
+    "BYPASS blocked: comment mentioning .worktrees → ask, NOT allow");
   // But the SAME op OUTSIDE a worktree → ask.
   assert(decideDestructiveAction({ tool: "Bash", input: { command: "git clean -fd" }, hits: [destructiveHit("git clean -fd")] }).decision === "ask",
     "git clean -fd outside worktree → ask");

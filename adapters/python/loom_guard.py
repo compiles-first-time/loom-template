@@ -24,6 +24,10 @@ _FORCE_PUSH_RE = re.compile(
 )
 # Same char class as the JS CONTAINED_PREFIX: start | whitespace/quote/paren/eq | slash
 _CONTAINED_PREFIX = "(?:^|[\\s\"'`(=]|/)"
+# A command with shell chaining/substitution/comments is NOT eligible for a
+# contained-scope downgrade — its destructive target may be outside the worktree
+# even if ".worktrees/" appears elsewhere. Mirrors the JS guard. Falls to `ask`.
+_CHAINED_OR_COMMENT = re.compile(r"&&|\|\||[;|&\n#]|\$\(|`")
 
 
 def load_policy(path=_POLICY_PATH):
@@ -104,11 +108,13 @@ def decide(tool="", input=None, hits=None, policy=None):
     if signal is None:
         return "none"
 
-    # Tier 3 — contained scope → allow.
+    # Tier 3 — contained scope (best-effort ask->allow; never a deny bypass).
     contained_re = _build_contained_re(policy.get("containedScopeSegments", []))
-    hay = _norm(file_path) + "\n" + _norm(command)
-    if contained_re and contained_re.search(hay):
-        return "allow"
+    if contained_re:
+        if file_path and contained_re.search(_norm(file_path)):
+            return "allow"
+        if command and not _CHAINED_OR_COMMENT.search(command) and contained_re.search(_norm(command)):
+            return "allow"
 
     # Tier 2 — the destructive class.
     return policy.get("destructiveDefault", "ask")

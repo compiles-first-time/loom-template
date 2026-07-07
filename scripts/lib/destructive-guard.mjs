@@ -124,9 +124,22 @@ function checkDenyTier({ tool, filePath, command, policy, protectedRe }) {
 
 // Tier 3 — contained scope: a destructive op whose target is inside a worktree
 // isolation dir. Bounded blast radius → trust the scope (Rule 8).
+//
+// SECURITY: a command with shell chaining / substitution / comments is NOT
+// eligible — its destructive target may be OUTSIDE the worktree even if
+// ".worktrees/" appears in another segment (e.g. "rm -rf /data && cd
+// .worktrees/x", or "rm -rf /data #.worktrees"). Those fall through to `ask`.
+// Contained-scope is a best-effort ask→allow downgrade, never a deny→allow
+// bypass; the deny tier is unaffected. See BR_01.md known-limitations.
+const CHAINED_OR_COMMENT = /&&|\|\||[;|&\n#]|\$\(|`/;
+
 function checkContainedScope({ filePath, command, containedRe }) {
-  const hay = normPath(filePath) + "\n" + normPath(command);
-  if (containedRe.test(hay)) return { marker: "contained-scope" };
+  // File target: precise — the edited path itself must be contained.
+  if (filePath && containedRe.test(normPath(filePath))) return { marker: "contained-scope" };
+  // Command: trust only a SINGLE, unchained, un-substituted, un-commented command.
+  if (command && !CHAINED_OR_COMMENT.test(command) && containedRe.test(normPath(command))) {
+    return { marker: "contained-scope" };
+  }
   return null;
 }
 
