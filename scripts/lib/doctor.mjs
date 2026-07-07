@@ -292,22 +292,26 @@ async function checkBidirectionalAdrLinks() {
 }
 
 function extractAffectsBlock(text) {
-  // Pull file paths from the "This ADR affects" bullet list under
-  // "## Affects / Affected by". Heuristic: backticked relative paths.
+  // Pull file paths from the "affects" bullet list under
+  // "## Affects / Affected by". Accepts BOTH marker forms: the template
+  // "**This ADR affects**" and the compact "**Affects:**" — earlier ADRs use
+  // one, later ones the other. Parsing only the first silently skipped ~13
+  // v0.4+ ADRs (their links went unverified). Heuristic: backticked paths.
   const sectionMatch = text.match(/##\s+Affects \/ Affected by\s*([\s\S]+?)(?=\n##\s+|\n#\s+|$)/);
   if (!sectionMatch) return null;
   const block = sectionMatch[1];
-  const affectsSubsection = block.split(/\*\*This ADR (?:affects|is affected by)\*\*/)[1];
+  const affectsSubsection = block.split(/\*\*(?:This ADR affects|Affects):?\*\*/)[1];
   if (!affectsSubsection) return null;
-  // Stop at the "is affected by" block, then capture backticked paths.
-  const upstream = affectsSubsection.split(/\*\*This ADR is affected by\*\*/)[0] || "";
+  // Stop at whichever "affected by" marker form appears.
+  const upstream = affectsSubsection.split(/\*\*(?:This ADR is affected by|Affected by):?\*\*/)[0] || "";
   const paths = [];
   const re = /`([^`]+\.(?:md|mjs|js|json|yaml|sh|ps1))`/g;
   let m;
   while ((m = re.exec(upstream)) !== null) {
     const p = m[1];
-    // Skip placeholders like `<file>`
-    if (p.includes("<") || p.includes(">")) continue;
+    // Skip placeholders (`<file>`) and glob/brace patterns (`*/SKILL.md`,
+    // `{a,b}.md`) — those name a *set*, not a single resolvable target.
+    if (/[<>*{}]/.test(p)) continue;
     paths.push(p);
   }
   return paths;
