@@ -1,3 +1,5 @@
+// Observatory aggregator — builds the projections defined by ADR-0040
+// (projection schemas); Update Bus inbox + decision write-back per ADR-0041.
 import { redact } from "./redactor.mjs";
 
 export class Aggregator {

@@ -119,6 +119,7 @@ A SessionStart hook that automatically performs §A and §C checks at session st
 - [ADR-0012](./0012-base-subagents.md) — the bundled subagent design that established the SKILL.md as a structured artifact suitable for Agent-tool simulation.
 - [ADR-0024](./0024-12-starter-specialists.md) — the 12 starter specialists whose SKILL.md files are the canonical prompts under path (2b).
 - [ADR-0033](./0033-mcp-vs-cli-capability-matrix.md) — the matrix that specialists (real or simulated) consult before tool selection.
+- [ADR-0038](./0038-hook-capture-gap-detection.md) — operationalizes the §C hook-capture-gap check this ADR introduced.
 
 ## References
 

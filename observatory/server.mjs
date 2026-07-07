@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// Observatory server — wires the Update Bus <-> Observatory integration per ADR-0041.
 
 import http from "node:http";
 import path from "node:path";

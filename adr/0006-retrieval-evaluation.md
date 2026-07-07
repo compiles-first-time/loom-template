@@ -46,4 +46,5 @@ The change is additive (retrieval is a new category; faithfulness drift is a new
 - [`../observability/eval-suite/README.md`](../observability/eval-suite/README.md) — Retrieval category
 - [`../spec/loom-spec-v0.1-full.md`](../spec/loom-spec-v0.1-full.md) §B.7
 - ADR-0003 (retrieval pipeline) — what is being evaluated
+- [ADR-0037](./0037-retrieval-pipeline-evidence-review.md) — the later retrieval-pipeline evidence review builds on this eval framework (this ADR is affected by ADR-0037)
 - `[research-p1][H]` Phase 1 retrieval & context-engineering research synthesis

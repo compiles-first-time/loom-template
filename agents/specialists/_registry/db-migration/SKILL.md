@@ -4,6 +4,7 @@ summary: Database schema migrations — Prisma, Drizzle, plain SQL. Forward-only
 tier: bundled
 context_budget: 24000
 tools: [Read, Glob, Grep, Edit, Write]
+verifier_type: exit_code
 ---
 
 # db-migration specialist

@@ -7,7 +7,8 @@
 //
 // Per ADR-0015 (foundational), extended by ADR-0017 (LR-02 / constitution
 // coverage), ADR-0022 (template conformance), ADR-0023 (bidirectional
-// ADR links), and ADR-0044 (skill-verifier-declared).
+// ADR links), ADR-0033 (MCP-vs-CLI alignment check), ADR-0034 (planned
+// specialist-invocation-discipline check), and ADR-0044 (skill-verifier-declared).
 
 import { promises as fs, existsSync } from "node:fs";
 import path from "node:path";

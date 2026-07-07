@@ -17,7 +17,7 @@ marker_behaviors:
 
 # credential-setup canonical prompt eval
 
-> Human-graded.
+> Human-graded. Evaluates the credential-setup specialist specified by [ADR-0042](../../../adr/0042-credential-setup-specialist.md).
 
 ## Rubric
 

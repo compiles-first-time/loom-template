@@ -4,11 +4,12 @@ summary: Deployment to common runtimes — Vercel, Netlify, Fly.io, Render. Conf
 tier: bundled
 context_budget: 16000
 tools: [Read, Glob, Grep, Edit, Write]
+verifier_type: exit_code
 ---
 
 # deploy specialist
 
-> Bundled per [ADR-0023](../../../../adr/0023-specialist-registry.md). Failure modes per [ADR-0022](../../../../adr/0022-xlsx-docs-convention.md). Complements the Loom deploy primitive at `scripts/deploy.{sh,ps1}` (ADR-0019). Hardened per [ADR-0032](../../../../adr/0032-deployment-hardening.md) — AnonForum session 2026-05-21 findings.
+> Bundled per [ADR-0023](../../../../adr/0023-specialist-registry.md). Failure modes per [ADR-0022](../../../../adr/0022-xlsx-docs-convention.md). Complements the Loom deploy primitive at `scripts/deploy.{sh,ps1}` (ADR-0019). Hardened per [ADR-0032](../../../../adr/0032-deployment-hardening.md) — AnonForum session 2026-05-21 findings. Distinct from the `provisioning` specialist ([ADR-0035](../../../../adr/0035-provisioning-specialist-and-playbooks.md)): deploy ships code to a running runtime; provisioning creates the runtime.
 
 ## Role + scope
 

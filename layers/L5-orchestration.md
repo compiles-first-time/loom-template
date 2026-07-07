@@ -15,6 +15,8 @@
 ## Who is the supervisor in v0.2?
 
 > **Honest reframe per [ADR-0011](../adr/0011-claude-code-enforcement-runtime.md).** v0.1 referred to a Magentic-One "supervisor" as if it were a separate process. In practice, **the Claude Code session is the supervisor**: it reads the ledgers, dispatches to subagents (`.claude/agents/*.md` from PR-2 of v0.2), and operates the two-ledger pattern through hooks and tool calls. Magentic-One remains the cited *pattern* (Fourney et al. 2024); the *implementation* is the session + hooks + subagents.
+>
+> Under the model-agnostic north star ([ADR-0048](../adr/0048-north-star-model-agnostic-spec-and-adapters.md)), the supervisor loop belongs to the host runtime; a Loom *adapter* governs it from the host's pre-action seam. Claude Code is the first adapter.
 
 ## The two ledgers
 
@@ -33,6 +35,7 @@ The system must support 35-hour autonomous task chains `[transcript][H]`:
 - User can interrupt and redirect at any time (Kernel Rule 1)
 - All intermediate state recoverable from event log — v0.2 hooks populate this automatically
 - Periodic checkpoints summarized to markdown — the "closing the books" pattern from `[LLM-A][H]`. In v0.2, the **Stop hook** writes one Session-log row per session as the closing-the-books artifact ([ADR-0011](../adr/0011-claude-code-enforcement-runtime.md))
+- Durable execution — checkpoint / replay of long chains across process restarts — is delegated to the production host runtime, not implemented by Loom itself, per [ADR-0052](../adr/0052-production-host-durable-execution.md)
 
 ## Context engineering
 

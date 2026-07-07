@@ -18,7 +18,7 @@ Every adapter must:
 | Adapter | Host | Enforcement | Status |
 |---|---|---|---|
 | [`claude-code/`](./claude-code/) | Claude Code | Hard (PreToolUse hooks) | ◐ first adapter (≈ PR #52) |
-| _langgraph/_ | LangGraph app | Hard (interrupts) | ☐ Phase 2 candidate |
+| _langgraph/_ | LangGraph app | Hard (interrupts) | ☐ Phase 2 candidate ([ADR-0050](../adr/0050-second-adapter-langgraph.md)) |
 | _gemini/_ | Raw Gemini API | Advisory + logged | ☐ Phase 2 candidate (proves the bare-model path) |
 
 ## Rule

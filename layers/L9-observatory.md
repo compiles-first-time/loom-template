@@ -20,6 +20,8 @@ Single-process Node.js HTTP server at `localhost:4040`. No external dependencies
 - Server-Sent Events (SSE) push deltas to the browser
 - Vanilla HTML/CSS/JS frontend — no build step, no framework
 
+The JSONL event stream the Observatory consumes is the same audit stream targeted for OpenTelemetry OTLP export ([ADR-0051](../adr/0051-opentelemetry-otlp-audit.md)); the Observatory reads it locally while OTLP carries it to external backends.
+
 ## Projections
 
 | Projection | Source | Dashboard panel |
@@ -40,6 +42,8 @@ All data passes through `observatory/lib/redactor.mjs` before reaching the brows
 ## Panels (10)
 
 Overview, Agents, Tasks, Cost, Failures, Deploys, Compliance, Update Bus, Testing, Systems.
+
+The Testing panel surfaces the requirements & exceptions test-case registry ([ADR-0046](../adr/0046-requirements-exceptions-testcase-registry.md)); pass / fail rollups per requirement come from that register.
 
 ## Relationship to other layers
 

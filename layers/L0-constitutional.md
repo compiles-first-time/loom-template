@@ -30,6 +30,8 @@ Rules 1, 2, 8, 19, 20, 22, 23 — summarized in [`../constitution/kernel-v6.md`]
 | Soft warning | Advisory rule violation |
 | Escalation | Ambiguous case → human approver queue |
 
+> Destructive operations (file deletion, force-push, schema drops) additionally require an explicit confirmation gate, hook-enforced per [ADR-0047](../adr/0047-hook-enforced-destructive-action-confirmation.md) (Kernel Rule 20). On model-agnostic hosts, this constitutional policy is enforced at the host's pre-action seam by a Loom adapter per [ADR-0048](../adr/0048-north-star-model-agnostic-spec-and-adapters.md) — hard where the host exposes a real seam, advisory + logged otherwise.
+
 ## Project-local overrides
 
 Local extensions go in [`../constitution/local-rules.md`](../constitution/local-rules.md). They may extend the kernel but never contradict it.

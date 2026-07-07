@@ -1,3 +1,5 @@
+// Observatory HTTP router — serves projection state (ADR-0040) and the
+// Update Bus decision write-back endpoint (ADR-0041).
 import { promises as fs } from "node:fs";
 import path from "node:path";
 

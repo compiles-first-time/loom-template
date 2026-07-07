@@ -112,7 +112,7 @@ HR generates the graph. The user reviews it. The user (or a follow-up dispatch s
 
 - `scripts/lib/hr-work-graph.mjs` — implementation
 - `scripts/hr-work-graph.{sh,ps1}` — wrappers
-- `orchestration/work-graph.json` *(generated; gitignored if user prefers, or committed if they want history)*
+- `orchestration/work-graph.json` *(generated at bootstrap/runtime — absent in a template repo; gitignored if user prefers, or committed if they want history)*
 - `orchestration/task-ledger.md` — markdown mirror, regenerated
 - `adr/0030-specialist-lifecycle.md` *(planned, PR-S)* — specialists consume `work-graph.json` to know what to spawn
 
@@ -123,6 +123,7 @@ HR generates the graph. The user reviews it. The user (or a follow-up dispatch s
 - `adr/0022-xlsx-docs-convention.md` — `risk-register.md` format
 - `layers/L5-orchestration.md` — Task Ledger + Progress Ledger conceptual model
 - `agents/specialists/_registry/manifest.yaml` — trigger patterns this generator consumes
+- `adr/0053-agent-reputation-and-dispatch.md` — ADR-0053; agent reputation signals inform how work items are assigned / dispatched to specialists
 
 ## References
 

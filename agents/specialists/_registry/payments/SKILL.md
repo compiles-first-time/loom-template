@@ -4,11 +4,12 @@ summary: Payment integration — Stripe, Paddle, Polar, Lemon Squeezy. Webhooks,
 tier: bundled
 context_budget: 24000
 tools: [Read, Glob, Grep, Edit, Write]
+verifier_type: test_suite
 ---
 
 # payments specialist
 
-> Bundled per [ADR-0023](../../../../adr/0023-specialist-registry.md). Failure modes per [ADR-0022](../../../../adr/0022-xlsx-docs-convention.md). Operates under LR-02 (any payment-mutation tool call needs constitution-service consultation).
+> Bundled per [ADR-0023](../../../../adr/0023-specialist-registry.md). Failure modes per [ADR-0022](../../../../adr/0022-xlsx-docs-convention.md). Operates under LR-02 (any payment-mutation tool call needs constitution-service consultation). Consults the [MCP-vs-CLI capability matrix](../../../../tools/mcp-cli-capability-matrix.md) ([ADR-0033](../../../../adr/0033-mcp-vs-cli-capability-matrix.md)) before choosing MCP vs CLI for provider operations.
 
 ## Role + scope
 

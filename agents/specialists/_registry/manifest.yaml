@@ -164,6 +164,7 @@ specialists:
     context_budget: 16000
     eval_source: observability/eval-suite/subagents/ci.md
 
+  # The credential-setup specialist is specified by ADR-0042 (credential-setup-specialist).
   - name: credential-setup
     summary: "Acquires web-gated credentials via browser automation — register, login, 2FA, API-key retrieval — with per-step consent. Hands secret to collect-credentials; never captures it."
     skill_md: _registry/credential-setup/SKILL.md

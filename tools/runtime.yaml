@@ -1,6 +1,7 @@
 ﻿# Runtime configuration — used by scripts/deploy.{sh,ps1}.
 #
-# Per ADR-0019, extended by ADR-0032 §A (wait-for-deploy integration).
+# Per ADR-0019, extended by ADR-0032 §A (wait-for-deploy integration) and
+# ADR-0035 (the provisioning specialist reads/writes this file).
 # The deploy primitive reads this file to know what command to run, what
 # env vars are required, and how to extract the deployment URL from the
 # deploy command's stdout.

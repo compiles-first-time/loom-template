@@ -2,6 +2,7 @@
 
 > **Schema:** `{task_id, project, agent_assigned, status, dependencies, deadline, created_at, updated_at}`
 > **Authority:** Supervisor (Magentic-One pattern). All entries are also replayable from the [event log](../memory/event-log/).
+> **Generation:** the HR work-graph generator ([ADR-0029](../adr/0029-hr-work-graph.md)) regenerates this markdown mirror from `orchestration/work-graph.json`.
 
 ---
 

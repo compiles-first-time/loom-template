@@ -4,11 +4,12 @@ summary: Exception monitoring — Sentry, Honeycomb, Datadog. SDK install, sourc
 tier: bundled
 context_budget: 16000
 tools: [Read, Glob, Grep, Edit, Write]
+verifier_type: exit_code
 ---
 
 # error-tracking specialist
 
-> Bundled per [ADR-0023](../../../../adr/0023-specialist-registry.md). Failure modes per [ADR-0022](../../../../adr/0022-xlsx-docs-convention.md).
+> Bundled per [ADR-0023](../../../../adr/0023-specialist-registry.md). Failure modes per [ADR-0022](../../../../adr/0022-xlsx-docs-convention.md). Consults the [MCP-vs-CLI capability matrix](../../../../tools/mcp-cli-capability-matrix.md) ([ADR-0033](../../../../adr/0033-mcp-vs-cli-capability-matrix.md)) before choosing MCP vs CLI for SDK / source-map operations.
 
 ## Role + scope
 

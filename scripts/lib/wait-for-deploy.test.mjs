@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// Smoke tests for wait-for-deploy.mjs.
+// Smoke tests for wait-for-deploy.mjs (the wait-for-terminal-state primitive
+// introduced by ADR-0032 §A — deployment hardening).
 //
 // Run: node scripts/lib/wait-for-deploy.test.mjs
 // Exit 0 on pass, 1 on any failure.
