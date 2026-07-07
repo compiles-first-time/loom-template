@@ -42,7 +42,7 @@
 
 ## Affects / Affected by
 
-**Affects:** `adapters/langgraph/durable.mjs` (+ `.run.mjs`, `.test.mjs`), `adapters/langgraph/README.md`, `layers/L5-orchestration.md` (durable execution), roadmap `OB-P4-*`.
+**Affects:** `adapters/langgraph/durable.mjs`, `adapters/langgraph/durable.run.mjs`, `adapters/langgraph/durable.test.mjs`, `adapters/langgraph/README.md`, `layers/L5-orchestration.md` (durable execution), roadmap `OB-P4-*`.
 **Affected by:** `adr/0050` (LangGraph host), `adr/0047` (guard/policy), `adr/0048` (Phase 4), `constitution/kernel-v6.md` Rule 20 (destructive ops require confirmation — now durably enforced with HIL).
 
 ## References

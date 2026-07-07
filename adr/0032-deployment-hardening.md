@@ -135,9 +135,9 @@ The Vercel MCP, Supabase MCP, and others have asymmetric (action, surface) cover
 - `scripts/lib/deploy.mjs` — integration of the wait primitive (planned follow-up PR, v0.3.2)
 - `agents/specialists/_registry/deploy/SKILL.md` — failure modes + pre-flight requirements + response-body discipline
 - `agents/specialists/_registry/oauth/SKILL.md` — device-code scope-drop entry (planned follow-up)
-- `lessons-learned/auth-scope-drop-on-device-code.md` — recurring-pattern entry
-- `lessons-learned/write-fails-read-works-is-quota.md` — recurring-pattern entry
-- `lessons-learned/exit-code-zero-with-error-body.md` — recurring-pattern entry
+- `lessons-learned/2026-05-21-auth-scope-drop-on-device-code.md` — recurring-pattern entry
+- `lessons-learned/2026-05-21-write-fails-read-works-is-quota.md` — recurring-pattern entry
+- `lessons-learned/2026-05-21-exit-code-zero-with-error-body.md` — recurring-pattern entry
 - `scripts/lib/permissions-classifier.mjs` — recognizes the pre-flight requirement as `external_service_setup` (follow-up integration)
 - `layers/L4-tooling.md` — capability-matrix design when v0.3.2 ships
 
