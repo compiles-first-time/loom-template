@@ -4,13 +4,14 @@ import http from "node:http";
 import path from "node:path";
 import { existsSync, readFileSync, mkdirSync } from "node:fs";
 import { exec } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 import { Aggregator } from "./lib/aggregator.mjs";
 import { FileWatcher } from "./lib/file-watcher.mjs";
 import { createRouter } from "./lib/router.mjs";
 
 const PROJECT_ROOT = process.env.LOOM_PROJECT_ROOT || process.cwd();
-const CONFIG_PATH = path.join(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1")), "config.yaml");
+const CONFIG_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), "config.yaml");
 
 function parseCostRates(text) {
   const rates = {};

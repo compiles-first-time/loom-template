@@ -67,4 +67,4 @@
 | OB-X-02 | Test-case registry per requirement (ADR-0046) — one register per BR, exceptions enumerated | ☑ | BR_01–BR_05 registered + emitting; `requirements/README.md` index |
 | OB-X-03 | Standing research gates: "does the host already provide this?" + "spec or adapter?" | ☑ | ADR-0048 §7 |
 | OB-X-04 | PRs #52 / #54 / #55 merged to main | ☑ | Option-B foundation + Phase 1 + Phase 2 all landed |
-| OB-X-05 | **Flaky test:** `permissions-classifier.test.mjs` intermittently reports 52 vs 60 asserts (0 failures — skips ~8 asserts, never fails). Pre-existing (identical to main). | ☐ | Dedicated root-cause pass (likely a swallowed try/catch or timing skip); undermines "always-green" reliability |
+| OB-X-05 | **Flaky test fixed** — root cause: fragile `URL.pathname` regex (only matched UPPERCASE Windows drive) → malformed path → integration block silently skipped (52 vs 60). Now `fileURLToPath`. | ☑ | Stably 60 across runs. Same bug-class also found + fixed in `observatory/server.mjs` (CONFIG_PATH) + `scripts/lib/deploy.mjs`. Lesson: `2026-07-06-fileurl-to-path-windows-drive-letter.md`. Candidate doctor check noted. |

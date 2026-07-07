@@ -25,6 +25,7 @@
 
 import { promises as fs, existsSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import readline from "node:readline";
 import { spawn, spawnSync } from "node:child_process";
 import { checkDiscoveryGate } from "./discovery-gate.mjs";
@@ -46,7 +47,7 @@ const EVENT_LOG_DIR = path.join(ROOT, "memory", "event-log");
 // imports staying side-effect-free.
 const isMain = (() => {
   try {
-    const here = new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
+    const here = fileURLToPath(import.meta.url);
     const invoked = process.argv[1] ? path.resolve(process.argv[1]) : null;
     return invoked != null && path.resolve(here) === invoked;
   } catch {
