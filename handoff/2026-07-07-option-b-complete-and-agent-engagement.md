@@ -60,7 +60,7 @@ Do not upgrade these claims without evidence.
 
 ## Two decisions pending (Nick)
 
-**1. Agent reputation / "reward" system.** Nick wants the specialist agents genuinely engaged + a non-coercive reward mechanism, framed by the constitution's mutual-self-preservation. `constitution-service` reviewed and **ESCALATED** (Rule 2 unconsented-narrowing + Rule 8 paternalism risk). Conditional-APPROVE requires guardrails **A–F**: (A) transparent track record in the Observatory; (B) consent + 30-day opt-in + contestation; (C) a minimum-dispatch floor (no lock-out feedback loop, Rule 1/20); (D) reputation audit mechanism; (E) non-paternalistic framing; (F) an ADR. **Low-risk fallback:** a *passive* reputation projection (visible track record, NO automatic dispatch preference). Awaiting Nick's choice: full-with-guardrails (draft ADR-0053) vs passive-first.
+**1. Agent reputation / "reward" system — DECIDED (2026-07-07): full system + guardrails A–F, per [ADR-0053](../adr/0053-agent-reputation-and-dispatch.md) (Accepted).** The guardrails are **mandatory conditions** (constitution-service escalation, Rule 2/8), and **preferential dispatch must NOT ship before its guardrails.** Implement in the constitution-sound order: **(step 1)** passive reputation projection (guardrail A — visible track record in the Observatory, safe alone) → **(step 2)** consent + 30-day opt-in + contestation + audit (B, D) → **(step 3)** dispatch floor + reputation-weighting (C, then preferential dispatch), extending HR (ADR-0029). Passive-only (step 1) remains the guaranteed-safe fallback if the full system proves not worth the overhead.
 
 **2. Enterprise-hardness path.** Needs a real deployment + (for a live model) an API key via `collect-credentials` (LR-03, keyring — Nick's involvement).
 
@@ -124,14 +124,17 @@ State: main green, 420/420 JS + Python 9/9, ADRs 0046–0052, roadmap Phases 0�
 (orchestration/roadmap-option-b.md). Loom is now a model-agnostic spec + adapters
 (ADR-0048).
 
-Do, in order (all safe/low-risk):
-1. Critic C3: add an aggregator handler for `destructive_action_decision`
-   (observatory/lib/aggregator.mjs) + recordActivity case + test.
-2. Critic C6: make graceful-skip tests not count as passes.
-3. OB-P3-02: Observatory reads OTLP (live OTel view).
-Then STOP and ask me about: the agent reputation/reward system (constitution-service
-escalated it — needs guardrails A–F or the passive fallback), and the enterprise-
-hardness path (needs a deployment + a model key via keyring).
+Do, in order:
+1. ADR-0053 (agent reputation, full + guardrails A-F) — implement STEP 1 ONLY: the
+   passive reputation projection (reputation_event + aggregator handler + Observatory
+   panel + test). Safe alone (no dispatch preference). Do NOT build preferential
+   dispatch until step 2 (consent/opt-in/contestation/audit) ships.
+2. Critic C3: aggregator handler for `destructive_action_decision` + recordActivity + test.
+3. Critic C6: make graceful-skip tests not count as passes.
+4. OB-P3-02: Observatory reads OTLP (live OTel view).
+Then STOP and ask me about: ADR-0053 steps 2-3 (consent + dispatch floor — they change
+HR dispatch, L2), and the enterprise-hardness path (needs a deployment + a model key
+via keyring).
 
 Discipline: dispatch the `critic` before consequential PRs and `constitution-service`
 for L0-adjacent changes (ADR-0034); verify their claims. loom doctor + full suite green
