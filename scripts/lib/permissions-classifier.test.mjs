@@ -20,6 +20,7 @@
 
 import { promises as fs, existsSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   classifyToolCall,
   parsePermissionsYaml,
@@ -275,7 +276,11 @@ categories:
 
 // ── Integration: real .claude/loom-permissions.yaml ──────────────────────
 {
-  const repoRoot = path.resolve(new URL(".", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1"), "../..");
+  // Use fileURLToPath (not a hand-rolled regex on URL.pathname) so Windows
+  // drive-letter casing + URL-encoding resolve correctly and deterministically
+  // (the old regex only matched an UPPERCASE drive → intermittently produced a
+  // malformed path → existsSync false → this whole block silently skipped). OB-X-05.
+  const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
   const yamlPath = path.join(repoRoot, ".claude", "loom-permissions.yaml");
   if (existsSync(yamlPath)) {
     const real = await loadPermissions(repoRoot);
