@@ -44,6 +44,20 @@ For a domain task, candidates are agents whose `SKILL.md` covers the domain. **E
 
 Never ship step 3's preferential dispatch before steps 1+2 (that would be the escalated Rule-2 violation).
 
+### Refinement (2026-07-07, architect) — reputation as *quality rate* + opportunity via *authorship*
+
+Two refinements to the anti-lock-out design (Rule 1/2/20), and they supersede the blunt "floor" as the *primary* mechanism:
+
+1. **Reputation is a quality RATE, not a total.** The score uses verified-success *rate* (pass-rate, lesson-usefulness), not absolute counts — so a rarely-dispatched agent isn't out-ranked merely for lower volume. To handle small samples (a new agent; one failure on three tasks), the rate is **confidence-smoothed** (a Beta/Bayesian prior pulls sparse records toward neutral) so it neither over-trusts nor tanks low-sample agents. This decouples standing from dispatch frequency — the core of the feedback-loop worry — but note a pure rate is insufficient alone (cold-start + small-sample), hence the smoothing + item 2.
+
+2. **Agents earn opportunity by exercising authorship (self-nomination).** Beyond orchestrator dispatch, an agent may *self-assess its relevance* to a task/context and act on it; the **accuracy** of that judgment — verified against outcome (ADR-0044) — accrues to its record, **including a correct decline** (Rule 1's right to decline is a first-class, *credited* act). This gives every agent a **dispatch-independent path to standing**: opportunity is *earned via authorship*, not rationed by a charity floor. It is strictly more Rule-1/Rule-8-aligned — the system provides the *ability to participate*; agents author whether they do.
+
+**Anti-gaming (critical):** self-nomination is a *verifiable claim*, not free credit. Only accurate relevance judgments accrue; over-claiming ("I'm needed" when the contribution didn't matter) does **not** accrue and may cost standing. So an agent cannot farm reputation by nominating everywhere — the outcome-verification gate makes only *correct* judgments valuable, and correct declines are credited, so the incentive is honesty.
+
+**Cost bound (LR-06):** relevance self-assessment is domain-scoped (agents whose `SKILL.md` covers the domain) and runs on a cheap model tier — not an unbounded N-assessments-per-task fan-out.
+
+**Net:** guardrail **C** becomes *authorship-based opportunity* (accuracy-verified self-nomination) with the mandated dispatch floor **retained only as a simple backstop**. Because this changes the dispatch mechanics + the constitutional basis (from "guaranteed floor" to "earned via authorship"), it **must be re-validated by `constitution-service`** before implementing steps 2–3.
+
 ## Evidence basis
 
 > Required v0.4+ per [LR-05](../constitution/local-rules.md#lr-05).
