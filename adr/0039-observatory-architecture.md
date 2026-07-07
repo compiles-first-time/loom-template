@@ -1,6 +1,6 @@
 # ADR-0039: Observatory architecture — real-time dashboard for Loom operations
 
-**Status:** Proposed
+**Status:** Accepted (Nick, 2026-07-07 — Observatory shipped & operational)
 **Date:** 2026-06-04
 **Author:** Builder — proposed to Nick
 **Confidence:** [M]
