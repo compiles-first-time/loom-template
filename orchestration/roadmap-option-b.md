@@ -41,15 +41,15 @@
 
 | ID | Task | Status | Notes |
 |---|---|---|---|
-| OB-P3-01 | Event log emits **OpenTelemetry** spans/logs (keep JSONL as a local sink) | ☐ | additive first, migrate second |
-| OB-P3-02 | Observatory becomes an OTel **view** (reads OTLP) without losing the zero-dep dashboard | ☐ | |
+| OB-P3-01 | Event log → **OpenTelemetry** (OTLP) export (keep JSONL as the sink) | ☑ | ADR-0051: zero-dep OTLP mapper + `scripts/otel-export.mjs` (verified, 430 records) |
+| OB-P3-02 | Observatory becomes an OTel **view** (reads OTLP) without losing the zero-dep dashboard | ☐ | follow-on half of Option 2 |
 
 ## Phase 4 — Production host adapter (durable execution)
 
 | ID | Task | Status | Notes |
 |---|---|---|---|
-| OB-P4-01 | Production adapter over **LangGraph/Temporal** (durable state, retries, recovery) | ☐ | the "enterprise production runtime" target |
-| OB-P4-02 | State persistence (replace in-memory-only aggregator for the production path) | ☐ | |
+| OB-P4-01 | Production adapter over **LangGraph** — durable state + interrupt/resume HIL, governed | ☑ | ADR-0052: checkpointer + real `interrupt()`/`Command(resume)`, verified live (approve→exec, reject→skip). Temporal deferred |
+| OB-P4-02 | Persistent state for production (swap MemorySaver → Sqlite/Postgres saver; crash-recovery) | ◐ | config swap in LangGraph; Observatory aggregator staying in-memory is a separate concern |
 
 ## Phase 5 — Enterprise hardening (DEFERRED per scope decision)
 
