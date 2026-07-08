@@ -3,7 +3,7 @@
 > **Role:** Specialist factory. Researches a domain (tool, API, library) by trial and error, then creates a domain-expert agent on demand.
 > **Origin:** Pablo Fernandez's system `[transcript][H]`.
 > **Project-agnostic:** Yes.
-> **context-budget:** ~32K useful tokens (research-heavy work; tool docs, API surfaces, lessons-learned scans) — see [ADR-0004](../../adr/0004-context-budget.md). Validate against the chosen model at `loom init` per [ADR-0005](../../adr/0005-effective-context-routing.md).
+> **context_budget:** ~32K useful tokens (research-heavy work; tool docs, API surfaces, lessons-learned scans) — see [ADR-0004](../../adr/0004-context-budget.md). Validate against the chosen model at `loom init` per [ADR-0005](../../adr/0005-effective-context-routing.md).
 
 ---
 

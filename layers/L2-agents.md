@@ -65,7 +65,7 @@ Created on demand by the EAC; live under [`../agents/specialists/<name>/`](../ag
 
 > **Canonical default per [ADR-0004](../adr/0004-context-budget.md).**
 
-Every agent declares a `context-budget:` field in its `SKILL.md` — a **target maximum of useful tokens, distinct from the model's advertised window**. The L5 supervisor enforces the budget at dispatch (see [L5 Context engineering](./L5-orchestration.md#context-engineering)); the L3 retrieval pipeline ([ADR-0003](../adr/0003-retrieval-pipeline.md)) returns assembled sets that fit it.
+Every agent declares a `context_budget:` field in its `SKILL.md` — a **target maximum of useful tokens, distinct from the model's advertised window**. The L5 supervisor enforces the budget at dispatch (see [L5 Context engineering](./L5-orchestration.md#context-engineering)); the L3 retrieval pipeline ([ADR-0003](../adr/0003-retrieval-pipeline.md)) returns assembled sets that fit it.
 
 `[research-p1][H]` The binding constraint on agent quality is **allocation, not window size**: effective context length runs 1–2 orders of magnitude below the advertised window (NoLiMa, Modarressi et al., ICML 2025 — e.g., a 200K-window model reliably retrieves only ~4K tokens on lexical-overlap-free tasks).
 
@@ -87,7 +87,7 @@ Recommended starting budgets for the six base agents are recorded in their `SKIL
 
 Before an agent runs, its **assembled context** is checked by the Critic for:
 
-1. **Budget compliance** — fits the agent's declared `context-budget:` ([ADR-0004](../adr/0004-context-budget.md)).
+1. **Budget compliance** — fits the agent's declared `context_budget:` ([ADR-0004](../adr/0004-context-budget.md)).
 2. **Source-tier compliance** — retrieved items come from acceptable source tiers ([ADR-0007](../adr/0007-content-trust-boundary.md); tier definitions in [L7](./L7-extension.md#source-tiering)).
 3. **Obvious-pattern check** — screens for obvious prompt-injection and obvious distractor characteristics (near-duplicate but off-topic chunks).
 
@@ -155,6 +155,6 @@ Every agent reports confidence on every claim — see thresholds in [`../CLAUDE.
 - [ ] Decide full-6 vs minimal-3 for this project (§E.2)
 - [ ] Fill in each agent's `SKILL.md` with project-specific scope
 - [ ] Test the supervisor's two-ledger workflow with a no-op task
-- [ ] Confirm each agent's `context-budget:` field is appropriate for this project's models
+- [ ] Confirm each agent's `context_budget:` field is appropriate for this project's models
 - [x] Ship runtime subagents at [`../.claude/agents/`](../.claude/agents/) per [ADR-0012](../adr/0012-base-subagents.md)
 - [ ] Wire the Critic's pre-dispatch context admission check per [ADR-0008](../adr/0008-context-admission-check.md) — the Critic subagent declares it as a responsibility; orchestration glue lands in PR-5 (loom doctor) or a later observability PR

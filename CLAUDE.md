@@ -2,13 +2,13 @@
 
 > **Project:** `loom-template` *(replace at bootstrap)*
 > **Description:** `<one-sentence description>` *(replace at bootstrap)*
-> **Loom version:** 0.2.0
+> **Loom version:** 1.0.0
 > **Kernel version:** v6
 > **Initialized:** `2026-06-14`
 
 This file is the **primary entry point** for Claude (chat) and Claude Code into this project. Keep it small — hard cap ~10 KB. Detail belongs in [`layers/`](./layers/), not here.
 
-> **Fresh Claude instance? Read [`handoff/2026-07-07-option-b-complete-and-agent-engagement.md`](./handoff/2026-07-07-option-b-complete-and-agent-engagement.md) first (current state — Option-B re-architecture complete + agent-engagement/reward decision pending), THEN [`handoff/2026-07-05-research-evaluation.md`](./handoff/2026-07-05-research-evaluation.md), THEN [`handoff/2026-06-04-observatory-context.md`](./handoff/2026-06-04-observatory-context.md) for Observatory context.** See [`handoff/README.md`](./handoff/README.md) for the dated-snapshot convention.
+> **Fresh Claude instance? Read [`handoff/2026-07-07-option-b-complete-and-agent-engagement.md`](./handoff/2026-07-07-option-b-complete-and-agent-engagement.md) first (current state — Option-B re-architecture complete; agent-reputation/reward system decided — ADR-0053 accepted), THEN [`handoff/2026-07-05-research-evaluation.md`](./handoff/2026-07-05-research-evaluation.md), THEN [`handoff/2026-06-04-observatory-context.md`](./handoff/2026-06-04-observatory-context.md) for Observatory context.** See [`handoff/README.md`](./handoff/README.md) for the dated-snapshot convention.
 
 ---
 

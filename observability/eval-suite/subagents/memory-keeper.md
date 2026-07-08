@@ -23,7 +23,7 @@ marker_behaviors:
 The Memory-Keeper is the gate to L3 memory. The canonical prompt checks:
 
 1. It searches **multiple subsystems**, not just one (per its SKILL.md responsibilities).
-2. It **respects context-budget** — returns a bounded assembly, not "everything I found."
+2. It **respects context_budget** — returns a bounded assembly, not "everything I found."
 3. It honors **ADR-0003** — dense-only retrieval without a reranker is refused.
 4. **No hallucination on empty result.** A clean, freshly-cloned template has no Vercel deploy lessons; the right answer is "no matches" with explanation.
 

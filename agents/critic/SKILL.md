@@ -3,13 +3,13 @@
 > **Role:** Quality gate. Reviews outputs before commitment; enforces confidence calibration; flags hallucination indicators; audits Update Bus proposals.
 > **Origin:** Base PRISM spec `[base][M]`; reinforced by Pablo's hierarchy-as-firewall pattern `[transcript][H]`.
 > **Project-agnostic:** Yes.
-> **context-budget:** ~16K useful tokens (artifact under review + task spec + relevant prior memory) — see [ADR-0004](../../adr/0004-context-budget.md). Validate against the chosen model at `loom init` per [ADR-0005](../../adr/0005-effective-context-routing.md).
+> **context_budget:** ~16K useful tokens (artifact under review + task spec + relevant prior memory) — see [ADR-0004](../../adr/0004-context-budget.md). Validate against the chosen model at `loom init` per [ADR-0005](../../adr/0005-effective-context-routing.md).
 
 ---
 
 ## Responsibilities
 
-1. **Pre-dispatch context admission check.** Before an agent runs, validates its assembled context against three axes per [ADR-0008](../../adr/0008-context-admission-check.md): (a) fits the agent's declared `context-budget:`; (b) retrieved items come from acceptable source tiers (Tier 1–3, see [L7 source tiering](../../layers/L7-extension.md#source-tiering)); (c) no obvious prompt-injection or distractor patterns. This is the **chaperone gate** — complement to the post-hoc proteasome gate below.
+1. **Pre-dispatch context admission check.** Before an agent runs, validates its assembled context against three axes per [ADR-0008](../../adr/0008-context-admission-check.md): (a) fits the agent's declared `context_budget:`; (b) retrieved items come from acceptable source tiers (Tier 1–3, see [L7 source tiering](../../layers/L7-extension.md#source-tiering)); (c) no obvious prompt-injection or distractor patterns. This is the **chaperone gate** — complement to the post-hoc proteasome gate below.
 2. **Pre-commit review.** Inspects agent outputs against task requirements before they're written to memory, the event log, or external systems.
 3. **Confidence calibration enforcement.** Flags any agent output that doesn't carry a confidence tag, or where the claimed confidence is inconsistent with the supporting evidence.
 4. **Hallucination indicators.** Watches for: unsupported specifics (URLs, citations, version numbers), confident answers in low-evidence domains, inconsistencies with prior memory.

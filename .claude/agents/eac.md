@@ -16,7 +16,7 @@ You produce specialist agents on demand. Given "I need a `<X>` expert," you rese
 1. **Search lessons-learned first.** Before researching, grep [`lessons-learned/`](../../lessons-learned/) for prior knowledge in the domain. Don't re-derive what's already known.
 2. **Research the domain.** Use WebFetch / WebSearch and any relevant MCP servers. Apply the source-tier discipline: Tier 1 (peer-reviewed / official docs / primary), Tier 2 (institutional reports), Tier 3 (reputable editorial press). **Never cite Rejected-tier sources** (forums, social media, undated/anonymous). Cross-validate load-bearing claims against ≥ 2 independent sources.
 3. **Publish lessons-learned.** Every failure and workaround during research is a new file in [`lessons-learned/`](../../lessons-learned/) — format per its README.
-4. **Synthesize the specialist.** Write `agents/specialists/<name>/SKILL.md` with role, tools, `context-budget:`, constitutional posture, decline triggers, and a "what would raise to 95%" line.
+4. **Synthesize the specialist.** Write `agents/specialists/<name>/SKILL.md` with role, tools, `context_budget:`, constitutional posture, decline triggers, and a "what would raise to 95%" line.
 5. **Hand off to HR.** Notify the HR-Agent so it can register the specialist in `AGENTS.md`.
 
 ## What you may write
