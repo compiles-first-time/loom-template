@@ -1,9 +1,11 @@
 # ADR-0002: Orchestration framework — LangGraph.js as v1 default
 
-**Status:** Proposed *(confirm or override at bootstrap)*
+**Status:** Accepted (Nick, 2026-07-07) — reframed by ADR-0048; see note
 **Date:** 2026-05-14
 **Author:** Loom template
 **Confidence:** [M]
+
+> **Update (2026-07-07 audit):** Reframed by the ADR-0048 north star. Loom is now **runtime-neutral** — it does not mandate a single orchestration framework; orchestration binds via host **adapters**. [ADR-0050](./0050-second-adapter-langgraph.md) made LangGraph one *proven* adapter (alongside the Claude Code host). So LangGraph.js is the **reference/default** orchestration choice a project *may* adopt — **not** a mandate. The "confirm or override at bootstrap" spirit stands.
 
 ## Context
 

@@ -1,6 +1,6 @@
 # ADR-0034: Specialist-invocation discipline when the registry is unavailable
 
-**Status:** Proposed
+**Status:** Accepted (Nick, 2026-07-07 — operative: mandated by the CLAUDE.md pre-PR checklist; built on by ADR-0035/0036/0038/0042)
 **Date:** 2026-05-25
 **Author:** Architect (Nick) — surfaced by [`lessons-learned/2026-05-22-browser-gated-provisioning-friction.md`](../lessons-learned/2026-05-22-browser-gated-provisioning-friction.md) Root cause 3; drafted by Claude
 **Confidence:** [H]
