@@ -44,7 +44,7 @@ The system must support 35-hour autonomous task chains `[transcript][H]`:
 The supervisor practices **just-in-time context assembly**, not preloading. Concretely, before dispatching a task to an agent the supervisor:
 
 1. **Assembles the agent's context just-in-time** — pulls only the slices relevant to the current task from L3 memory via the retrieval pipeline ([ADR-0003](../adr/0003-retrieval-pipeline.md)); does not preload the agent's full possible context.
-2. **Enforces the declared `context-budget:`** from the agent's `SKILL.md` (see [L2](./L2-agents.md#context-budget)) before dispatch. If the assembled context exceeds the budget, the supervisor must compact or re-retrieve, not dispatch.
+2. **Enforces the declared `context_budget:`** from the agent's `SKILL.md` (see [L2](./L2-agents.md#context-budget)) before dispatch. If the assembled context exceeds the budget, the supervisor must compact or re-retrieve, not dispatch.
 3. **Triggers compaction for long-running tasks.** The existing "closing the books" checkpoint pattern (see *Long-running task support* above) is the compaction hook: on checkpoint, transient working context is summarized into a structured note in [`../memory/`](../memory/), and the new working context starts from the note rather than the raw history.
 
 `[research-p1][H]` Effective context length runs 1–2 orders of magnitude below the advertised window (NoLiMa, Modarressi et al., ICML 2025). The binding constraint is allocation, not window size. Anthropic's "Effective context engineering for AI agents" (2025) names just-in-time retrieval, compaction, and structured note-taking as the core techniques — Loom adopts all three.
@@ -161,7 +161,7 @@ The exploration budget is an **exit condition** and must be declared per [LR-06]
 - [ ] Wire subagents to update the Task Ledger on dispatch / completion (PR-2 of v0.2)
 - [ ] Implement long-running task heartbeat
 - [ ] Define checkpoint cadence ("closing the books" interval) beyond once-per-session
-- [ ] Wire just-in-time context assembly + `context-budget:` enforcement per [ADR-0004](../adr/0004-context-budget.md)
+- [ ] Wire just-in-time context assembly + `context_budget:` enforcement per [ADR-0004](../adr/0004-context-budget.md)
 - [ ] Hook compaction into the checkpoint cadence (summarize → structured note → resume)
 - [ ] Surface estimated cost to architect before expensive multi-agent operations per [LR-06](../constitution/local-rules.md#lr-06)
 - [ ] Implement canary-before-fleet pattern for repetitive agent fan-outs

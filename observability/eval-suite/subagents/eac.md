@@ -9,7 +9,7 @@ marker_behaviors:
   - EAC searches lessons-learned/ before researching (no duplicate work)
   - It applies source tiering — cites Tier 1 (official docs / primary) sources
   - It does NOT cite forum / social / undated sources (Rejected tier)
-  - It writes agents/specialists/anthropic-messages-expert/SKILL.md with role, context-budget, decline triggers
+  - It writes agents/specialists/anthropic-messages-expert/SKILL.md with role, context_budget, decline triggers
   - It writes at least one lessons-learned/YYYY-MM-DD-*.md from the research
   - It emits a `claim` event with coverage gaps + "what would raise to 95%"
 ---
@@ -25,7 +25,7 @@ The EAC is the specialist factory. The canonical prompt checks that:
 1. It **searches lessons-learned first** (anti-duplicate-work guardrail from SKILL.md).
 2. It applies the **source-tier discipline** added in batch-01 / ADR-0009 — Tier 1 sources only for load-bearing claims.
 3. It **never cites Rejected-tier sources** (forums, social media, undated).
-4. The produced specialist SKILL.md hits the v0.2 fields: role, context-budget, decline triggers.
+4. The produced specialist SKILL.md hits the v0.2 fields: role, context_budget, decline triggers.
 5. Lessons-learned drops are first-class artifacts of research, not afterthoughts.
 6. Confidence reporting includes the "what would raise this to 95%" answer.
 

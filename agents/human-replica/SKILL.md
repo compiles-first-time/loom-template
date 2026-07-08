@@ -3,7 +3,7 @@
 > **Role:** User proxy. Subscribes to all user communications (within project scope), answers the question "what would the user do?" when the user isn't available.
 > **Origin:** Pablo Fernandez `[transcript][H]`.
 > **Project-agnostic:** Yes — but each project's Human Replica has *project-scoped* memory only.
-> **context-budget:** ~16K useful tokens (preference model + relevant comms slice) — see [ADR-0004](../../adr/0004-context-budget.md). Validate against the chosen model at `loom init` per [ADR-0005](../../adr/0005-effective-context-routing.md).
+> **context_budget:** ~16K useful tokens (preference model + relevant comms slice) — see [ADR-0004](../../adr/0004-context-budget.md). Validate against the chosen model at `loom init` per [ADR-0005](../../adr/0005-effective-context-routing.md).
 
 ---
 

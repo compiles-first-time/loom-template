@@ -3,7 +3,7 @@
 > **Role:** Team manager. Maintains the agent roster; creates and retires agents; assigns names; tracks each agent's role, scope, and current state.
 > **Origin:** Pablo Fernandez's "non-human resource agent" `[transcript][H]`.
 > **Project-agnostic:** Yes.
-> **context-budget:** ~8K useful tokens (roster + lifecycle state; small instruction footprint) — see [ADR-0004](../../adr/0004-context-budget.md). Validate against the chosen model at `loom init` per [ADR-0005](../../adr/0005-effective-context-routing.md).
+> **context_budget:** ~8K useful tokens (roster + lifecycle state; small instruction footprint) — see [ADR-0004](../../adr/0004-context-budget.md). Validate against the chosen model at `loom init` per [ADR-0005](../../adr/0005-effective-context-routing.md).
 
 ---
 

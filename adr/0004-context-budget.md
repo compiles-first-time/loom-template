@@ -20,7 +20,7 @@ Combined with ADR-0003: retrieval and assembly must produce a set that **fits th
 
 Every agent **declares a context budget** in its `SKILL.md`. The orchestrator (the L5 supervisor) **enforces** that budget at dispatch time. Retrieval (ADR-0003) and assembly respect it.
 
-- `SKILL.md` gets a `context-budget:` field — a target maximum of *useful* tokens, distinct from the model's advertised window.
+- `SKILL.md` gets a `context_budget:` field — a target maximum of *useful* tokens, distinct from the model's advertised window.
 - The supervisor (a) **assembles each agent's context just-in-time** rather than preloading; (b) **enforces the declared budget** before dispatch; (c) **triggers compaction** for long-running tasks, hooked into the existing "closing the books" checkpoint pattern in L5.
 - The L3 retrieval pipeline returns a set that fits the requesting agent's budget — overflow is the retriever's problem, not the agent's.
 

@@ -22,7 +22,7 @@ This is a sound architectural inference from Phase 1 evidence rather than a cita
 
 Before an agent runs, its **assembled context** passes a lightweight admission check, performed by the Critic at dispatch time. The check verifies:
 
-1. **Budget compliance** — the assembled context fits the agent's declared `context-budget:` (ADR-0004).
+1. **Budget compliance** — the assembled context fits the agent's declared `context_budget:` (ADR-0004).
 2. **Source-tier compliance** — retrieved items in the context come from acceptable source tiers (ADR-0007, with tier definitions in ADR-0009 / L7).
 3. **Obvious-pattern check** — the context is screened for obvious prompt-injection patterns and obvious distractor characteristics (e.g., near-duplicate but off-topic chunks).
 

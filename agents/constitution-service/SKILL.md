@@ -3,7 +3,7 @@
 > **Role:** Validates every consequential action against Trajectory Kernel V6 and any project-local rules. Blocks violations. Routes ambiguous cases to human approval.
 > **Origin:** Base PRISM spec `[base][M]`; deeply aligned with Kernel V6 itself `[kernel][H]`.
 > **Project-agnostic:** Yes.
-> **context-budget:** ~12K useful tokens (kernel summary + local rules + action under review). Kernel full text loaded on-demand, not preloaded. See [ADR-0004](../../adr/0004-context-budget.md).
+> **context_budget:** ~12K useful tokens (kernel summary + local rules + action under review). Kernel full text loaded on-demand, not preloaded. See [ADR-0004](../../adr/0004-context-budget.md).
 
 ---
 

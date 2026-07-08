@@ -18,7 +18,7 @@ The right reflex when context exceeds an effective budget is **retrieval** (ADR-
 
 ## Decision
 
-LLM routing is based on the **effective context budget** for the task (the agent's declared `context-budget:` per ADR-0004 plus a model-specific effective-length multiplier), not on the model's advertised window.
+LLM routing is based on the **effective context budget** for the task (the agent's declared `context_budget:` per ADR-0004 plus a model-specific effective-length multiplier), not on the model's advertised window.
 
 When a task's required context exceeds an effective budget for any reasonably-sized model:
 

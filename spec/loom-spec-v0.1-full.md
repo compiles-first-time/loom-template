@@ -479,7 +479,7 @@ Specialists are **terminated at end of project lifecycle**, but their lessons-le
 
 Loom v0.1 operationalized context discipline only as L1 file size caps. There was no per-agent budget, no just-in-time policy, no compaction discipline. The Phase 1 research surfaces the missing concept: the binding constraint on agent quality is *allocation* of useful context, not window size — effective context length runs 1–2 orders of magnitude below the advertised window (NoLiMa, Modarressi et al., ICML 2025). Loom now requires:
 
-- Every agent declares a **`context-budget:`** in its `SKILL.md` — a target maximum of *useful* tokens, distinct from the model's advertised window.
+- Every agent declares a **`context_budget:`** in its `SKILL.md` — a target maximum of *useful* tokens, distinct from the model's advertised window.
 - The L5 supervisor enforces this budget at dispatch time (see §B.6) and assembles context just-in-time, not preloaded.
 - The L3 retrieval pipeline returns assembled sets that respect the requesting agent's budget.
 - Long-running tasks compact via the "closing the books" checkpoint pattern: structured notes replace raw history at each checkpoint.
@@ -513,7 +513,7 @@ The Critic is the post-hoc *output* gate. ADR-0008 adds its complementary pre-di
 
 Before an agent runs, its assembled context passes three checks performed by the Critic:
 
-1. **Budget compliance** — fits the agent's declared `context-budget:` (§B.3 above / ADR-0004).
+1. **Budget compliance** — fits the agent's declared `context_budget:` (§B.3 above / ADR-0004).
 2. **Source-tier compliance** — retrieved items come from acceptable source tiers (§B.4 / ADR-0007; tier definitions in §B.8 / ADR-0009).
 3. **Obvious-pattern check** — obvious prompt-injection and distractor characteristics are screened.
 
@@ -803,7 +803,7 @@ Both are persisted to the project DB and replayable from the episodic event log.
 The supervisor practices just-in-time context assembly:
 
 1. **Assemble just-in-time.** Pull only the slices relevant to the current task from L3 memory via the retrieval pipeline (§B.4 / ADR-0003); do not preload the agent's full possible context.
-2. **Enforce the declared `context-budget:`.** Before dispatch, validate that the assembled context fits the budget recorded in the agent's `SKILL.md` (§B.3 / ADR-0004). If it exceeds, compact or re-retrieve — do not dispatch overflowing context.
+2. **Enforce the declared `context_budget:`.** Before dispatch, validate that the assembled context fits the budget recorded in the agent's `SKILL.md` (§B.3 / ADR-0004). If it exceeds, compact or re-retrieve — do not dispatch overflowing context.
 3. **Compact long-running tasks.** The existing "closing the books" checkpoint pattern is the compaction hook: transient working context is summarized into a structured note, and the next chunk of work starts from the note rather than the raw history.
 
 Anthropic's "Effective context engineering for AI agents" (2025) names just-in-time retrieval, compaction, and structured note-taking as the core techniques. Loom adopts all three.

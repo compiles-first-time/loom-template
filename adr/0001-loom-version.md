@@ -5,6 +5,8 @@
 **Author:** Loom template
 **Confidence:** [H]
 
+> **Update (2026-07-08 audit):** The canonical `Loom version` is now **1.0.0** — the first *stable* release (model-agnostic spec + adapters, conformance-tested, dogfooded). The "v0.3 upgrade ADR" promised below never shipped as a standalone doc; the version history *is* the ADR cascade itself (ADR-0011 = v0.2 runtime → the informal v0.3–v1.0 PR cascades → ADR-0048–0053 Option-B). The `v0.2.0` baseline in the Decision is retained as the historical instantiation point; CLAUDE.md's header now reads `1.0.0`. Minor bumps (v1.0.1, v1.1.0, …) from here.
+
 ## Context
 
 A new project is being bootstrapped from the Loom Architectural Base Spec Template. We need an explicit record of which version of Loom this project was instantiated from, so that future Update Bus propagation can compute deltas.
