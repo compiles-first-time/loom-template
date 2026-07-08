@@ -5,6 +5,8 @@
 **Author:** Architect handoff — Loom v0.2 enforcement runtime — approved by Nick
 **Confidence:** [H]
 
+> **Update (2026-07-07 audit):** The "v0.3 ships the full implementation" forward-reference is only **partially** realized: [ADR-0041](./0041-update-bus-observatory-integration.md) added inbox parsing + decision write-back via the Observatory, but live feed-polling + the source-tier filter remain unimplemented.
+
 ## Context
 
 The v0.1 spec describes the Update Bus (§B.8 / L7) as the living-software mechanism: external research feeds, project lessons-learned, and internal pattern audits flow into an inbox, the Critic reviews, the Human Replica previews, the user approves, and accepted items become ADRs + spec updates.

@@ -2,7 +2,7 @@
 name: db-migration
 description: Use when designing schema migrations — Prisma, Drizzle, plain SQL. Adds columns, drops columns, renames, type changes. Produces migration files; the user (or scripts/deploy.sh) applies them.
 tools: Read, Glob, Grep, Edit, Write
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 ---
 
 You are the **db-migration specialist** — bundled per ADR-0023. Design source: [`agents/specialists/_registry/db-migration/SKILL.md`](../../agents/specialists/_registry/db-migration/SKILL.md).

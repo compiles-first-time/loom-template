@@ -5,6 +5,8 @@
 **Author:** Architect handoff — Loom v0.2 enforcement runtime — approved by Nick
 **Confidence:** [H]
 
+> **Update (2026-07-07 audit):** The "seven checks" below are the original v0.2 set. `loom doctor` has since grown to ~15 checks (extended by ADRs 0017, 0022, 0023, 0031, 0033, 0034, 0038, 0044, 0045). The current authoritative list is in the `scripts/lib/doctor.mjs` header comment.
+
 ## Context
 
 PRs 1–4 added enforcement runtime pieces (hooks, subagents, bootstrap unification, lessons auto-suggest). Each can drift independently — placeholders forgotten, CLAUDE.md grows past its cap, YAML and JSON drift, subagent frontmatter breaks, hooks disabled silently. The v0.1 spec assumed a doctor existed (in the v0.2 roadmap) but didn't ship one.

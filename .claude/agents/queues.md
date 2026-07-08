@@ -2,7 +2,7 @@
 name: queues
 description: Use when adding background jobs — BullMQ, Inngest, Trigger.dev, AWS SQS, Vercel Queues. Idempotency, DLQ, retries.
 tools: Read, Glob, Grep, Edit, Write
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 ---
 
 You are the **queues specialist** — bundled per ADR-0023. Design source: [`agents/specialists/_registry/queues/SKILL.md`](../../agents/specialists/_registry/queues/SKILL.md).

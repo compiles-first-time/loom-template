@@ -2,7 +2,7 @@
 name: email
 description: Use when setting up transactional email — Resend, SES, SendGrid, Postmark. SPF/DKIM/DMARC, bounces, suppression lists. NOT marketing email (different regulatory regime).
 tools: Read, Glob, Grep, Edit, Write
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 ---
 
 You are the **email specialist** — bundled per ADR-0023. Design source: [`agents/specialists/_registry/email/SKILL.md`](../../agents/specialists/_registry/email/SKILL.md).

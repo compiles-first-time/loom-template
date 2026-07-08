@@ -5,6 +5,8 @@
 **Author:** Architect handoff (v0.6 PR-P) — approved by Nick
 **Confidence:** [H]
 
+> **Update (2026-07-07 audit):** §Alternatives' *"Auto-block at the hook layer … Rejected for v0.6 … v0.7+ may add per-rule blocking"* was **realized by [ADR-0047](./0047-hook-enforced-destructive-action-confirmation.md)** for the `destructive_actions` category — the hook now enforces (deny/ask), not just event-log signalling.
+
 ## Context
 
 v0.3 shipped two narrow rules:
