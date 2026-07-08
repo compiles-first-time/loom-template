@@ -9,7 +9,7 @@
 
 [ADR-0032 §E](./0032-deployment-hardening.md) surfaced a bonus finding from the AnonForum deployment session (2026-05-21): **MCP servers and CLI tools disagree on which `(platform, action)` tuples actually work**. The Vercel MCP exposes `deploy_to_vercel` but the implementation just returns "run the Vercel CLI"; the Supabase MCP has rich read coverage but several mutation actions delegate back to `supabase` CLI; some Stripe MCPs cover product/webhook configuration but require browser steps for billing portal access.
 
-Specialists driving these platforms (per [ADR-0024](./0024-12-starter-specialists.md)) need to know *before* picking a tool whether their intended action is end-to-end automatable, partially automatable (CLI + MCP collaboration), or fundamentally browser-gated (human-in-the-loop required). Without this knowledge a specialist will:
+Specialists driving these platforms (per [ADR-0024](./0024-starter-specialists.md)) need to know *before* picking a tool whether their intended action is end-to-end automatable, partially automatable (CLI + MCP collaboration), or fundamentally browser-gated (human-in-the-loop required). Without this knowledge a specialist will:
 
 - Pick the MCP confidently, discover mid-flow it delegates back to CLI, and waste a tool-call round-trip
 - Pick the CLI when an MCP would have kept the credential out of tool args (per [L4 MCP-over-CLI guidance](../layers/L4-tooling.md#mcp-over-cli-for-credentialed-services))

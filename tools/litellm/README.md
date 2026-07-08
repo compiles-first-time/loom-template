@@ -22,7 +22,7 @@ litellm --config tools/litellm/config.yaml --port 4000
 | Alias | Default model | Use for |
 |---|---|---|
 | `loom-haiku` | claude-haiku-4-5 | Mechanical tasks, classification, CRUD |
-| `loom-sonnet` | claude-sonnet-4-6 | Standard code generation, engineering tasks |
+| `loom-sonnet` | claude-sonnet-5 | Standard code generation, engineering tasks |
 | `loom-opus` | claude-opus-4-8 | Deep research, synthesis, complex reasoning |
 
 Fallback chains are defined in `config.yaml` — Anthropic → OpenAI → local Ollama.

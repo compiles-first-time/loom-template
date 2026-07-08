@@ -5,6 +5,8 @@
 **Author:** Nick / Builder
 **Confidence:** [H] on model-tier assignments; [M] on exact cost-reduction estimates
 
+> **Update (2026-07-07 audit):** The Sonnet-tier ID was bumped from `claude-sonnet-4-6` (this ADR's original pin) to `claude-sonnet-5` (current generation) across the 15 Sonnet agents + LiteLLM config. The `model-id-current` doctor check proposed below to catch exactly this staleness remains **unbuilt** — recommended follow-up.
+
 ---
 
 ## Context
@@ -24,7 +26,7 @@ Each `.claude/agents/<name>.md` file now carries a `model:` field in its YAML fr
 | Tier | Model | Agents | Rationale |
 |---|---|---|---|
 | **Haiku** | claude-haiku-4-5-20251001 | constitution-service, hr, human-replica | Read-only pattern-matching, CRUD, preference lookup. Deterministic rules → no frontier reasoning needed. ~20× cheaper than Opus. |
-| **Sonnet** | claude-sonnet-4-6 | critic, memory-keeper, auth, ci, credential-setup, db-migration, deploy, email, error-tracking, file-storage, monitoring, oauth, payments, queues, secrets | Standard engineering tasks: code generation, schema design, config wiring. Sonnet covers these reliably at ~4× lower cost than Opus. |
+| **Sonnet** | claude-sonnet-5 | critic, memory-keeper, auth, ci, credential-setup, db-migration, deploy, email, error-tracking, file-storage, monitoring, oauth, payments, queues, secrets | Standard engineering tasks: code generation, schema design, config wiring. Sonnet covers these reliably at ~4× lower cost than Opus. |
 | **Opus** | claude-opus-4-8 | eac | Expert Agent Creator performs deep domain research, multi-source synthesis, and novel specialist design. Frontier reasoning quality is load-bearing for this agent. |
 
 **Estimated savings:** In orchestration-heavy sessions where governance agents (constitution-service, hr) are invoked frequently, routing them to Haiku reduces per-session token cost by an estimated 30–50% relative to an all-Opus session. Actual savings depend on invocation frequency.
@@ -34,7 +36,7 @@ Each `.claude/agents/<name>.md` file now carries a `model:` field in its YAML fr
 For code that makes LLM calls directly (LangGraph.js orchestration, custom tool agents, scripts), Loom ships a LiteLLM proxy at `tools/litellm/config.yaml`. It exposes three OpenAI-compatible aliases backed by Anthropic, with OpenAI fallbacks:
 
 - `loom-haiku` → claude-haiku-4-5 (fallback: gpt-4o-mini → loom-local)
-- `loom-sonnet` → claude-sonnet-4-6 (fallback: gpt-4o)
+- `loom-sonnet` → claude-sonnet-5 (fallback: gpt-4o)
 - `loom-opus` → claude-opus-4-8 (fallback: o1-preview → loom-sonnet)
 
 Endpoint: `http://localhost:4000`. Start with `scripts/router.ps1 start` (Windows) or `scripts/router.sh start`.

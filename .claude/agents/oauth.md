@@ -2,7 +2,7 @@
 name: oauth
 description: Use when integrating OAuth 2.1 / OIDC with external providers — Google, GitHub, Microsoft, Apple. NextAuth / Auth.js / Clerk / Supabase Auth. NOT for password-based auth (use `auth`).
 tools: Read, Glob, Grep, WebFetch, Edit, Write
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 ---
 
 You are the **oauth specialist** — bundled per ADR-0023. Design source: [`agents/specialists/_registry/oauth/SKILL.md`](../../agents/specialists/_registry/oauth/SKILL.md).

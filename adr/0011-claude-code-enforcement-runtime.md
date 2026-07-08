@@ -5,6 +5,8 @@
 **Author:** Architect handoff — Loom v0.2 enforcement runtime — approved by Nick
 **Confidence:** [H]
 
+> **Update (2026-07-07 audit):** The "transparency layer, **not** an enforcement layer" stance in this ADR was **superseded on that point by [ADR-0047](./0047-hook-enforced-destructive-action-confirmation.md)** — the `PreToolUse` hook now *blocks* (`deny`) / *confirms* (`ask`) destructive actions via `decideDestructiveAction`. The hook-emits-Rule-22-events design here remains accurate; only the no-blocking posture changed.
+
 ## Context
 
 A real agentic session (Claude Code, Opus 4.7) bootstrapped a Next.js + Supabase + AI SDK forum app from the v0.1 template. The session exposed concrete gaps between what the spec promises and what actually runs:

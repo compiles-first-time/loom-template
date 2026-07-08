@@ -22,7 +22,7 @@ model_list:
   # Agents: critic, memory-keeper, all 12 specialists
   - model_name: loom-sonnet
     litellm_params:
-      model: anthropic/claude-sonnet-4-6
+      model: anthropic/claude-sonnet-5
       api_key: os.environ/ANTHROPIC_API_KEY
 
   # ── Opus tier — deep research and synthesis ─────────────────────────────────

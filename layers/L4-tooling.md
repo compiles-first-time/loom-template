@@ -65,7 +65,7 @@ Each base agent and specialist carries a `model:` field in its `.claude/agents/<
 | Tier | Model | Agents |
 |---|---|---|
 | **Haiku** | claude-haiku-4-5 | constitution-service, hr, human-replica |
-| **Sonnet** | claude-sonnet-4-6 | critic, memory-keeper, all 12 specialists |
+| **Sonnet** | claude-sonnet-5 | critic, memory-keeper, all 12 specialists |
 | **Opus** | claude-opus-4-8 | eac |
 
 Governance agents (constitution-service, hr) perform rule lookup and CRUD — Haiku is sufficient and ~20× cheaper than Opus per token. Specialists do focused engineering work — Sonnet handles these reliably. EAC requires frontier reasoning for deep domain synthesis — Opus only. See [ADR-0045](../adr/0045-per-agent-model-routing.md).
@@ -77,7 +77,7 @@ For code that calls LLMs directly (LangGraph.js orchestration, custom tools), ro
 | Alias | Primary | Fallback chain |
 |---|---|---|
 | `loom-haiku` | claude-haiku-4-5 | gpt-4o-mini → loom-local |
-| `loom-sonnet` | claude-sonnet-4-6 | gpt-4o |
+| `loom-sonnet` | claude-sonnet-5 | gpt-4o |
 | `loom-opus` | claude-opus-4-8 | o1-preview → loom-sonnet |
 
 **Start:** `scripts/router.ps1 start` (Windows) or `scripts/router.sh start` (Linux/macOS).

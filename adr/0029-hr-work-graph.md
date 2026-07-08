@@ -66,9 +66,7 @@ For each work item, the generator runs the title + notes through the same intent
 
 The generator regenerates both files on each run. The markdown ledger has a `## Manual edits` section near the bottom; content **below** the auto-generated section is preserved by the user's convention (the script doesn't enforce it for v1.0 MVP — future revision can parse + preserve).
 
-Dependency edges are not auto-inferred in v1.0. The user (or HR-Agent in a dispatch session) hand-edits `work-graph.json` to add `depends_on` arrays; re-running the generator preserves them by reading the existing JSON and merging.
-
-**Actually for v1.0 MVP, the generator OVERWRITES on each run.** Edge inference is deferred to v1.0.1 — once we see real projects, we'll know which edges are inferable and which require human judgment.
+Dependency edges are not auto-inferred in v1.0. **In the v1.0 MVP the generator OVERWRITES `work-graph.json` on each run** — hand-added `depends_on` arrays do NOT survive a regenerate. Merge-on-regenerate (reading the existing JSON and preserving user-added edges) is deferred to v1.0.1, once real projects show which edges are reliably inferable vs. require human judgment.
 
 ### F. Proposes, never applies
 
