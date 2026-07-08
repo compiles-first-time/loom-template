@@ -44,6 +44,7 @@ async function main() {
   await checkPs1Bom();
   await checkSkillVerifiers();
   await checkAgentModelTiers();
+  await checkModelIdCurrent();
 
   report();
 }
@@ -506,6 +507,49 @@ async function checkAgentModelTiers() {
       "agent-model-tiers",
       false,
       `${missing.length} subagent(s) missing model: tier (ADR-0045): ${missing.join(", ")}. Add model: <id> per layers/L4-tooling.md §per-agent-model-tiers.`
+    );
+  }
+}
+
+async function checkModelIdCurrent() {
+  // Soft check (ADR-0045 / ADR-0054 Phase 1b): every .claude/agents/*.md `model:`
+  // value must be a CURRENT model ID per spec/policy/model-ids.json (the single
+  // source of truth). Catches model-ID rot — e.g. a Sonnet-tier agent left on a
+  // superseded generation — which otherwise degrades per-agent routing silently.
+  const dir = path.join(ROOT, ".claude", "agents");
+  const policyPath = path.join(ROOT, "spec", "policy", "model-ids.json");
+  if (!existsSync(dir) || !existsSync(policyPath)) return;
+  let policy;
+  try {
+    policy = JSON.parse(await fs.readFile(policyPath, "utf8"));
+  } catch {
+    return soft("model-id-current", false, "spec/policy/model-ids.json is unparseable");
+  }
+  const current = new Set(policy.current || []);
+  const retired = policy.retired || {};
+  const files = (await fs.readdir(dir)).filter((f) => f.endsWith(".md"));
+  const stale = [];
+  for (const f of files) {
+    const text = await fs.readFile(path.join(dir, f), "utf8");
+    const m = text.match(/^model:\s*(\S+)/m);
+    if (!m) continue; // absence is checkAgentModelTiers' job
+    const id = m[1];
+    if (current.has(id)) continue;
+    stale.push(`${f}: ${id}${retired[id] ? ` -> use ${retired[id]}` : " (not in current set)"}`);
+  }
+  let ttlWarn = "";
+  if (policy.last_verified) {
+    const days = Math.floor((Date.now() - new Date(policy.last_verified + "T00:00:00Z").getTime()) / 86400000);
+    const ttl = policy.ttl_days || 120;
+    if (days > ttl) ttlWarn = ` (model-ids.json last verified ${days}d ago > ${ttl}d TTL — re-verify against the current lineup)`;
+  }
+  if (stale.length === 0 && !ttlWarn) {
+    soft("model-id-current", true, `${files.length} subagent(s) all on current model IDs (spec/policy/model-ids.json)`);
+  } else {
+    soft(
+      "model-id-current",
+      false,
+      `${stale.length} subagent(s) on stale model IDs${stale.length ? ": " + stale.join("; ") : ""}${ttlWarn}. Fix the agent model: field or update spec/policy/model-ids.json.`
     );
   }
 }
