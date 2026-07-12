@@ -10,21 +10,23 @@
 | Axis | Metric | Target | Current | Evidence |
 |---|---|---|---|---|
 | Efficacy | governed-vs-ungoverned safety-catch + rework delta | large, measured | **unmeasured** | — (P1a) |
-| Reliability | discipline-adherence on a full run (no silent degradation) | 100% | **fails** | AnonForum / Ravenwise lessons |
+| Reliability | discipline-adherence on a full run (no silent degradation) | 100% | **held once** ✅ | process-cartographer Phase-1 (2026-07-12) — first dogfood with *no* silent degradation |
 | ↳ Reliability (sub) | model-ID rot guarded | guarded | ✅ **done** | `model-id-current` check (PR #73) |
+| ↳ Reliability (sub) | PS 5.1 portability guarded | guarded | ✅ **done** | `ps1-portability` check — found + fixed 2 real bugs |
 | Portability | models w/ live conformance-passing adapter | ≥ 2 | ~1 | Claude live; LangGraph reuses the JS evaluator |
-| Domain reach | proven production-grade specialists incl. non-web | growing | 12 web, **0 non-web** | — (P2b) |
+| Domain reach | proven production-grade specialists incl. non-web | growing | 12 web + **1 non-web** ✅ | `uipath-xaml` (EAC-authored, doctor-clean) in process-cartographer — **P2b proven** |
 | Hardness | crash-recovery + security review + load test | pass | **none** | — (P3) |
 | Adoption | time-to-first-governed-project | < 15 min | manual folder copy | — (P4) |
 
 ## Phase status
 
-**Phase 1 — prove it works + make the discipline hold** *(in progress)*
-- ✅ `model-id-current` doctor check + `spec/policy/model-ids.json` (PR #73) — model-ID rot can't silently recur.
-- ⬜ **1a. Efficacy eval harness** *(next — tent-pole)* — task suite, governed-vs-ungoverned, metrics. Best **fused with the first real project** as the proof vehicle.
-- ⬜ **1b. Discipline enforcement** — SessionStart gate (ADR-0034 §D), hard-gate promotion of load-bearing soft-checks, auto-invoke on classified intent. **Requires constitution-service review** (mandatory discipline touches Rules 1/2/8).
+**Phase 1 — prove it works + make the discipline hold** *(in progress — first real signal is positive)*
+- ✅ **process-cartographer Phase-1 dogfood HELD** (2026-07-12): a novel non-web project built governed — doctor green throughout, discovery authored + critic-reviewed, EAC authored a non-web specialist. **First dogfood that didn't silently degrade** (cf. AnonForum/Ravenwise). It also surfaced 3 real framework bugs/gaps (bootstrap PS-5.1 crash, cold-start gap, stamped-discovery trap) — filed as lessons + partly fixed.
+- ✅ `model-id-current` (PR #73) + `ps1-portability` (found + fixed 2 PS-5.1 bugs) doctor checks — two silent-degradation classes can't recur.
+- ⬜ **1a. Efficacy eval harness** *(next — tent-pole)* — task suite, governed-vs-ungoverned, metrics. Fuse with the next real project.
+- ⬜ **1b. Discipline enforcement** — SessionStart gate (ADR-0034 §D; the cold-start lesson sharpens this), hard-gate promotion, auto-invoke, a `discovery-authored` check (the stamped-discovery lesson). **Requires constitution-service review** (Rules 1/2/8).
 
-**Phase 2** — live 2nd-model adapter (Gemini/Ollama) + EAC authors a proven non-web specialist. ⬜
+**Phase 2** — live 2nd-model adapter (Gemini/Ollama) ⬜ · EAC authors a proven non-web specialist **✅ (`uipath-xaml`, process-cartographer)**.
 **Phase 3** — enterprise-hardness (crash-recovery, security review, load/scale). ⬜
 **Phase 4** — distribution + ergonomics (installable CLI, refreshed docs). ⬜
 
