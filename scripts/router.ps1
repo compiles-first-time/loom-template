@@ -9,7 +9,7 @@
 param([string]$Action = "start")
 
 $ComposeFile = Join-Path $PSScriptRoot "..\tools\litellm\docker-compose.yml"
-$ProxyPort   = $env:LITELLM_PORT ?? "4000"
+$ProxyPort   = if ($env:LITELLM_PORT) { $env:LITELLM_PORT } else { "4000" }
 $ProxyUrl    = "http://localhost:$ProxyPort"
 
 function Assert-Docker {

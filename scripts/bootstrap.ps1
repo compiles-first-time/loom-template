@@ -124,7 +124,7 @@ Write-Host ""
 Write-Host "Generating v0.2 runtime artifacts..." -ForegroundColor Cyan
 
 # Touch today's JSONL so hooks have somewhere to write
-$dateLog = Join-Path $root "memory/event-log/$(Get-Date -AsUTC -Format 'yyyy-MM-dd').jsonl"
+$dateLog = Join-Path $root "memory/event-log/$((Get-Date).ToUniversalTime().ToString('yyyy-MM-dd')).jsonl"
 if (-not (Test-Path $dateLog)) {
     New-Item -ItemType File -Path $dateLog -Force | Out-Null
     Write-Host "  created: memory/event-log/$(Split-Path $dateLog -Leaf)"

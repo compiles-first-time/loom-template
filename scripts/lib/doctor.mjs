@@ -45,6 +45,7 @@ async function main() {
   await checkSkillVerifiers();
   await checkAgentModelTiers();
   await checkModelIdCurrent();
+  await checkPs1Portability();
 
   report();
 }
@@ -550,6 +551,37 @@ async function checkModelIdCurrent() {
       "model-id-current",
       false,
       `${stale.length} subagent(s) on stale model IDs${stale.length ? ": " + stale.join("; ") : ""}${ttlWarn}. Fix the agent model: field or update spec/policy/model-ids.json.`
+    );
+  }
+}
+
+async function checkPs1Portability() {
+  // Soft check (process-cartographer Phase-1 lesson, 2026-07-08): .ps1 scripts must
+  // run on Windows PowerShell 5.1 (the Windows default), not just PS 7. Flag PS-6+-
+  // only tokens that abort on 5.1 — `Get-Date -AsUTC` crashed bootstrap.ps1 mid-run.
+  const dir = path.join(ROOT, "scripts");
+  if (!existsSync(dir)) return;
+  const files = (await fs.readdir(dir)).filter((f) => f.endsWith(".ps1"));
+  const TOKENS = [
+    { re: /-AsUTC\b/, name: "-AsUTC (PS 6+)" },
+    { re: /-AsHashtable\b/, name: "-AsHashtable (PS 6+)" },
+    { re: /\s\?\?\s/, name: "?? null-coalescing (PS 7+)" },
+  ];
+  const hits = [];
+  for (const f of files) {
+    const lines = (await fs.readFile(path.join(dir, f), "utf8")).split(/\r?\n/);
+    lines.forEach((line, i) => {
+      const code = line.split("#")[0]; // ignore comments (heuristic)
+      for (const t of TOKENS) if (t.re.test(code)) hits.push(`${f}:${i + 1} ${t.name}`);
+    });
+  }
+  if (hits.length === 0) {
+    soft("ps1-portability", true, `${files.length} .ps1 script(s) free of PS-6+-only tokens (run on Windows PowerShell 5.1)`);
+  } else {
+    soft(
+      "ps1-portability",
+      false,
+      `${hits.length} PS-6+-only token(s) — abort on Windows PowerShell 5.1 (the Windows default): ${hits.join("; ")}. Also manually review for ?. / && / ||.`
     );
   }
 }
