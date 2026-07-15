@@ -9,6 +9,11 @@ Per [ADR-0046](../../../adr/0046-requirements-exceptions-testcase-registry.md). 
 | **BR_03** | Kanban action-item tracking (time-in-state) | 0048 (OB-X-01) | `observatory/lib/aggregator.test.mjs` | `registry.cases.mjs` |
 | **BR_04** | Model-agnostic governance (spec + adapters) | 0048 | `adapters/langgraph/guard.test.mjs` | `registry.cases.mjs` |
 | **BR_05** | Conformance suite (adapter contract) | 0048 (OB-P1-04) | `spec/conformance/conformance.test.mjs` | `registry.cases.mjs` |
+| **BR_06** | Passive agent-reputation projection (Step 1) | 0053 | `observatory/lib/reputation.test.mjs` | [BR_06.md](./BR_06.md) + `BR_06.cases.mjs` |
+| **BR_07** | Multi-LLM deliberation panel (disciplined) | 0056 | `scripts/lib/deliberation.test.mjs` | [BR_07.md](./BR_07.md) + `BR_07.cases.mjs` |
+| **BR_08** | `discovery-authored` doctor check | 0015 (+ lesson 2026-07-10) | `scripts/lib/discovery-authored.test.mjs` | [BR_08.md](./BR_08.md) + `BR_08.cases.mjs` |
+| **BR_09** | Cold-start bootstrap fixes | 0020/0038 (+ lesson 2026-07-10) | `scripts/lib/cold-start.test.mjs` | [BR_09.md](./BR_09.md) + `BR_09.cases.mjs` |
+| **BR_10** | Lessons-Learned Service Phase 0 | 0055 | `scripts/lib/lessons.test.mjs` | [BR_10.md](./BR_10.md) + `BR_10.cases.mjs` |
 
 ## How it works
 

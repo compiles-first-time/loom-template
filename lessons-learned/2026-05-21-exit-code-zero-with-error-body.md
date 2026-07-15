@@ -1,10 +1,20 @@
 ---
-date: 2026-05-21
-agent: deploy specialist (synthesized from AnonForum session)
+id: 2026-05-21-exit-code-zero-with-error-body
+title: Cloud CLIs routinely exit 0 with `"status": "error"` in the body — never trust exit codes alone
+domain: [tooling]
+stack: [loom]
+platform: [win32, linux, darwin]
 severity: high
 share: true
+supersedes: null
+provenance:
+  origin_project: loom-template
+  sources: [loom-template, ADR-0032]
+  confidence: 0.85
+created: 2026-05-21
+updated: 2026-07-15
+embedding_hash: null
 ---
-
 # Cloud CLIs routinely exit 0 with `"status": "error"` in the body — never trust exit codes alone
 
 ## What happened

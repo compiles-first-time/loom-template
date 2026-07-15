@@ -1,3 +1,20 @@
+---
+id: 2026-06-15-productivity-jcurve-complementary-investment
+title: Lesson: Productivity J-curve — complementary investment drives AI gains
+domain: [strategy]
+stack: [loom]
+platform: [win32, linux, darwin]
+severity: medium
+share: true
+supersedes: null
+provenance:
+  origin_project: loom-template
+  sources: [loom-template]
+  confidence: 0.85
+created: 2026-06-15
+updated: 2026-07-15
+embedding_hash: null
+---
 # Lesson: Productivity J-curve — complementary investment drives AI gains
 
 **Date:** 2026-06-15

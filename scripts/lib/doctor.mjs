@@ -14,6 +14,7 @@ import { promises as fs, existsSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { scanDiscoveryAuthored, AUTHORED_DISCOVERY_FILES } from "./discovery-authored.mjs";
+import { loadLessons, validateLessonSchema } from "./lessons.mjs";
 
 const ROOT = process.cwd();
 const args = new Set(process.argv.slice(2));
@@ -40,6 +41,7 @@ async function main() {
   await checkAdrTemplateConformance();
   await checkBidirectionalAdrLinks();
   await checkDiscoveryAuthored();
+  await checkLessonSchema();
   await checkHandoffFreshness();
   await checkPlaybookFreshness();
   await checkSkeleton();
@@ -354,6 +356,34 @@ async function checkDiscoveryAuthored() {
     false,
     `${flagged.length} discovery doc(s) still contain template placeholders (stamped ≠ authored): ${detail}. Author real content per L8/ADR-0026, then run the critic.`
   );
+}
+
+async function checkLessonSchema() {
+  // Soft check (ADR-0055 Phase 0): lessons-learned/*.md should carry the
+  // standardized frontmatter schema (id/title/domain/stack/severity/share/
+  // provenance) so they are future-ingestable + searchable by metadata. Reports
+  // conformance coverage; warns below 90% (the proposal's adoption target).
+  const dir = path.join(ROOT, "lessons-learned");
+  if (!existsSync(dir)) return soft("lesson-schema", true, "no lessons-learned/ (skipped)");
+  const lessons = loadLessons(dir);
+  if (lessons.length === 0) return soft("lesson-schema", true, "no lessons yet (skipped)");
+  let conforming = 0;
+  const nonconforming = [];
+  for (const l of lessons) {
+    const v = validateLessonSchema(l.frontmatter);
+    if (v.conforms) conforming++;
+    else nonconforming.push(`${l.file} (missing ${v.missing.join(", ")})`);
+  }
+  const pct = Math.round((conforming / lessons.length) * 100);
+  if (pct >= 90) {
+    soft("lesson-schema", true, `${conforming}/${lessons.length} lessons carry the ADR-0055 schema (${pct}%)`);
+  } else {
+    soft(
+      "lesson-schema",
+      false,
+      `only ${conforming}/${lessons.length} lessons carry the ADR-0055 schema (${pct}% < 90%): ${nonconforming.slice(0, 3).join("; ")}${nonconforming.length > 3 ? " …" : ""}. Run \`node scripts/lib/lessons.mjs validate\`.`
+    );
+  }
 }
 
 async function checkHandoffFreshness() {

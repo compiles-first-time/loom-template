@@ -1,11 +1,20 @@
 ---
-date: 2026-07-08
-agent: builder (Opus 4.8)
+id: 2026-07-08-bootstrap-ps1-getdate-asutc-ps51
+title: bootstrap.ps1 crashes on Windows PowerShell 5.1 (Get-Date -AsUTC is PS 6+)
+domain: [tooling, windows, powershell]
+stack: [loom, powershell]
+platform: [win32]
 severity: medium
 share: true
-upstream: loom-template
+supersedes: null
+provenance:
+  origin_project: loom-template
+  sources: [loom-template]
+  confidence: 0.98
+created: 2026-07-08
+updated: 2026-07-15
+embedding_hash: null
 ---
-
 # `scripts/bootstrap.ps1` crashes on Windows PowerShell 5.1 — `Get-Date -AsUTC` is PS 6+ only
 
 ## What happened

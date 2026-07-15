@@ -1,3 +1,20 @@
+---
+id: 2026-06-15-agent-memory-tier-selection
+title: Lesson: Agent memory architecture — stateless file-store is insufficient for long-horizon tasks
+domain: [memory]
+stack: [loom]
+platform: [win32, linux, darwin]
+severity: medium
+share: true
+supersedes: null
+provenance:
+  origin_project: loom-template
+  sources: [loom-template]
+  confidence: 0.85
+created: 2026-06-15
+updated: 2026-07-15
+embedding_hash: null
+---
 # Lesson: Agent memory architecture — stateless file-store is insufficient for long-horizon tasks
 
 **Date:** 2026-06-15

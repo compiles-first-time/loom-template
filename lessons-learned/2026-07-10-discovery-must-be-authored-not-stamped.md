@@ -1,11 +1,20 @@
 ---
-date: 2026-07-10
-agent: builder (Opus 4.8)
+id: 2026-07-10-discovery-must-be-authored-not-stamped
+title: Discovery is "done" only when authored — stamped template defaults are the silent-skip trap
+domain: [discovery, doctor, process]
+stack: [loom]
+platform: [win32, linux, darwin]
 severity: medium
 share: true
-upstream: loom-template
+supersedes: null
+provenance:
+  origin_project: loom-template
+  sources: [loom-template, ADR-0025, ADR-0026]
+  confidence: 0.9
+created: 2026-07-10
+updated: 2026-07-15
+embedding_hash: null
 ---
-
 # Discovery is "done" only when authored — stamped template defaults are the silent-skip trap in disguise
 
 ## What happened
