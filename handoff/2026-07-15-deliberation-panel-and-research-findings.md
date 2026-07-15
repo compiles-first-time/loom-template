@@ -19,8 +19,10 @@ multi-agent to high-value decisions (LR-06). Be proof-first and honest — measu
 don't claim; don't overstate scope (ADR-0054).
 
 STEP 0 — clone + orient (order matters):
-- git clone both GitHub repos (compiles-first-time/loom-template and
-  compiles-first-time/process-cartographer) into sibling folders.
+- git clone compiles-first-time/loom-template — that is ALL you need for the
+  priority work (items 1-4; its lessons + the lessons-service proposal were already
+  upstreamed here). Clone compiles-first-time/process-cartographer ONLY if you pick
+  up its own M3/M4 build (item 5).
 - Open Claude Code INSIDE loom-template (clone FIRST, then open) so Loom's hooks,
   subagents, and the /testcase + /ticket skills register at session start. Verify:
   memory/event-log/ has today's session_start event — if not, restart in the repo
@@ -131,4 +133,4 @@ Real data from the prior session: the deep-research pass = ~2.07M tokens **on Op
 
 ## The two repos
 - **loom-template** — `github: compiles-first-time/loom-template` (the framework; do the updates here).
-- **process-cartographer** — `github: compiles-first-time/process-cartographer` (the Phase-1 proof project; UiPath REFramework → 3D city visualizer; MVP built, M3/M4 pending).
+- **process-cartographer** — `github: compiles-first-time/process-cartographer` (the Phase-1 proof project; UiPath REFramework → 3D city visualizer; MVP built, M3/M4 pending). **Only needed for item 5** — its lessons + the lessons-service proposal are already in loom-template, so the priority work (items 1-4) doesn't require this repo.
