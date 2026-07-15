@@ -302,6 +302,29 @@ export function warn(message) {
   process.stderr.write(`[loom-hook] ${message}\n`);
 }
 
+// ── Cold-start advisory (lesson 2026-07-10-first-governed-session-cold-start) ──
+//
+// When Loom is bootstrapped mid-session (or a session starts before `.claude/`
+// existed), THIS session's hooks + subagents are not registered — Claude Code
+// builds that registry once, at session start, from the CWD's `.claude/`. The
+// founding session therefore can't self-govern. The existing RESTART banner says
+// "subagents not invokable"; these lines add the two workarounds the lesson
+// calls out so a careful operator isn't left to infer them.
+export const COLD_START_ADVISORY = [
+  "Hooks + subagents are NOT active for the CURRENT session (they register at",
+  "session start — ADR-0020/0038). Until you restart Claude Code in this dir:",
+  "  (a) invoke agents via ADR-0034 path 2b (Agent tool seeded with the agent's SKILL.md);",
+  "  (b) expect the audit trail to be HAND-AUTHORED (emit session_start + claim records yourself).",
+  "A fresh CLONE opened in Claude Code has no cold-start gap — the recommended path.",
+];
+
+// Payload for the `bootstrapped_this_session` marker (lesson recommendation #2):
+// emitted when a session stamps the project this run, so the cold-start gap is
+// VISIBLE in the event log rather than silently inferred. Pure — testable.
+export function bootstrappedThisSessionPayload(extra = {}) {
+  return { stamped: true, cold_start_advised: true, ...extra };
+}
+
 // ── Session inspection: has constitution-service been consulted? ─────────
 //
 // Used by pre-tool-use to enforce LR-02 (production mutations require a

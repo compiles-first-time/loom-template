@@ -207,6 +207,13 @@ function recordActivity(state, ev) {
         detail: `${ev.agent || "agent"} ${ev.kind || "signal"}`,
       });
       break;
+    case "bootstrapped_this_session":
+      pushActivity(state, {
+        timestamp: ev.timestamp, session_id: ev.session_id,
+        kind: "cold-start", tool: "bootstrap",
+        detail: `bootstrapped this session${ev.project ? ` (${ev.project})` : ""} — hooks/subagents need a restart`,
+      });
+      break;
     default:
       // Governance/attempt events have their own panels; keep the feed focused.
       break;
@@ -391,6 +398,20 @@ const EVENT_HANDLERS = {
   // 2; Steps 2-3 gated on constitution-service).
   reputation_event(state, ev) {
     bumpReputation(state, ev.agent, ev.kind, ev.timestamp);
+  },
+
+  // Cold-start marker (lesson 2026-07-10). A session that stamped the project
+  // this run couldn't fully self-govern (hooks/subagents register at session
+  // start). Surface it so the gap is VISIBLE rather than inferred.
+  bootstrapped_this_session(state, ev) {
+    state.compliance.bootstrapped_this_session = {
+      at: ev.timestamp,
+      session_id: ev.session_id,
+      project: ev.project || null,
+      source: ev.source || null, // "session-start" (hook) | "bootstrap-script"
+      stamped: ev.stamped === true,
+      cold_start_advised: ev.cold_start_advised === true,
+    };
   },
 
   loop_cost_summary(state, ev, costRates = {}) {
