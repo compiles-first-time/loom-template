@@ -68,3 +68,15 @@
 | OB-X-03 | Standing research gates: "does the host already provide this?" + "spec or adapter?" | ☑ | ADR-0048 §7 |
 | OB-X-04 | PRs #52 / #54 / #55 merged to main | ☑ | Option-B foundation + Phase 1 + Phase 2 all landed |
 | OB-X-05 | **Flaky test fixed** — root cause: fragile `URL.pathname` regex (only matched UPPERCASE Windows drive) → malformed path → integration block silently skipped (52 vs 60). Now `fileURLToPath`. | ☑ | Stably 60 across runs. Same bug-class also found + fixed in `observatory/server.mjs` (CONFIG_PATH) + `scripts/lib/deploy.mjs`. Lesson: `2026-07-06-fileurl-to-path-windows-drive-letter.md`. Candidate doctor check noted. |
+
+## Phase 1 proof-first backlog (2026-07-15 handoff)
+
+> From `handoff/2026-07-15-deliberation-panel-and-research-findings.md`. Each item has a Requirements & Exceptions register (ADR-0046, `observability/eval-suite/requirements/BR_NN.md`) as its definition-of-done and a kanban ticket. An item is DONE only when its register PASSES. Seeded as `ticket` events → Observatory Kanban panel.
+
+| ID | Task | Status | BR | Notes |
+|---|---|---|---|---|
+| OB-REP-01 | ADR-0053 **Step 1** passive reputation projection (panel dependency) | ☑ | BR_06 | `observatory/lib/reputation.mjs` + aggregator `state.reputation`; projection-only (no dispatch, Rule 2). critic APPROVE-WITH-FLAGS (fixed) + constitution-service APPROVE |
+| OB-PANEL-01 | **Deliberation panel** (reputation-weighted + robust aggregation, cost-gated, live 2nd model) — ADR-0056 first | ☐ | BR_07 | depends on OB-REP-01 + live Ollama 2nd model |
+| OB-P1B-01 | `discovery-authored` doctor check (stamped ≠ authored; guarded for template) | ☐ | BR_08 | from lesson `2026-07-10-discovery-must-be-authored-not-stamped.md` |
+| OB-P1B-02 | Cold-start bootstrap fixes (louder banner + `bootstrapped_this_session` marker) | ☐ | BR_09 | from lesson `2026-07-10-first-governed-session-cold-start.md`; constitution-service gate |
+| OB-LS0-01 | Lessons-service **Phase 0** (frontmatter schema + `loom lessons search` + soft-checks) | ☐ | BR_10 | ADR-0055 Phase 0; zero-infra |

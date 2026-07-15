@@ -1,6 +1,12 @@
 // Observatory aggregator — builds the projections defined by ADR-0040
 // (projection schemas); Update Bus inbox + decision write-back per ADR-0041.
 import { redact } from "./redactor.mjs";
+import {
+  REPUTATION_FORMULA,
+  REPUTATION_WEIGHTS,
+  emptyRecord as emptyReputationRecord,
+  applySignal as applyReputationSignal,
+} from "./reputation.mjs";
 
 export class Aggregator {
   constructor({ costRates = {} } = {}) {
@@ -19,6 +25,11 @@ export class Aggregator {
       requirements: { cases: [], by_requirement: {} },
       kanban: { tickets: [], by_state: {} },
       activity: { feed: [] },
+      // Passive agent-reputation projection (ADR-0053 Step 1). Populated from
+      // `reputation_event` accrual + passively-derived specialist invocations.
+      // No dispatch preference is derived from it — Steps 2-3 are gated on
+      // constitution-service (Rule 2). Formula is published for auditability.
+      reputation: { agents: {}, formula: REPUTATION_FORMULA, weights: { ...REPUTATION_WEIGHTS } },
     };
   }
 
@@ -189,6 +200,13 @@ function recordActivity(state, ev) {
         detail: `${ev.id || "ticket"} → ${ev.state || "backlog"}${ev.parent_id ? ` (${ev.parent_id})` : ""}`,
       });
       break;
+    case "reputation_event":
+      pushActivity(state, {
+        timestamp: ev.timestamp, session_id: ev.session_id,
+        kind: "reputation", tool: ev.kind || "reputation",
+        detail: `${ev.agent || "agent"} ${ev.kind || "signal"}`,
+      });
+      break;
     default:
       // Governance/attempt events have their own panels; keep the feed focused.
       break;
@@ -231,6 +249,15 @@ function rollupKanban(tickets) {
     out[k] = (out[k] || 0) + 1;
   }
   return out;
+}
+
+// Accrue one reputation signal for `agent` into the projection (ADR-0053 Step
+// 1). Best-effort: a missing agent is a no-op so dirty logs never corrupt the
+// panel. No dispatch preference is derived — projection only (Rule 2).
+function bumpReputation(state, agent, kind, timestamp) {
+  if (!agent) return;
+  const rec = (state.reputation.agents[agent] ||= emptyReputationRecord(agent));
+  applyReputationSignal(rec, kind, timestamp);
 }
 
 const EVENT_HANDLERS = {
@@ -342,6 +369,8 @@ const EVENT_HANDLERS = {
       work_item: ev.work_item_id,
       spawned_at: ev.timestamp,
     });
+    // Passive reputation signal: a spawn is an invocation (ADR-0053 Step 1).
+    bumpReputation(state, ev.specialist_name, "invocation", ev.timestamp);
   },
 
   specialist_retired(state, ev) {
@@ -353,6 +382,15 @@ const EVENT_HANDLERS = {
       retired_at: ev.timestamp,
       archived_path: ev.archived_path,
     });
+    // Recency-only touch of the reputation record (unknown kind → last_active).
+    bumpReputation(state, ev.specialist_name, "retirement", ev.timestamp);
+  },
+
+  // Passive reputation projection (ADR-0053 Step 1). One accrual per signal,
+  // keyed by agent. Projection only — no dispatch preference is derived (Rule
+  // 2; Steps 2-3 gated on constitution-service).
+  reputation_event(state, ev) {
+    bumpReputation(state, ev.agent, ev.kind, ev.timestamp);
   },
 
   loop_cost_summary(state, ev, costRates = {}) {
