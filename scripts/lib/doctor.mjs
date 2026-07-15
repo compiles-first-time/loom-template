@@ -13,6 +13,7 @@
 import { promises as fs, existsSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { scanDiscoveryAuthored, AUTHORED_DISCOVERY_FILES } from "./discovery-authored.mjs";
 
 const ROOT = process.cwd();
 const args = new Set(process.argv.slice(2));
@@ -38,6 +39,7 @@ async function main() {
   await checkConstitutionCoverage();
   await checkAdrTemplateConformance();
   await checkBidirectionalAdrLinks();
+  await checkDiscoveryAuthored();
   await checkHandoffFreshness();
   await checkPlaybookFreshness();
   await checkSkeleton();
@@ -318,6 +320,40 @@ function extractAffectsBlock(text) {
     paths.push(p);
   }
   return paths;
+}
+
+async function checkDiscoveryAuthored() {
+  // Soft check (lesson 2026-07-10-discovery-must-be-authored-not-stamped):
+  // `scripts/discover.*` stamps TEMPLATE content into discovery docs; a
+  // stamped-but-unauthored doc looks "done" (file exists, gate passes) while
+  // its content is boilerplate — the silent-degradation trap. Flag the tell-tale
+  // placeholder strings. GUARDED: skip when the project has no authored-discovery
+  // docs (loom-template ships only discovery/README.md — nothing to author).
+  const discDir = path.join(ROOT, "discovery");
+  if (!existsSync(discDir)) return soft("discovery-authored", true, "no discovery/ directory (skipped)");
+  const docs = [];
+  for (const name of AUTHORED_DISCOVERY_FILES) {
+    const p = path.join(discDir, name);
+    if (!existsSync(p)) continue;
+    try {
+      docs.push({ name, text: await fs.readFile(p, "utf8") });
+    } catch {
+      // Unreadable — the scanner tolerates it; skip.
+    }
+  }
+  if (docs.length === 0) {
+    return soft("discovery-authored", true, "no authored discovery docs yet (template scaffolding only — skipped)");
+  }
+  const { checked, flagged } = scanDiscoveryAuthored(docs);
+  if (flagged.length === 0) {
+    return soft("discovery-authored", true, `${checked} discovery doc(s) authored (no template placeholders)`);
+  }
+  const detail = flagged.map((f) => `${f.name} [${f.hits.join(", ")}]`).join("; ");
+  soft(
+    "discovery-authored",
+    false,
+    `${flagged.length} discovery doc(s) still contain template placeholders (stamped ≠ authored): ${detail}. Author real content per L8/ADR-0026, then run the critic.`
+  );
 }
 
 async function checkHandoffFreshness() {
