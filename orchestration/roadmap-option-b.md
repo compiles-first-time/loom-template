@@ -76,7 +76,7 @@
 | ID | Task | Status | BR | Notes |
 |---|---|---|---|---|
 | OB-REP-01 | ADR-0053 **Step 1** passive reputation projection (panel dependency) | ☑ | BR_06 | `observatory/lib/reputation.mjs` + aggregator `state.reputation`; projection-only (no dispatch, Rule 2). critic APPROVE-WITH-FLAGS (fixed) + constitution-service APPROVE |
-| OB-PANEL-01 | **Deliberation panel** (reputation-weighted + robust aggregation, cost-gated, live 2nd model) — ADR-0056 first | ☐ | BR_07 | depends on OB-REP-01 + live Ollama 2nd model |
+| OB-PANEL-01 | **Deliberation panel** (reputation-weighted + robust aggregation, cost-gated, live 2nd model) — ADR-0056 | ☑ | BR_07 | ADR-0056; live llama3 vote proven (Canberra @0.632, indep 2); critic APPROVE-WITH-FLAGS (3 blockers + 2 residuals closed) + constitution-service (LR-06 emission added). 16 cases |
 | OB-P1B-01 | `discovery-authored` doctor check (stamped ≠ authored; guarded for template) | ☐ | BR_08 | from lesson `2026-07-10-discovery-must-be-authored-not-stamped.md` |
 | OB-P1B-02 | Cold-start bootstrap fixes (louder banner + `bootstrapped_this_session` marker) | ☐ | BR_09 | from lesson `2026-07-10-first-governed-session-cold-start.md`; constitution-service gate |
 | OB-LS0-01 | Lessons-service **Phase 0** (frontmatter schema + `loom lessons search` + soft-checks) | ☐ | BR_10 | ADR-0055 Phase 0; zero-infra |
