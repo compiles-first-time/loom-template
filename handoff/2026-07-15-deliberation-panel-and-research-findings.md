@@ -12,40 +12,63 @@ status: active
 ## TL;DR — paste into a NEW chat on the high-cap account to bootstrap
 
 ```
-I'm Nick, the architect; you're the builder. Two repos, both on GitHub under
-compiles-first-time: loom-template (the governance framework) and
-process-cartographer (a real project built ON Loom — the Phase-1 proof vehicle).
-Work in loom-template unless I say otherwise. This account has a HIGH token cap,
-so USE multi-agent workflows freely for the proof-first work — but keep Loom's
-cost DISCIPLINE regardless: route fan-out subagents to Sonnet/Haiku not Opus
-(ADR-0045), cost-gate multi-agent to high-value decisions (LR-06). Be proof-first
-and honest — measure, don't claim; don't overstate scope (ADR-0054).
+I'm Nick, the architect; you're the builder. This account has a HIGH token cap —
+USE multi-agent workflows freely for the proof-first work, but keep Loom's cost
+DISCIPLINE: route fan-out subagents to Sonnet/Haiku not Opus (ADR-0045), cost-gate
+multi-agent to high-value decisions (LR-06). Be proof-first and honest — measure,
+don't claim; don't overstate scope (ADR-0054).
 
-Read first, in order: handoff/2026-07-15-deliberation-panel-and-research-findings.md
-(this doc), adr/0054-path-to-top-tier-proof-first.md (the program), adr/0055-shared-
-lessons-learned-service.md, orchestration/roadmap-to-number-one.md (the live
-scoreboard). State: main green, ADRs through 0055, doctor 0 hard failures, suite
-420/420.
+STEP 0 — clone + orient (order matters):
+- git clone both GitHub repos (compiles-first-time/loom-template and
+  compiles-first-time/process-cartographer) into sibling folders.
+- Open Claude Code INSIDE loom-template (clone FIRST, then open) so Loom's hooks,
+  subagents, and the /testcase + /ticket skills register at session start. Verify:
+  memory/event-log/ has today's session_start event — if not, restart in the repo
+  dir before doing anything else (ADR-0020/0038 cold-start gap).
+- Read, in order: this doc; adr/0054-path-to-top-tier-proof-first.md (the program);
+  adr/0055-shared-lessons-learned-service.md; adr/0022-xlsx-docs-convention.md
+  (Requirements & Exceptions format); adr/0046-requirements-exceptions-testcase-
+  registry.md; orchestration/roadmap-to-number-one.md (the scoreboard). Skim
+  layers/ + AGENTS.md to understand the codebase. State: main green, ADRs through
+  0055, doctor 0 hard failures, suite 420/420.
 
-Do, in priority order (see this doc's "Pending work"):
-1. Design + build the multi-LLM DELIBERATION PANEL — the disciplined version the
-   research supports (reputation-weighted + robust aggregation, cost-gated to
-   high-stakes/high-disagreement). Write it as an ADR first, then implement.
-2. Phase-1b reliability checks: a `discovery-authored` doctor check + the
-   cold-start bootstrap fixes (both from the process-cartographer lessons).
-3. Lessons-service Phase 0 (ADR-0055): standardize lesson frontmatter + a local
-   `loom lessons search`.
-4. (Optional, cheap now) finish the deep-research verification — re-run the
-   bundled `deep-research` skill; last time the adversarial pass errored on the
-   token cap, which you no longer have.
+STEP 1 — PRESENT A TRACKABLE PLAN (propose-first; do NOT build until I approve):
+Decompose the "Pending work" below into discrete items. For EACH item author a
+Requirements & Exceptions register in Loom's own format (ADR-0022 + ADR-0046 — use
+the /testcase skill): the business + technical requirement(s) it satisfies, its SE
+(System Exception) + BE (Business Exception) failure modes, expected input →
+expected output (actual filled on completion), and the Justifications column. Open
+a kanban ticket per item (ADR-0048 OB-X-01 — /ticket skill) so we mark items off as
+we go (visible in the Observatory). Present the item list + registers + board for
+my approval. (See "How we track the work" below.)
 
-Discipline: loom doctor + full suite green before every PR; dispatch the `critic`
-subagent before consequential commits and `constitution-service` for L0-adjacent
-or mandatory-enforcement changes; VERIFY agent claims against real tools; the
-destructive guard is LIVE (don't put rm-rf/force-push literals in shell args);
-never hand-commit hook-managed files (orchestration/progress-ledger.md,
-tools/discovered-runtime.md). You may merge green PRs; propose-first for L0.
+STEP 2 — EXECUTE proof-first (after I approve): work items in priority order. An
+item is DONE only when its R&E register PASSES — requirements met, SE/BE exceptions
+handled + tested (resilience, accuracy, stability), kept for regression. Move its
+ticket across the board as you go. loom doctor + full suite green before every PR;
+dispatch the `critic` before consequential commits, `constitution-service` for
+L0/mandatory-enforcement; VERIFY agent claims against real tools; the destructive
+guard is LIVE (no rm-rf/force-push literals in shell args); never hand-commit
+hook-managed files (orchestration/progress-ledger.md, tools/discovered-runtime.md).
+You may merge green PRs; propose-first for L0.
+
+Priority items: (1) multi-LLM DELIBERATION PANEL — disciplined version
+(reputation-weighted + robust aggregation, cost-gated); ADR first, then build.
+(2) Phase-1b: discovery-authored doctor check + cold-start bootstrap fixes.
+(3) Lessons-service Phase 0 (ADR-0055): lesson frontmatter schema + local
+loom lessons search. (4) optional: finish the deep-research verification (re-run
+the bundled deep-research skill). Full detail in "Pending work".
 ```
+
+## How we track the work (dogfood Loom's own Requirements & Exceptions registry)
+
+Nick's requirement: every work item is tracked in the **Requirements & Exceptions format** so "done" means *resilience, accuracy, stability* — not just "code written." This is Loom governing its own development with its own machinery (and it exercises ADR-0046 on real work):
+
+- **Per item → a test-case register** (`/testcase`, ADR-0046, in the ADR-0022 xlsx convention): the **business + technical requirements** it satisfies; **SE** (System Exception) and **BE** (Business Exception) rows; **expected input → expected output** (actual filled on completion); and the **Justifications** column (why each handler/decision is load-bearing). The register is the **definition-of-done** and is kept for regression.
+- **Per item → a kanban ticket** (`/ticket`, ADR-0048 OB-X-01) moved across the board as work proceeds — the "mark it off" view, visible in the Observatory.
+- **Proof-first (ADR-0054):** an item closes only when its register *passes* — the SE/BE exceptions are actually handled + tested, not merely enumerated. Example: for the *deliberation panel*, BE rows include "panel converges on a shared wrong answer (confabulation consensus)" and "a low-reputation/compromised agent swings the vote"; the robust-aggregation design is the handler, and the register's expected-output is what the test asserts.
+
+Present the plan — items + their registers + the board — for approval before building anything.
 
 ## What changed since 2026-07-08
 
