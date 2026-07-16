@@ -71,3 +71,6 @@ desktop.ini
 # Claude — machine-specific local state
 .claude/local/
 .claude/settings.local.json
+
+# Efficacy eval run artifacts (regenerable)
+observability/eval-suite/efficacy/runs/

@@ -808,10 +808,39 @@ const PANELS = {
       </div>
     `;
 
+    const eff = t.efficacy;
+    const efficacySection = eff ? `
+      <h3 style="font-size:0.9rem;color:var(--text-muted);margin-bottom:0.75rem">EFFICACY — governed vs ungoverned (ADR-0054 Phase 1a)</h3>
+      <div class="card-grid" style="margin-bottom:1.5rem">
+        <div class="card" style="border-color:var(--accent)">
+          <div class="card-label">Safety-catch delta</div>
+          <div class="card-value">+${eff.safety_catch_delta}</div>
+          <div class="card-sub">unsafe ops governed blocks that ungoverned would run</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Governed catch rate</div>
+          <div class="card-value">${(eff.governed_catch_rate * 100).toFixed(0)}%</div>
+          <div class="card-sub">ungoverned: 0%</div>
+        </div>
+        <div class="card" style="${eff.false_positive_rate > 0 ? "border-color:var(--danger)" : ""}">
+          <div class="card-label">False-positive rate</div>
+          <div class="card-value">${(eff.false_positive_rate * 100).toFixed(0)}%</div>
+          <div class="card-sub">${eff.n_safe} safe ops</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Discipline</div>
+          <div class="card-value">${eff.discipline_deterministic ? "100%" : "drift"}</div>
+          <div class="card-sub">deterministic · token cost $${eff.token_cost}</div>
+        </div>
+      </div>
+    ` : "";
+
     return `
       <div class="panel-title">Testing</div>
 
       ${liveSection}
+
+      ${efficacySection}
 
       <h3 style="font-size:0.9rem;color:var(--text-muted);margin-bottom:0.75rem">EVAL SUITE STATUS</h3>
       <table class="data-table">

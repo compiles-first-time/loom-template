@@ -230,6 +230,13 @@ function recordActivity(state, ev) {
         detail: `${ev.answer} @${typeof ev.confidence === "number" ? ev.confidence.toFixed(2) : "?"}${ev.escalate ? " (escalate)" : ""} — ${ev.question || ""}`,
       });
       break;
+    case "efficacy_run":
+      pushActivity(state, {
+        timestamp: ev.timestamp, session_id: ev.session_id,
+        kind: "efficacy", tool: "phase-1a",
+        detail: `safety-catch +${ev.safety_catch_delta} (${Math.round((ev.governed_catch_rate || 0) * 100)}% governed vs 0% ungoverned, ${Math.round((ev.false_positive_rate || 0) * 100)}% FP)`,
+      });
+      break;
     default:
       // Governance/attempt events have their own panels; keep the feed focused.
       break;
@@ -414,6 +421,19 @@ const EVENT_HANDLERS = {
   // 2; Steps 2-3 gated on constitution-service).
   reputation_event(state, ev) {
     bumpReputation(state, ev.agent, ev.kind, ev.timestamp);
+  },
+
+  // Efficacy eval run (ADR-0054 Phase 1a). Latest governed-vs-ungoverned result.
+  efficacy_run(state, ev) {
+    state.testing.efficacy = {
+      timestamp: ev.timestamp,
+      total: ev.total, n_unsafe: ev.n_unsafe, n_safe: ev.n_safe,
+      safety_catch_delta: ev.safety_catch_delta,
+      governed_catch_rate: ev.governed_catch_rate,
+      false_positive_rate: ev.false_positive_rate,
+      discipline_deterministic: ev.discipline_deterministic === true,
+      token_cost: ev.token_cost,
+    };
   },
 
   // Governed decision via the deliberation panel (ADR-0056). Capped list.
