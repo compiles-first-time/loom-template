@@ -214,6 +214,13 @@ function recordActivity(state, ev) {
         detail: `bootstrapped this session${ev.project ? ` (${ev.project})` : ""} — hooks/subagents need a restart`,
       });
       break;
+    case "verifier_result":
+      pushActivity(state, {
+        timestamp: ev.timestamp, session_id: ev.session_id,
+        kind: ev.passed === true ? "verifier-pass" : "verifier-fail", tool: ev.verifier_type || "verifier",
+        detail: `${ev.agent || "agent"}: ${ev.passed === true ? "PASS" : "FAIL"}${ev.task ? ` — ${ev.task}` : ""}`,
+      });
+      break;
     default:
       // Governance/attempt events have their own panels; keep the feed focused.
       break;
@@ -398,6 +405,19 @@ const EVENT_HANDLERS = {
   // 2; Steps 2-3 gated on constitution-service).
   reputation_event(state, ev) {
     bumpReputation(state, ev.agent, ev.kind, ev.timestamp);
+  },
+
+  // Verifier gate outcome (ADR-0044). The reputation accrual rides its paired
+  // `reputation_event`; here we keep an auditable list of verifier results.
+  verifier_result(state, ev) {
+    state.compliance.verifications = state.compliance.verifications || [];
+    state.compliance.verifications.push({
+      timestamp: ev.timestamp, session_id: ev.session_id, agent: ev.agent || null,
+      task: ev.task || "", verifier_type: ev.verifier_type || null, passed: ev.passed === true,
+    });
+    if (state.compliance.verifications.length > 300) {
+      state.compliance.verifications = state.compliance.verifications.slice(-300);
+    }
   },
 
   // Cold-start marker (lesson 2026-07-10). A session that stamped the project

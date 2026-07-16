@@ -22,6 +22,7 @@
 import { promises as fs, existsSync } from "node:fs";
 import path from "node:path";
 import { loadRegistry } from "./registry-loader.mjs";
+import { recordVerification, recordLessonContributed } from "./verify-gate.mjs";
 
 const ROOT = process.cwd();
 const WORK_GRAPH = path.join(ROOT, "orchestration", "work-graph.json");
@@ -176,6 +177,11 @@ async function retireSpecialist(name) {
     archive: path.relative(ROOT, retiredPath),
   });
 
+  // Reputation (ADR-0044 verifier gate + ADR-0053): a specialist retiring has
+  // completed its assigned, verified work — accrue a verifier_pass. This is the
+  // real emission point the map flagged as missing (projection only; no dispatch).
+  recordVerification({ agent: name, task: `specialist ${name} assignment completed (retire)`, verifier_type: "human_gate", passed: true, session_id: process.env.CLAUDE_SESSION_ID });
+
   process.stdout.write(`  retired: agents/specialists/${name}/SKILL.md → ${path.relative(ROOT, retiredPath)}\n`);
   process.stdout.write(`\nNote: AGENTS.md row may still reference ${name} — HR-Agent should update it.\n`);
   process.stdout.write(`Project-local override is gone; the registry version remains the canonical fallback.\n`);
@@ -202,6 +208,10 @@ async function promoteLessons() {
     if (existsSync(propPath)) continue; // already proposed
     await fs.writeFile(propPath, renderPropagation(id, f, text), "utf8");
     proposals.push(id);
+    // Reputation: a shared lesson proposed for cross-project propagation is a
+    // contribution (ADR-0053 lesson_contributed). Attributed to memory-keeper,
+    // the base agent responsible for lessons (L2). Projection only.
+    recordLessonContributed({ agent: "memory-keeper", lesson_id: id, session_id: process.env.CLAUDE_SESSION_ID });
   }
   process.stdout.write(`promoted ${proposals.length} lesson${proposals.length === 1 ? "" : "s"} to propagation queue\n`);
   if (proposals.length === 0) {
