@@ -216,7 +216,8 @@ const PANELS = {
         tool: "badge-info", error: "badge-danger", session: "badge-muted",
         destructive: "badge-warning", tokens: "badge-info", test: "badge-success",
         test_case: "badge-success", ticket: "badge-info", reputation: "badge-info",
-        "cold-start": "badge-warning",
+        "cold-start": "badge-warning", "verifier-pass": "badge-success",
+        "verifier-fail": "badge-danger", deliberation: "badge-info",
       };
       return `<span class="badge ${map[k] || "badge-muted"}">${esc(k)}</span>`;
     };
@@ -348,6 +349,44 @@ const PANELS = {
               <td>${a.critic_approvals ?? 0}</td>
               <td>${(a.retractions ?? 0) > 0 ? `<span class="badge badge-danger">${a.retractions}</span>` : "0"}</td>
               <td>${a.last_active ? formatTime(a.last_active) : "-"}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  },
+
+  // ─── Deliberation (ADR-0056 governed decisions) ─────────────
+  deliberation(s) {
+    const decisions = ((s.deliberations && s.deliberations.decisions) || []).slice().reverse();
+    if (decisions.length === 0) {
+      return `
+        <div class="panel-title">Deliberation</div>
+        <div class="empty-state">
+          <div class="empty-state-icon">&#9878;</div>
+          <div class="empty-state-text">No governed decisions yet. The deliberation panel (ADR-0056) aggregates reviewer/model votes with <strong>reputation-weighted, robust, cost-gated</strong> logic and emits a <code>deliberation</code> event. Run one via <code>scripts/lib/governed-decision.mjs</code> or <code>examples/governed-decision-live.mjs</code>.</div>
+        </div>`;
+    }
+    const escalated = decisions.filter((d) => d.escalate).length;
+    return `
+      <div class="panel-title">Deliberation</div>
+      <div class="card-grid" style="margin-bottom:1rem">
+        <div class="card"><div class="card-label">Decisions</div><div class="card-value">${decisions.length}</div></div>
+        <div class="card" style="${escalated > 0 ? "border-color:var(--warning)" : ""}"><div class="card-label">Escalated</div><div class="card-value">${escalated}</div><div class="card-sub">low-confidence / contested</div></div>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>Time</th><th>Question</th><th>Answer</th><th>Confidence</th><th>Indep.</th><th>Method</th><th>Flags</th><th>Cost</th></tr></thead>
+        <tbody>
+          ${decisions.map((d) => `
+            <tr>
+              <td>${formatTime(d.timestamp)}</td>
+              <td>${esc(truncate(d.question, 44))}</td>
+              <td><strong>${esc(String(d.answer))}</strong></td>
+              <td><span class="badge ${(d.confidence ?? 0) >= 0.66 ? "badge-success" : (d.confidence ?? 0) >= 0.4 ? "badge-info" : "badge-warning"}">${typeof d.confidence === "number" ? d.confidence.toFixed(3) : "-"}</span>${d.escalate ? ` <span class="badge badge-warning">escalate</span>` : ""}</td>
+              <td>${d.effective_independence ?? "-"}</td>
+              <td><code>${esc(d.method || "-")}</code></td>
+              <td>${(d.flags || []).map((f) => `<span class="badge badge-muted">${esc(f)}</span>`).join(" ") || "-"}</td>
+              <td>${d.cost ?? "-"}</td>
             </tr>
           `).join("")}
         </tbody>

@@ -30,6 +30,8 @@ export class Aggregator {
       // No dispatch preference is derived from it — Steps 2-3 are gated on
       // constitution-service (Rule 2). Formula is published for auditability.
       reputation: { agents: {}, formula: REPUTATION_FORMULA, weights: { ...REPUTATION_WEIGHTS } },
+      // Governed decisions run through the deliberation panel (ADR-0056).
+      deliberations: { decisions: [] },
     };
   }
 
@@ -221,6 +223,13 @@ function recordActivity(state, ev) {
         detail: `${ev.agent || "agent"}: ${ev.passed === true ? "PASS" : "FAIL"}${ev.task ? ` — ${ev.task}` : ""}`,
       });
       break;
+    case "deliberation":
+      pushActivity(state, {
+        timestamp: ev.timestamp, session_id: ev.session_id,
+        kind: "deliberation", tool: ev.method || "panel",
+        detail: `${ev.answer} @${typeof ev.confidence === "number" ? ev.confidence.toFixed(2) : "?"}${ev.escalate ? " (escalate)" : ""} — ${ev.question || ""}`,
+      });
+      break;
     default:
       // Governance/attempt events have their own panels; keep the feed focused.
       break;
@@ -405,6 +414,20 @@ const EVENT_HANDLERS = {
   // 2; Steps 2-3 gated on constitution-service).
   reputation_event(state, ev) {
     bumpReputation(state, ev.agent, ev.kind, ev.timestamp);
+  },
+
+  // Governed decision via the deliberation panel (ADR-0056). Capped list.
+  deliberation(state, ev) {
+    state.deliberations.decisions.push({
+      timestamp: ev.timestamp, session_id: ev.session_id,
+      question: ev.question || "", answer: ev.answer, confidence: ev.confidence,
+      method: ev.method, effective_independence: ev.effective_independence,
+      escalate: ev.escalate === true, flags: ev.flags || [], cost: ev.cost,
+      votes: ev.votes || [],
+    });
+    if (state.deliberations.decisions.length > 200) {
+      state.deliberations.decisions = state.deliberations.decisions.slice(-200);
+    }
   },
 
   // Verifier gate outcome (ADR-0044). The reputation accrual rides its paired

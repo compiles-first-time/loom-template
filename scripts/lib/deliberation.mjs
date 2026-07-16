@@ -25,6 +25,7 @@ export const DELIBERATION_DEFAULTS = {
   minQuorum: 3, // fewer valid votes than this → no-quorum (don't trust a plurality)
   confabulationMinFamilies: 2, // agreement from fewer distinct families than this is suspect
   confabulationConfidenceCap: 0.5, // and its confidence is capped here + escalated
+  escalateBelowConfidence: 0.4, // a decision below this confidence is escalated, not acted on
 };
 
 // ── Vote hygiene ──────────────────────────────────────────────────────────
@@ -248,6 +249,13 @@ export function aggregate(rawVotes, { weights, thresholds = {} } = {}) {
   if (topShare >= 0.8 && effIndep < th.confabulationMinFamilies) {
     flags.push("confabulation_consensus_suspected");
     confidence = Math.min(confidence, th.confabulationConfidenceCap);
+    escalate = true;
+  }
+  // Confidence floor: a decision the panel isn't confident in is escalated to a
+  // human, never returned as a final answer (surfaced by the live governed-
+  // decision run 2026-07-15 — a contested 0.326 call between authorities).
+  if (confidence < th.escalateBelowConfidence) {
+    if (!flags.includes("low_confidence")) flags.push("low_confidence");
     escalate = true;
   }
 

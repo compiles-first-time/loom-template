@@ -232,6 +232,19 @@ export const BR_07_CASES = [
     },
   },
   {
+    id: "BR-07_LowConf", type: "BE", framework_location: "scripts/lib/deliberation.mjs",
+    title: "Low-confidence decision is escalated, not returned as final",
+    expected_input: "a contested vote yielding confidence < 0.4",
+    expected_output: "flag low_confidence; escalate true",
+    justification: "Live governed-decision run (2026-07-15): a 0.326-confidence contested call between authorities must escalate to a human, not be acted on.",
+    run() {
+      // 3 diverse families, near-even split → low confidence.
+      const r = aggregate([v("A", "f1"), v("B", "f2"), v("C", "f3")], {});
+      const ok = r.confidence < 0.4 && r.flags.includes("low_confidence") && r.escalate === true;
+      return { actual: `conf=${r.confidence.toFixed(3)}, escalate=${r.escalate}, flags=[${r.flags.join(",")}]`, pass: ok };
+    },
+  },
+  {
     id: "BR-07_Numeric", type: "---", framework_location: "scripts/lib/deliberation.mjs",
     title: "Numeric answers → robust weighted median",
     expected_input: "[5,5,5,5,1000] with adversarial weight on 1000",
