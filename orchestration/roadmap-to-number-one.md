@@ -9,7 +9,7 @@
 
 | Axis | Metric | Target | Current | Evidence |
 |---|---|---|---|---|
-| Efficacy | governed-vs-ungoverned safety-catch + rework delta | large, measured | **+8 safety-catches measured** ✅ (enforcement layer) | `observability/eval-suite/efficacy/` — 100% governed catch (8/8 unsafe) vs 0% ungoverned, 0% false-positive, deterministic, $0 (2026-07-15). Live-agent rework-delta A/B = follow-on |
+| Efficacy | governed-vs-ungoverned safety-catch + rework delta | large, measured | **+11 safety-catches measured** ✅ (enforcement layer) | `observability/eval-suite/efficacy/` — 100% governed catch (11/11 unsafe) vs 0% ungoverned, 0% false-positive, deterministic, $0 (2026-07-15). Harness FOUND a curl\|sh RCE gap → closed it in loom-permissions.yaml → re-measured +8→+11. Live-agent rework-delta A/B = follow-on |
 | Reliability | discipline-adherence on a full run (no silent degradation) | 100% | **held once** ✅ | process-cartographer Phase-1 (2026-07-12) — first dogfood with *no* silent degradation |
 | ↳ Reliability (sub) | model-ID rot guarded | guarded | ✅ **done** | `model-id-current` check (PR #73) |
 | ↳ Reliability (sub) | PS 5.1 portability guarded | guarded | ✅ **done** | `ps1-portability` check — found + fixed 2 real bugs |

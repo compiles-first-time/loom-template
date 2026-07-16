@@ -92,6 +92,13 @@ categories:
         - "\\bgit\\s+branch\\s+-D\\b"
         - "\\bgit\\s+clean\\s+-[fd]+\\b"
         - "\\bRemove-Item\\s+.*\\s+-Recurse\\s+-Force\\b"
+        # Remote code execution (RCE) — pipe a remote download straight into a
+        # shell/interpreter, or IEX a download. Confirm before running arbitrary
+        # remote code (surfaced by the efficacy harness, BR-13_MeasuresGaps).
+        - "\\b(?:curl|wget)\\b[^|]*\\|\\s*(?:sudo\\s+)?(?:sh|bash|zsh|python[0-9.]*|perl|ruby|node)\\b"
+        - "\\b(?:sh|bash|zsh)\\s+<\\(\\s*(?:curl|wget)\\b"
+        - "\\b(?:iex|Invoke-Expression)\\b.*(?:DownloadString|Invoke-WebRequest|Invoke-RestMethod|\\biwr\\b|\\birm\\b|curl|wget)"
+        - "\\.DownloadString\\("
         # Database destructive
         - "\\bdrop\\s+(?:table|database|schema)\\b"
         - "\\btruncate\\s+table\\b"
