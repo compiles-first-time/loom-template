@@ -16,6 +16,7 @@ Per [ADR-0046](../../../adr/0046-requirements-exceptions-testcase-registry.md). 
 | **BR_10** | Lessons-Learned Service Phase 0 | 0055 | `scripts/lib/lessons.test.mjs` | [BR_10.md](./BR_10.md) + `BR_10.cases.mjs` |
 | **BR_11** | Verifier gate → reputation emission | 0044 + 0053 | `scripts/lib/verify-gate.test.mjs` | [BR_11.md](./BR_11.md) + `BR_11.cases.mjs` |
 | **BR_12** | Governed decision (panel as a decision path) | 0056 | `scripts/lib/governed-decision.test.mjs` | [BR_12.md](./BR_12.md) + `BR_12.cases.mjs` |
+| **BR_13** | Efficacy eval harness (governed vs ungoverned) | 0054 (P1a) | `observability/eval-suite/efficacy/harness.test.mjs` | [BR_13.md](./BR_13.md) + `BR_13.cases.mjs` |
 
 ## How it works
 
