@@ -215,6 +215,8 @@ const PANELS = {
       const map = {
         tool: "badge-info", error: "badge-danger", session: "badge-muted",
         destructive: "badge-warning", tokens: "badge-info", test: "badge-success",
+        test_case: "badge-success", ticket: "badge-info", reputation: "badge-info",
+        "cold-start": "badge-warning",
       };
       return `<span class="badge ${map[k] || "badge-muted"}">${esc(k)}</span>`;
     };
@@ -304,6 +306,52 @@ const PANELS = {
           </tbody>
         </table>
       ` : ""}
+    `;
+  },
+
+  // ─── Reputation (ADR-0053 Step 1 — passive projection) ──────
+  reputation(s) {
+    const rep = s.reputation || { agents: {}, formula: "", weights: {} };
+    const agents = Object.values(rep.agents || {}).sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+
+    if (agents.length === 0) {
+      return `
+        <div class="panel-title">Reputation</div>
+        <div class="empty-state">
+          <div class="empty-state-icon">&#9733;</div>
+          <div class="empty-state-text">No reputation signals yet. This is a <strong>passive projection</strong> (ADR-0053 Step 1) — it accrues from <code>reputation_event</code> records (verifier pass/fail, lessons contributed, critic approvals, retractions) and specialist invocations. No dispatch preference is derived from it (Rule 2); Steps 2&ndash;3 are gated on constitution-service.</div>
+        </div>`;
+    }
+
+    const pct = (v) => v == null ? "-" : (v * 100).toFixed(0) + "%";
+    return `
+      <div class="panel-title">Reputation</div>
+      <div class="card-sub" style="margin-bottom:1rem">Passive projection (ADR-0053 Step 1). Transparent, confidence-smoothed, <strong>no dispatch preference</strong> (Rule 2). Any agent can recompute its own score from the published formula.</div>
+
+      <div class="card" style="margin-bottom:1.5rem">
+        <div class="card-label">Published formula</div>
+        <div class="card-sub"><code>${esc(rep.formula || "-")}</code></div>
+      </div>
+
+      <table class="data-table">
+        <thead><tr><th>Agent</th><th>Score</th><th>Pass rate</th><th>n</th><th>Pass</th><th>Fail</th><th>Lessons</th><th>Critic&#10003;</th><th>Retractions</th><th>Last active</th></tr></thead>
+        <tbody>
+          ${agents.map((a) => `
+            <tr>
+              <td><strong>${esc(a.agent)}</strong></td>
+              <td><span class="badge ${(a.score ?? 0) >= 0.66 ? "badge-success" : (a.score ?? 0) >= 0.4 ? "badge-info" : "badge-warning"}">${(a.score ?? 0).toFixed(3)}</span></td>
+              <td>${pct(a.smoothed_pass_rate)}</td>
+              <td>${a.n ?? 0}</td>
+              <td>${a.verifier_pass ?? 0}</td>
+              <td>${a.verifier_fail ?? 0}</td>
+              <td>${a.lessons_contributed ?? 0}</td>
+              <td>${a.critic_approvals ?? 0}</td>
+              <td>${(a.retractions ?? 0) > 0 ? `<span class="badge badge-danger">${a.retractions}</span>` : "0"}</td>
+              <td>${a.last_active ? formatTime(a.last_active) : "-"}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
     `;
   },
 
@@ -565,6 +613,12 @@ const PANELS = {
           <div class="card-value">${redactionHits}</div>
           <div class="card-sub">OAuth preference hints triggered</div>
         </div>
+        ${s.compliance.bootstrapped_this_session ? `
+        <div class="card" style="border-color:var(--warning)">
+          <div class="card-label">Cold-Start This Session</div>
+          <div class="card-value"><span class="badge badge-warning">bootstrapped</span></div>
+          <div class="card-sub">${esc(s.compliance.bootstrapped_this_session.project || "project")} stamped via ${esc(s.compliance.bootstrapped_this_session.source || "?")} &mdash; hooks/subagents need a restart (ADR-0020/0038)</div>
+        </div>` : ""}
       </div>
 
       ${checks.length > 0 ? `
