@@ -176,6 +176,11 @@ echo ""
 echo "  Run \`scripts/doctor.sh\` to validate the project at any time."
 echo "  Run \`scripts/secrets-doctor.sh\` before any commit touching credentials."
 echo ""
+# Persist the cold-start marker (recommendation #2) — visible in the event log +
+# Observatory even in the true hookless founding session (the SessionStart hook
+# won't fire for the session that ran this bootstrap).
+node "$ROOT/scripts/lib/mark-bootstrapped.mjs" "$PROJECT_NAME" 2>/dev/null || true
+echo ""
 echo "============================================================"
 echo "⚠  RESTART CLAUDE CODE NOW"
 echo "============================================================"
@@ -183,3 +188,8 @@ echo "  Claude Code builds the subagent registry at session start."
 echo "  The six base subagents at .claude/agents/*.md were just"
 echo "  added to disk — they are NOT yet invokable in the current"
 echo "  session. Restart Claude Code to load them. (Per ADR-0020.)"
+echo ""
+echo "  Until you restart, THIS session cannot self-govern:"
+echo "    (a) invoke agents via ADR-0034 path 2b (Agent tool + the agent's SKILL.md);"
+echo "    (b) the audit trail must be HAND-AUTHORED (emit session_start + claim records)."
+echo "  A fresh CLONE opened in Claude Code avoids this cold-start gap entirely."

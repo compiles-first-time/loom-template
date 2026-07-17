@@ -1,10 +1,20 @@
 ---
-date: 2026-06-15
-agent: EAC (research-validator role)
+id: 2026-06-15-practitioner-claim-validation-methodology
+title: Practitioner claim validation: source-tier discipline in action
+domain: [research]
+stack: [loom]
+platform: [win32, linux, darwin]
 severity: low
 share: true
+supersedes: null
+provenance:
+  origin_project: loom-template
+  sources: [loom-template]
+  confidence: 0.85
+created: 2026-06-15
+updated: 2026-07-15
+embedding_hash: null
 ---
-
 # Practitioner claim validation: source-tier discipline in action
 
 ## What happened

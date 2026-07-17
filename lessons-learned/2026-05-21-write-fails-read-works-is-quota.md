@@ -1,10 +1,20 @@
 ---
-date: 2026-05-21
-agent: deploy specialist (synthesized from AnonForum session)
+id: 2026-05-21-write-fails-read-works-is-quota
+title: "Auth error" on write while reads succeed = check quota/billing first
+domain: [reliability, tooling]
+stack: [loom]
+platform: [win32, linux, darwin]
 severity: high
 share: true
+supersedes: null
+provenance:
+  origin_project: loom-template
+  sources: [loom-template, ADR-0032]
+  confidence: 0.85
+created: 2026-05-21
+updated: 2026-07-15
+embedding_hash: null
 ---
-
 # "Auth error" on write while reads succeed = check quota/billing first
 
 ## What happened

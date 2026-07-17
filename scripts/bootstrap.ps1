@@ -286,6 +286,11 @@ Write-Host ""
 Write-Host "  Run scripts/doctor.ps1 to validate the project at any time."
 Write-Host "  Run scripts/secrets-doctor.ps1 before any commit touching credentials."
 Write-Host ""
+# Persist the cold-start marker (recommendation #2) - visible in the event log +
+# Observatory even in the true hookless founding session (the SessionStart hook
+# won't fire for the session that ran this bootstrap).
+try { & node (Join-Path $root "scripts/lib/mark-bootstrapped.mjs") $ProjectName } catch {}
+Write-Host ""
 Write-Host "============================================================" -ForegroundColor Yellow
 Write-Host "RESTART CLAUDE CODE NOW" -ForegroundColor Yellow
 Write-Host "============================================================" -ForegroundColor Yellow
@@ -293,3 +298,8 @@ Write-Host "  Claude Code builds the subagent registry at session start."
 Write-Host "  The six base subagents at .claude/agents/*.md were just"
 Write-Host "  added to disk - they are NOT yet invokable in the current"
 Write-Host "  session. Restart Claude Code to load them. (Per ADR-0020.)"
+Write-Host ""
+Write-Host "  Until you restart, THIS session cannot self-govern:" -ForegroundColor Yellow
+Write-Host "    (a) invoke agents via ADR-0034 path 2b (Agent tool + the agent's SKILL.md);"
+Write-Host "    (b) the audit trail must be HAND-AUTHORED (emit session_start + claim records)."
+Write-Host "  A fresh CLONE opened in Claude Code avoids this cold-start gap entirely."

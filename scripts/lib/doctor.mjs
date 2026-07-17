@@ -13,6 +13,8 @@
 import { promises as fs, existsSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { scanDiscoveryAuthored, AUTHORED_DISCOVERY_FILES } from "./discovery-authored.mjs";
+import { loadLessons, validateLessonSchema } from "./lessons.mjs";
 
 const ROOT = process.cwd();
 const args = new Set(process.argv.slice(2));
@@ -38,6 +40,8 @@ async function main() {
   await checkConstitutionCoverage();
   await checkAdrTemplateConformance();
   await checkBidirectionalAdrLinks();
+  await checkDiscoveryAuthored();
+  await checkLessonSchema();
   await checkHandoffFreshness();
   await checkPlaybookFreshness();
   await checkSkeleton();
@@ -318,6 +322,68 @@ function extractAffectsBlock(text) {
     paths.push(p);
   }
   return paths;
+}
+
+async function checkDiscoveryAuthored() {
+  // Soft check (lesson 2026-07-10-discovery-must-be-authored-not-stamped):
+  // `scripts/discover.*` stamps TEMPLATE content into discovery docs; a
+  // stamped-but-unauthored doc looks "done" (file exists, gate passes) while
+  // its content is boilerplate — the silent-degradation trap. Flag the tell-tale
+  // placeholder strings. GUARDED: skip when the project has no authored-discovery
+  // docs (loom-template ships only discovery/README.md — nothing to author).
+  const discDir = path.join(ROOT, "discovery");
+  if (!existsSync(discDir)) return soft("discovery-authored", true, "no discovery/ directory (skipped)");
+  const docs = [];
+  for (const name of AUTHORED_DISCOVERY_FILES) {
+    const p = path.join(discDir, name);
+    if (!existsSync(p)) continue;
+    try {
+      docs.push({ name, text: await fs.readFile(p, "utf8") });
+    } catch {
+      // Unreadable — the scanner tolerates it; skip.
+    }
+  }
+  if (docs.length === 0) {
+    return soft("discovery-authored", true, "no authored discovery docs yet (template scaffolding only — skipped)");
+  }
+  const { checked, flagged } = scanDiscoveryAuthored(docs);
+  if (flagged.length === 0) {
+    return soft("discovery-authored", true, `${checked} discovery doc(s) authored (no template placeholders)`);
+  }
+  const detail = flagged.map((f) => `${f.name} [${f.hits.join(", ")}]`).join("; ");
+  soft(
+    "discovery-authored",
+    false,
+    `${flagged.length} discovery doc(s) still contain template placeholders (stamped ≠ authored): ${detail}. Author real content per L8/ADR-0026, then run the critic.`
+  );
+}
+
+async function checkLessonSchema() {
+  // Soft check (ADR-0055 Phase 0): lessons-learned/*.md should carry the
+  // standardized frontmatter schema (id/title/domain/stack/severity/share/
+  // provenance) so they are future-ingestable + searchable by metadata. Reports
+  // conformance coverage; warns below 90% (the proposal's adoption target).
+  const dir = path.join(ROOT, "lessons-learned");
+  if (!existsSync(dir)) return soft("lesson-schema", true, "no lessons-learned/ (skipped)");
+  const lessons = loadLessons(dir);
+  if (lessons.length === 0) return soft("lesson-schema", true, "no lessons yet (skipped)");
+  let conforming = 0;
+  const nonconforming = [];
+  for (const l of lessons) {
+    const v = validateLessonSchema(l.frontmatter);
+    if (v.conforms) conforming++;
+    else nonconforming.push(`${l.file} (missing ${v.missing.join(", ")})`);
+  }
+  const pct = Math.round((conforming / lessons.length) * 100);
+  if (pct >= 90) {
+    soft("lesson-schema", true, `${conforming}/${lessons.length} lessons carry the ADR-0055 schema (${pct}%)`);
+  } else {
+    soft(
+      "lesson-schema",
+      false,
+      `only ${conforming}/${lessons.length} lessons carry the ADR-0055 schema (${pct}% < 90%): ${nonconforming.slice(0, 3).join("; ")}${nonconforming.length > 3 ? " …" : ""}. Run \`node scripts/lib/lessons.mjs validate\`.`
+    );
+  }
 }
 
 async function checkHandoffFreshness() {

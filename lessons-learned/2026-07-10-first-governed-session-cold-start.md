@@ -1,11 +1,20 @@
 ---
-date: 2026-07-10
-agent: builder (Opus 4.8)
+id: 2026-07-10-first-governed-session-cold-start
+title: The FIRST governed session can't self-govern — bootstrapping Loom mid-session leaves hooks/subagents inactive until restart
+domain: [bootstrap, hooks, governance]
+stack: [loom, claude-code]
+platform: [win32, linux, darwin]
 severity: medium
 share: true
-upstream: loom-template
+supersedes: null
+provenance:
+  origin_project: loom-template
+  sources: [loom-template, ADR-0020, ADR-0034, ADR-0043]
+  confidence: 0.9
+created: 2026-07-10
+updated: 2026-07-15
+embedding_hash: null
 ---
-
 # The FIRST governed session can't self-govern — bootstrapping Loom mid-session leaves hooks/subagents inactive until restart
 
 ## What happened

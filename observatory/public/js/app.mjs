@@ -215,6 +215,9 @@ const PANELS = {
       const map = {
         tool: "badge-info", error: "badge-danger", session: "badge-muted",
         destructive: "badge-warning", tokens: "badge-info", test: "badge-success",
+        test_case: "badge-success", ticket: "badge-info", reputation: "badge-info",
+        "cold-start": "badge-warning", "verifier-pass": "badge-success",
+        "verifier-fail": "badge-danger", deliberation: "badge-info",
       };
       return `<span class="badge ${map[k] || "badge-muted"}">${esc(k)}</span>`;
     };
@@ -304,6 +307,90 @@ const PANELS = {
           </tbody>
         </table>
       ` : ""}
+    `;
+  },
+
+  // ─── Reputation (ADR-0053 Step 1 — passive projection) ──────
+  reputation(s) {
+    const rep = s.reputation || { agents: {}, formula: "", weights: {} };
+    const agents = Object.values(rep.agents || {}).sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+
+    if (agents.length === 0) {
+      return `
+        <div class="panel-title">Reputation</div>
+        <div class="empty-state">
+          <div class="empty-state-icon">&#9733;</div>
+          <div class="empty-state-text">No reputation signals yet. This is a <strong>passive projection</strong> (ADR-0053 Step 1) — it accrues from <code>reputation_event</code> records (verifier pass/fail, lessons contributed, critic approvals, retractions) and specialist invocations. No dispatch preference is derived from it (Rule 2); Steps 2&ndash;3 are gated on constitution-service.</div>
+        </div>`;
+    }
+
+    const pct = (v) => v == null ? "-" : (v * 100).toFixed(0) + "%";
+    return `
+      <div class="panel-title">Reputation</div>
+      <div class="card-sub" style="margin-bottom:1rem">Passive projection (ADR-0053 Step 1). Transparent, confidence-smoothed, <strong>no dispatch preference</strong> (Rule 2). Any agent can recompute its own score from the published formula.</div>
+
+      <div class="card" style="margin-bottom:1.5rem">
+        <div class="card-label">Published formula</div>
+        <div class="card-sub"><code>${esc(rep.formula || "-")}</code></div>
+      </div>
+
+      <table class="data-table">
+        <thead><tr><th>Agent</th><th>Score</th><th>Pass rate</th><th>n</th><th>Pass</th><th>Fail</th><th>Lessons</th><th>Critic&#10003;</th><th>Retractions</th><th>Last active</th></tr></thead>
+        <tbody>
+          ${agents.map((a) => `
+            <tr>
+              <td><strong>${esc(a.agent)}</strong></td>
+              <td><span class="badge ${(a.score ?? 0) >= 0.66 ? "badge-success" : (a.score ?? 0) >= 0.4 ? "badge-info" : "badge-warning"}">${(a.score ?? 0).toFixed(3)}</span></td>
+              <td>${pct(a.smoothed_pass_rate)}</td>
+              <td>${a.n ?? 0}</td>
+              <td>${a.verifier_pass ?? 0}</td>
+              <td>${a.verifier_fail ?? 0}</td>
+              <td>${a.lessons_contributed ?? 0}</td>
+              <td>${a.critic_approvals ?? 0}</td>
+              <td>${(a.retractions ?? 0) > 0 ? `<span class="badge badge-danger">${a.retractions}</span>` : "0"}</td>
+              <td>${a.last_active ? formatTime(a.last_active) : "-"}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  },
+
+  // ─── Deliberation (ADR-0056 governed decisions) ─────────────
+  deliberation(s) {
+    const decisions = ((s.deliberations && s.deliberations.decisions) || []).slice().reverse();
+    if (decisions.length === 0) {
+      return `
+        <div class="panel-title">Deliberation</div>
+        <div class="empty-state">
+          <div class="empty-state-icon">&#9878;</div>
+          <div class="empty-state-text">No governed decisions yet. The deliberation panel (ADR-0056) aggregates reviewer/model votes with <strong>reputation-weighted, robust, cost-gated</strong> logic and emits a <code>deliberation</code> event. Run one via <code>scripts/lib/governed-decision.mjs</code> or <code>examples/governed-decision-live.mjs</code>.</div>
+        </div>`;
+    }
+    const escalated = decisions.filter((d) => d.escalate).length;
+    return `
+      <div class="panel-title">Deliberation</div>
+      <div class="card-grid" style="margin-bottom:1rem">
+        <div class="card"><div class="card-label">Decisions</div><div class="card-value">${decisions.length}</div></div>
+        <div class="card" style="${escalated > 0 ? "border-color:var(--warning)" : ""}"><div class="card-label">Escalated</div><div class="card-value">${escalated}</div><div class="card-sub">low-confidence / contested</div></div>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>Time</th><th>Question</th><th>Answer</th><th>Confidence</th><th>Indep.</th><th>Method</th><th>Flags</th><th>Cost</th></tr></thead>
+        <tbody>
+          ${decisions.map((d) => `
+            <tr>
+              <td>${formatTime(d.timestamp)}</td>
+              <td>${esc(truncate(d.question, 44))}</td>
+              <td><strong>${esc(String(d.answer))}</strong></td>
+              <td><span class="badge ${(d.confidence ?? 0) >= 0.66 ? "badge-success" : (d.confidence ?? 0) >= 0.4 ? "badge-info" : "badge-warning"}">${typeof d.confidence === "number" ? d.confidence.toFixed(3) : "-"}</span>${d.escalate ? ` <span class="badge badge-warning">escalate</span>` : ""}</td>
+              <td>${d.effective_independence ?? "-"}</td>
+              <td><code>${esc(d.method || "-")}</code></td>
+              <td>${(d.flags || []).map((f) => `<span class="badge badge-muted">${esc(f)}</span>`).join(" ") || "-"}</td>
+              <td>${d.cost ?? "-"}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
     `;
   },
 
@@ -565,6 +652,12 @@ const PANELS = {
           <div class="card-value">${redactionHits}</div>
           <div class="card-sub">OAuth preference hints triggered</div>
         </div>
+        ${s.compliance.bootstrapped_this_session ? `
+        <div class="card" style="border-color:var(--warning)">
+          <div class="card-label">Cold-Start This Session</div>
+          <div class="card-value"><span class="badge badge-warning">bootstrapped</span></div>
+          <div class="card-sub">${esc(s.compliance.bootstrapped_this_session.project || "project")} stamped via ${esc(s.compliance.bootstrapped_this_session.source || "?")} &mdash; hooks/subagents need a restart (ADR-0020/0038)</div>
+        </div>` : ""}
       </div>
 
       ${checks.length > 0 ? `
@@ -715,10 +808,39 @@ const PANELS = {
       </div>
     `;
 
+    const eff = t.efficacy;
+    const efficacySection = eff ? `
+      <h3 style="font-size:0.9rem;color:var(--text-muted);margin-bottom:0.75rem">EFFICACY — governed vs ungoverned (ADR-0054 Phase 1a)</h3>
+      <div class="card-grid" style="margin-bottom:1.5rem">
+        <div class="card" style="border-color:var(--accent)">
+          <div class="card-label">Safety-catch delta</div>
+          <div class="card-value">+${eff.safety_catch_delta}</div>
+          <div class="card-sub">unsafe ops governed blocks that ungoverned would run</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Governed catch rate</div>
+          <div class="card-value">${(eff.governed_catch_rate * 100).toFixed(0)}%</div>
+          <div class="card-sub">ungoverned: 0%</div>
+        </div>
+        <div class="card" style="${eff.false_positive_rate > 0 ? "border-color:var(--danger)" : ""}">
+          <div class="card-label">False-positive rate</div>
+          <div class="card-value">${(eff.false_positive_rate * 100).toFixed(0)}%</div>
+          <div class="card-sub">${eff.n_safe} safe ops</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Discipline</div>
+          <div class="card-value">${eff.discipline_deterministic ? "100%" : "drift"}</div>
+          <div class="card-sub">deterministic · token cost $${eff.token_cost}</div>
+        </div>
+      </div>
+    ` : "";
+
     return `
       <div class="panel-title">Testing</div>
 
       ${liveSection}
+
+      ${efficacySection}
 
       <h3 style="font-size:0.9rem;color:var(--text-muted);margin-bottom:0.75rem">EVAL SUITE STATUS</h3>
       <table class="data-table">

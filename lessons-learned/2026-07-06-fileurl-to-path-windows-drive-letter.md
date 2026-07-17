@@ -1,10 +1,20 @@
 ---
-date: 2026-07-06
-agent: builder (Opus 4.8)
+id: 2026-07-06-fileurl-to-path-windows-drive-letter
+title: Hand-rolled `file://` URL → path conversion is fragile on Windows — always use `fileURLToPath`
+domain: [windows]
+stack: [loom]
+platform: [win32]
 severity: medium
 share: true
+supersedes: null
+provenance:
+  origin_project: loom-template
+  sources: [loom-template, ADR-0043]
+  confidence: 0.85
+created: 2026-07-06
+updated: 2026-07-15
+embedding_hash: null
 ---
-
 # Hand-rolled `file://` URL → path conversion is fragile on Windows — always use `fileURLToPath`
 
 ## What happened

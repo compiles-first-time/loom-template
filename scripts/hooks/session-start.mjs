@@ -16,6 +16,8 @@ import {
   validateProjectRoot,
   warn,
   PROJECT_ROOT,
+  COLD_START_ADVISORY,
+  bootstrappedThisSessionPayload,
 } from "./_lib.mjs";
 import { spawnSync, spawn } from "node:child_process";
 import path from "node:path";
@@ -136,6 +138,30 @@ if (placeholders.length > 0) {
       warn(`auto-bootstrap stamped project as "${projectName}" (user="${userName}")`);
     }
   }
+
+  // Lesson 2026-07-10-first-governed-session-cold-start: placeholders were
+  // present, so this session just stamped the project — the cold-start gap is in
+  // play (subagents/hooks created or completed after session start aren't
+  // registered until restart). Emit a VISIBLE marker (recommendation #2) and
+  // surface the two workarounds loudly (recommendation #1) rather than leaving a
+  // careful operator to infer them.
+  appendEvent(
+    mechanicalRecord(
+      "bootstrapped_this_session",
+      bootstrappedThisSessionPayload({
+        session_id: event.session_id || process.env.CLAUDE_SESSION_ID || `local-${Date.now()}`,
+        project: projectName,
+        // Honest: `stamped` reflects whether the auto-bootstrap actually
+        // succeeded (result may be undefined if no bootstrap script was found,
+        // or non-zero on failure — in which case placeholders REMAIN and the
+        // stamp claim would be false). The advisory still fires either way.
+        stamped: result?.status === 0,
+        source: "session-start",
+      })
+    )
+  );
+  warn("");
+  for (const line of COLD_START_ADVISORY) warn(line);
 }
 
 // Observatory auto-launch (L9, ADR-0039)

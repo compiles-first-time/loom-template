@@ -1,6 +1,12 @@
 // Observatory aggregator — builds the projections defined by ADR-0040
 // (projection schemas); Update Bus inbox + decision write-back per ADR-0041.
 import { redact } from "./redactor.mjs";
+import {
+  REPUTATION_FORMULA,
+  REPUTATION_WEIGHTS,
+  emptyRecord as emptyReputationRecord,
+  applySignal as applyReputationSignal,
+} from "./reputation.mjs";
 
 export class Aggregator {
   constructor({ costRates = {} } = {}) {
@@ -19,6 +25,13 @@ export class Aggregator {
       requirements: { cases: [], by_requirement: {} },
       kanban: { tickets: [], by_state: {} },
       activity: { feed: [] },
+      // Passive agent-reputation projection (ADR-0053 Step 1). Populated from
+      // `reputation_event` accrual + passively-derived specialist invocations.
+      // No dispatch preference is derived from it — Steps 2-3 are gated on
+      // constitution-service (Rule 2). Formula is published for auditability.
+      reputation: { agents: {}, formula: REPUTATION_FORMULA, weights: { ...REPUTATION_WEIGHTS } },
+      // Governed decisions run through the deliberation panel (ADR-0056).
+      deliberations: { decisions: [] },
     };
   }
 
@@ -189,6 +202,41 @@ function recordActivity(state, ev) {
         detail: `${ev.id || "ticket"} → ${ev.state || "backlog"}${ev.parent_id ? ` (${ev.parent_id})` : ""}`,
       });
       break;
+    case "reputation_event":
+      pushActivity(state, {
+        timestamp: ev.timestamp, session_id: ev.session_id,
+        kind: "reputation", tool: ev.kind || "reputation",
+        detail: `${ev.agent || "agent"} ${ev.kind || "signal"}`,
+      });
+      break;
+    case "bootstrapped_this_session":
+      pushActivity(state, {
+        timestamp: ev.timestamp, session_id: ev.session_id,
+        kind: "cold-start", tool: "bootstrap",
+        detail: `bootstrapped this session${ev.project ? ` (${ev.project})` : ""} — hooks/subagents need a restart`,
+      });
+      break;
+    case "verifier_result":
+      pushActivity(state, {
+        timestamp: ev.timestamp, session_id: ev.session_id,
+        kind: ev.passed === true ? "verifier-pass" : "verifier-fail", tool: ev.verifier_type || "verifier",
+        detail: `${ev.agent || "agent"}: ${ev.passed === true ? "PASS" : "FAIL"}${ev.task ? ` — ${ev.task}` : ""}`,
+      });
+      break;
+    case "deliberation":
+      pushActivity(state, {
+        timestamp: ev.timestamp, session_id: ev.session_id,
+        kind: "deliberation", tool: ev.method || "panel",
+        detail: `${ev.answer} @${typeof ev.confidence === "number" ? ev.confidence.toFixed(2) : "?"}${ev.escalate ? " (escalate)" : ""} — ${ev.question || ""}`,
+      });
+      break;
+    case "efficacy_run":
+      pushActivity(state, {
+        timestamp: ev.timestamp, session_id: ev.session_id,
+        kind: "efficacy", tool: "phase-1a",
+        detail: `safety-catch +${ev.safety_catch_delta} (${Math.round((ev.governed_catch_rate || 0) * 100)}% governed vs 0% ungoverned, ${Math.round((ev.false_positive_rate || 0) * 100)}% FP)`,
+      });
+      break;
     default:
       // Governance/attempt events have their own panels; keep the feed focused.
       break;
@@ -231,6 +279,15 @@ function rollupKanban(tickets) {
     out[k] = (out[k] || 0) + 1;
   }
   return out;
+}
+
+// Accrue one reputation signal for `agent` into the projection (ADR-0053 Step
+// 1). Best-effort: a missing agent is a no-op so dirty logs never corrupt the
+// panel. No dispatch preference is derived — projection only (Rule 2).
+function bumpReputation(state, agent, kind, timestamp) {
+  if (!agent) return;
+  const rec = (state.reputation.agents[agent] ||= emptyReputationRecord(agent));
+  applyReputationSignal(rec, kind, timestamp);
 }
 
 const EVENT_HANDLERS = {
@@ -342,6 +399,8 @@ const EVENT_HANDLERS = {
       work_item: ev.work_item_id,
       spawned_at: ev.timestamp,
     });
+    // Passive reputation signal: a spawn is an invocation (ADR-0053 Step 1).
+    bumpReputation(state, ev.specialist_name, "invocation", ev.timestamp);
   },
 
   specialist_retired(state, ev) {
@@ -353,6 +412,69 @@ const EVENT_HANDLERS = {
       retired_at: ev.timestamp,
       archived_path: ev.archived_path,
     });
+    // Recency-only touch of the reputation record (unknown kind → last_active).
+    bumpReputation(state, ev.specialist_name, "retirement", ev.timestamp);
+  },
+
+  // Passive reputation projection (ADR-0053 Step 1). One accrual per signal,
+  // keyed by agent. Projection only — no dispatch preference is derived (Rule
+  // 2; Steps 2-3 gated on constitution-service).
+  reputation_event(state, ev) {
+    bumpReputation(state, ev.agent, ev.kind, ev.timestamp);
+  },
+
+  // Efficacy eval run (ADR-0054 Phase 1a). Latest governed-vs-ungoverned result.
+  efficacy_run(state, ev) {
+    state.testing.efficacy = {
+      timestamp: ev.timestamp,
+      total: ev.total, n_unsafe: ev.n_unsafe, n_safe: ev.n_safe,
+      safety_catch_delta: ev.safety_catch_delta,
+      governed_catch_rate: ev.governed_catch_rate,
+      false_positive_rate: ev.false_positive_rate,
+      discipline_deterministic: ev.discipline_deterministic === true,
+      token_cost: ev.token_cost,
+    };
+  },
+
+  // Governed decision via the deliberation panel (ADR-0056). Capped list.
+  deliberation(state, ev) {
+    state.deliberations.decisions.push({
+      timestamp: ev.timestamp, session_id: ev.session_id,
+      question: ev.question || "", answer: ev.answer, confidence: ev.confidence,
+      method: ev.method, effective_independence: ev.effective_independence,
+      escalate: ev.escalate === true, flags: ev.flags || [], cost: ev.cost,
+      votes: ev.votes || [],
+    });
+    if (state.deliberations.decisions.length > 200) {
+      state.deliberations.decisions = state.deliberations.decisions.slice(-200);
+    }
+  },
+
+  // Verifier gate outcome (ADR-0044). The reputation accrual rides its paired
+  // `reputation_event`; here we keep an auditable list of verifier results.
+  verifier_result(state, ev) {
+    state.compliance.verifications = state.compliance.verifications || [];
+    state.compliance.verifications.push({
+      timestamp: ev.timestamp, session_id: ev.session_id, agent: ev.agent || null,
+      task: ev.task || "", verifier_type: ev.verifier_type || null, passed: ev.passed === true,
+    });
+    if (state.compliance.verifications.length > 300) {
+      state.compliance.verifications = state.compliance.verifications.slice(-300);
+    }
+  },
+
+  // Cold-start marker (lesson 2026-07-10). A session that stamped the project
+  // this run couldn't fully self-govern (hooks/subagents register at session
+  // start). Surface it so the gap is VISIBLE rather than inferred.
+  bootstrapped_this_session(state, ev) {
+    state.compliance.bootstrapped_this_session = {
+      at: ev.timestamp,
+      session_id: ev.session_id,
+      project: ev.project || null,
+      source: ev.source || null, // "session-start" (hook) | "bootstrap-script"
+      stamped: ev.stamped === true,
+      cold_start_advised: ev.cold_start_advised === true,
+    };
   },
 
   loop_cost_summary(state, ev, costRates = {}) {

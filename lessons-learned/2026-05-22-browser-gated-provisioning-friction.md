@@ -1,10 +1,20 @@
 ---
-date: 2026-05-22
-agent: ravenwise-session (synthesized from real use of Loom to spin up a first project)
+id: 2026-05-22-browser-gated-provisioning-friction
+title: Browser-gated provisioning fragments the architect's flow — and we over-classified actions as browser-only
+domain: [provisioning]
+stack: [loom]
+platform: [win32, linux, darwin]
 severity: high
 share: true
+supersedes: null
+provenance:
+  origin_project: loom-template
+  sources: [loom-template, ADR-0033, ADR-0020, ADR-0034]
+  confidence: 0.85
+created: 2026-05-22
+updated: 2026-07-15
+embedding_hash: null
 ---
-
 # Browser-gated provisioning fragments the architect's flow — and we over-classified actions as browser-only
 
 ## What happened

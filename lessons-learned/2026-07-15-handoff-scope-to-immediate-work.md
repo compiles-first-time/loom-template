@@ -1,10 +1,20 @@
 ---
-date: 2026-07-15
-agent: builder (Opus 4.8)
+id: 2026-07-15-handoff-scope-to-immediate-work
+title: Handoff/bootstrap prompts must be scoped to the immediate work — bundling "related" repos/context adds friction
+domain: [auth, process]
+stack: [loom]
+platform: [win32, linux, darwin]
 severity: low
 share: true
+supersedes: null
+provenance:
+  origin_project: loom-template
+  sources: [loom-template, ADR-0053, ADR-0004, ADR-0031]
+  confidence: 0.85
+created: 2026-07-15
+updated: 2026-07-15
+embedding_hash: null
 ---
-
 # Handoff/bootstrap prompts must be scoped to the immediate work — bundling "related" repos/context adds friction
 
 ## What happened

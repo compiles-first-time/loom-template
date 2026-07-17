@@ -1,10 +1,20 @@
 ---
-date: 2026-05-21
-agent: deploy specialist (synthesized from AnonForum session)
+id: 2026-05-21-auth-scope-drop-on-device-code
+title: Device-code CLIs can drop write scope while keeping read scope
+domain: [auth, process]
+stack: [loom]
+platform: [win32, linux, darwin]
 severity: medium
 share: true
+supersedes: null
+provenance:
+  origin_project: loom-template
+  sources: [loom-template, ADR-0032]
+  confidence: 0.85
+created: 2026-05-21
+updated: 2026-07-15
+embedding_hash: null
 ---
-
 # Device-code CLIs can drop write scope while keeping read scope
 
 ## What happened
