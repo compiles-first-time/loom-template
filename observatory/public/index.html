@@ -7,75 +7,22 @@
   <link rel="stylesheet" href="/css/observatory.css">
 </head>
 <body>
-  <header class="header">
-    <div class="header-title">
-      <span>L9</span> Observatory
-    </div>
-    <div class="header-controls">
-      <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
-        <span class="theme-icon" id="theme-icon">&#9789;</span>
-      </button>
-      <div class="header-status">
-        <span class="status-dot" id="status-dot"></span>
-        <span id="status-text">connecting...</span>
-      </div>
-    </div>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><span class="mark"></span><span style="display:flex;flex-direction:column;line-height:1.15"><span style="font-weight:680">loom-template</span><small style="font-weight:500">Loom Observatory &middot; L9</small></span></div>
+    <div class="runsel" id="runsel"><span class="dot"></span><span id="runName">Run 7</span> <small id="runBranch">phase1-backlog</small></div>
+    <span class="spacer"></span>
+    <div class="actor"><span class="ava sm" style="background:#45C7BD">NN</span><span>Nick Noel</span></div>
+    <div class="header-status"><span class="status-dot" id="connDot"></span><span id="connText">connecting…</span></div>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle theme" title="Toggle light / dark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v2M12 19v2M5 12H3M21 12h-2M6 6 4.5 4.5M18 18l1.5 1.5M6 18l-1.5 1.5M18 6l1.5-1.5"/><circle cx="12" cy="12" r="4"/></svg></button>
   </header>
-
-  <div class="layout">
-    <nav class="nav" id="nav">
-      <button class="nav-item active" data-panel="overview">
-        <span class="nav-icon">&#9632;</span> Overview
-      </button>
-      <button class="nav-item" data-panel="activity">
-        <span class="nav-icon">&#9889;</span> Activity
-      </button>
-      <button class="nav-item" data-panel="agents">
-        <span class="nav-icon">&#9670;</span> Agents
-      </button>
-      <button class="nav-item" data-panel="reputation">
-        <span class="nav-icon">&#9733;</span> Reputation
-      </button>
-      <button class="nav-item" data-panel="deliberation">
-        <span class="nav-icon">&#9878;</span> Deliberation
-      </button>
-      <button class="nav-item" data-panel="tasks">
-        <span class="nav-icon">&#9654;</span> Tasks
-      </button>
-      <button class="nav-item" data-panel="cost">
-        <span class="nav-icon">&#9650;</span> Cost
-      </button>
-      <button class="nav-item" data-panel="failures">
-        <span class="nav-icon">&#9888;</span> Failures
-      </button>
-      <button class="nav-item" data-panel="deploys">
-        <span class="nav-icon">&#9730;</span> Deploys
-      </button>
-      <button class="nav-item" data-panel="compliance">
-        <span class="nav-icon">&#9745;</span> Compliance
-      </button>
-      <button class="nav-item" data-panel="update-bus">
-        <span class="nav-icon">&#8634;</span> Update Bus
-      </button>
-      <button class="nav-item" data-panel="testing">
-        <span class="nav-icon">&#10003;</span> Testing
-      </button>
-      <button class="nav-item" data-panel="requirements">
-        <span class="nav-icon">&#8801;</span> Requirements
-      </button>
-      <button class="nav-item" data-panel="kanban">
-        <span class="nav-icon">&#9776;</span> Kanban
-      </button>
-      <button class="nav-item" data-panel="systems">
-        <span class="nav-icon">&#8644;</span> Systems
-      </button>
-    </nav>
-
-    <main class="main" id="main-content">
-      <!-- Panels render here -->
-    </main>
-  </div>
-
-  <script type="module" src="/js/app.mjs"></script>
+  <nav class="nav" id="nav"></nav>
+  <main class="main" id="main"></main>
+</div>
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="Detail" role="dialog"></aside>
+<div class="toast" id="toast"></div>
+<script type="module" src="/js/app.mjs"></script>
 </body>
 </html>
