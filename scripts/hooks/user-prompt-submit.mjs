@@ -16,11 +16,27 @@ import {
   readStdinJson,
 } from "./_lib.mjs";
 import { classifyIntent } from "./_classify.mjs";
+import { currentAgent, detectSlashCommand } from "../lib/provenance.mjs";
 
 const event = await readStdinJson();
 const sessionId =
   event.session_id || process.env.CLAUDE_SESSION_ID || "unknown";
 const prompt = event.prompt || event.user_prompt || event.message || "";
+
+// Provenance: Loom's own skills (`/testcase`, `/ticket`, `/handoff`) are slash
+// commands, so this is where their use is recorded. Without it the skill map
+// has no data — measured as zero `skill` fields across 10,015 real events.
+const invoked = detectSlashCommand(prompt);
+if (invoked) {
+  appendEvent(
+    mechanicalRecord("skill_invoked", {
+      session_id: sessionId,
+      skill: invoked.skill,
+      source: invoked.source,
+      agent: currentAgent(),
+    })
+  );
+}
 
 const hits = await classifyIntent(prompt);
 

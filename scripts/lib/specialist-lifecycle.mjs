@@ -23,6 +23,7 @@ import { promises as fs, existsSync } from "node:fs";
 import path from "node:path";
 import { loadRegistry } from "./registry-loader.mjs";
 import { recordVerification, recordLessonContributed } from "./verify-gate.mjs";
+import { currentAgent } from "./provenance.mjs";
 
 const ROOT = process.cwd();
 const WORK_GRAPH = path.join(ROOT, "orchestration", "work-graph.json");
@@ -105,6 +106,9 @@ async function spawnSpecialist(wiId) {
     event_type: "specialist_spawned",
     work_item: wiId,
     specialists: instantiated,
+    // Provenance: who spawned these. Without it the agent graph has nodes and
+    // no edges — measured as zero `parent_agent` fields across 10,015 events.
+    parent_agent: currentAgent(),
   });
 
   process.stdout.write(`\nMarked ${wiId} as dispatched in work-graph.json.\n`);

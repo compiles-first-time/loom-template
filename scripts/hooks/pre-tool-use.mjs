@@ -20,6 +20,12 @@ import { classifyProductionMutation } from "./_classify.mjs";
 import { loadPermissions, classifyToolCall } from "../lib/permissions-classifier.mjs";
 import { detectOauthPreferenceMisses } from "../lib/oauth-preference.mjs";
 import { decideDestructiveAction, toHookOutput } from "../lib/destructive-guard.mjs";
+import {
+  classifyExecution,
+  currentAgent,
+  detectAgentInvocation,
+  detectSkillInvocation,
+} from "../lib/provenance.mjs";
 
 const event = await readStdinJson();
 const sessionId = event.session_id || process.env.CLAUDE_SESSION_ID || "unknown";
@@ -31,8 +37,39 @@ appendEvent(
     session_id: sessionId,
     tool: toolName,
     tool_args_summary: summarizeToolArgs(toolInput),
+    // Provenance: did code run, or did this spend inference? "unknown" where we
+    // genuinely cannot tell (MCP tools) rather than a guess.
+    execution_kind: classifyExecution({ tool: toolName }),
+    agent: currentAgent(),
   })
 );
+
+// Provenance: which agent used which skill.
+const skillUse = detectSkillInvocation({ tool: toolName, input: toolInput });
+if (skillUse) {
+  appendEvent(
+    mechanicalRecord("skill_invoked", {
+      session_id: sessionId,
+      skill: skillUse.skill,
+      source: skillUse.source,
+      agent: currentAgent(),
+    })
+  );
+}
+
+// Provenance: which agent invoked which agent — the edge the graph could not
+// draw, because nothing recorded the parent.
+const spawn = detectAgentInvocation({ tool: toolName, input: toolInput });
+if (spawn) {
+  appendEvent(
+    mechanicalRecord("agent_invoked", {
+      session_id: sessionId,
+      agent: spawn.agent,
+      parent_agent: spawn.parent_agent,
+      description: spawn.description,
+    })
+  );
+}
 
 // Production-mutation detection (LR-02 / ADR-0017 — now subsumed by LR-04 / ADR-0027).
 // Kept for backward compatibility; LR-04 classifier below produces the unified events.

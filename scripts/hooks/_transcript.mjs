@@ -61,6 +61,70 @@ export async function summarizeTranscriptTokens(transcriptPath) {
   return { input_tokens: input, output_tokens: output, model, assistant_messages: assistantMessages };
 }
 
+/**
+ * Per-turn usage, with the tool calls each turn produced.
+ *
+ * The session total (above) answers "what did this session cost". It cannot
+ * answer "what did *this step* cost", which is what a provenance graph needs —
+ * and spreading a session's tokens evenly across its tool calls would invent
+ * precision the data does not have.
+ *
+ * An assistant turn is the smallest unit the transcript actually measures, and
+ * a turn names the `tool_use` blocks it emitted. So cost attaches to the turn,
+ * and the turn names its steps. Anything finer is not in the transcript.
+ *
+ * Returns `[]` when the transcript is unreadable — never throws.
+ */
+export async function summarizeTranscriptTurns(transcriptPath) {
+  if (!transcriptPath) return [];
+  let text;
+  try {
+    text = stripBom(await fs.readFile(transcriptPath, "utf8"));
+  } catch {
+    return [];
+  }
+
+  const turns = [];
+  let index = 0;
+
+  for (const line of text.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    let rec;
+    try {
+      rec = JSON.parse(trimmed);
+    } catch {
+      continue;
+    }
+    const msg = rec.message;
+    if (!msg || !msg.usage) continue;
+    const u = msg.usage;
+
+    // Which tool calls this turn produced — the link from cost to step.
+    const toolUses = [];
+    if (Array.isArray(msg.content)) {
+      for (const block of msg.content) {
+        if (block && block.type === "tool_use") {
+          toolUses.push({ id: block.id || null, tool: block.name || null });
+        }
+      }
+    }
+
+    turns.push({
+      turn_index: index++,
+      input_tokens:
+        (u.input_tokens || 0) +
+        (u.cache_creation_input_tokens || 0) +
+        (u.cache_read_input_tokens || 0),
+      output_tokens: u.output_tokens || 0,
+      model: msg.model || null,
+      tool_uses: toolUses,
+    });
+  }
+
+  return turns;
+}
+
 // Best-effort transcript-path resolution when the hook payload omits it.
 // Claude Code stores transcripts at
 //   ~/.claude/projects/<encoded-cwd>/<session-id>.jsonl

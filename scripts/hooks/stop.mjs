@@ -19,7 +19,11 @@ import {
   todayLogPath,
   PROJECT_ROOT,
 } from "./_lib.mjs";
-import { summarizeTranscriptTokens, findTranscript } from "./_transcript.mjs";
+import {
+  summarizeTranscriptTokens,
+  summarizeTranscriptTurns,
+  findTranscript,
+} from "./_transcript.mjs";
 import { promises as fs } from "node:fs";
 import { existsSync } from "node:fs";
 import path from "node:path";
@@ -106,6 +110,27 @@ try {
         output_tokens: usage.output_tokens,
         model: usage.model,
         assistant_messages: usage.assistant_messages,
+      })
+    );
+  }
+
+  // Provenance: per-turn cost, with the tool calls each turn produced. The
+  // session total cannot answer "what did this step cost", and dividing it
+  // evenly across steps would invent precision the data does not have. A turn
+  // is the smallest unit the transcript actually measures.
+  const turns = await summarizeTranscriptTurns(transcriptPath);
+  // Only the turns that did something — a turn with no tools and no output is
+  // not a node worth drawing.
+  for (const turn of turns) {
+    if (turn.tool_uses.length === 0 && turn.output_tokens === 0) continue;
+    appendEvent(
+      mechanicalRecord("turn_token_usage", {
+        session_id: sessionId,
+        turn_index: turn.turn_index,
+        input_tokens: turn.input_tokens,
+        output_tokens: turn.output_tokens,
+        model: turn.model,
+        tool_uses: turn.tool_uses,
       })
     );
   }

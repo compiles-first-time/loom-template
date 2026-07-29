@@ -14,6 +14,7 @@ import {
   classifyDestructive,
   errorSignature,
 } from "./_lib.mjs";
+import { classifyExecution, currentAgent } from "../lib/provenance.mjs";
 
 const event = await readStdinJson();
 const toolName = event.tool_name || event.tool || "unknown";
@@ -51,6 +52,8 @@ appendEvent(
     exit_code: exitCode,
     error_signature: sig,
     error_preview: errorText ? errorText.slice(0, 240) : null,
+    execution_kind: classifyExecution({ tool: toolName }),
+    agent: currentAgent(),
   })
 );
 

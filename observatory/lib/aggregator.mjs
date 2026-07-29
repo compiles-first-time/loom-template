@@ -237,6 +237,25 @@ function recordActivity(state, ev) {
         detail: `safety-catch +${ev.safety_catch_delta} (${Math.round((ev.governed_catch_rate || 0) * 100)}% governed vs 0% ungoverned, ${Math.round((ev.false_positive_rate || 0) * 100)}% FP)`,
       });
       break;
+    // Provenance (2026-07-28) — the graph edges. Given feed entries because a
+    // new event type that renders nowhere is exactly how 244 events went
+    // unnoticed in IDEA's reader; see
+    // lessons-learned/2026-07-28-event-schema-drift-and-unknown-as-zero.md.
+    case "skill_invoked":
+      pushActivity(state, {
+        timestamp: ev.timestamp, session_id: ev.session_id,
+        kind: "skill", tool: ev.skill,
+        detail: `${ev.agent || "main"} used /${ev.skill}`,
+      });
+      break;
+    case "agent_invoked":
+      pushActivity(state, {
+        timestamp: ev.timestamp, session_id: ev.session_id,
+        kind: "agent", tool: ev.agent,
+        detail: `${ev.parent_agent || "main"} → ${ev.agent}`,
+      });
+      break;
+
     default:
       // Governance/attempt events have their own panels; keep the feed focused.
       break;
