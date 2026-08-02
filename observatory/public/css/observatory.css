@@ -124,7 +124,6 @@
   .tile .label{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
   .tile .val{font-size:var(--fs-stat);font-weight:700;margin-top:6px;letter-spacing:-.02em;line-height:1}
   .tile .foot{font-size:var(--fs-sm);color:var(--dim);margin-top:5px}
-  .tile .spark{position:absolute;right:11px;bottom:11px;opacity:.85}
   .strip{position:absolute;left:0;top:11px;bottom:11px;width:3px;border-radius:0 3px 3px 0}
   .strip.good{background:var(--good)} .strip.accent{background:var(--accent)} .strip.warn{background:var(--warn)} .strip.info{background:var(--info)}
 

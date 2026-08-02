@@ -28,7 +28,7 @@ const AGENT_META={
   eac:{role:'Expert Agent Creator',model:'opus',modelWhy:'Opus &#8212; heaviest reasoning; domain research + agent synthesis is the hardest task.',
     objective:'Grow new specialist agents on demand when the project needs expertise nobody has.',
     skills:['domain research (tiered sources)','specialist SKILL authoring','lessons publishing'],
-    tools:['Read','WebFetch','WebSearch','Edit','Write'],collaborators:['hr','memory-keeper'],
+    tools:['Read','Glob','Grep','WebFetch','WebSearch','Edit','Write'],collaborators:['hr','memory-keeper'],
     what:'When the project needs expertise no current agent has, EAC researches the domain, writes a new specialist agent, publishes what it learned, and hands it to HR to register. It is how Loom grows specialists on demand.'},
   'constitution-service':{role:'Rule validator',model:'haiku',modelWhy:'Haiku &#8212; rule-citation is cheap + high-volume; fastest tier suffices.',
     objective:'Check consequential actions against the kernel + local rules before they happen.',
@@ -37,15 +37,15 @@ const AGENT_META={
     what:'Checks consequential actions against the kernel rules + local rules before they happen. Read-only. Blocks hard violations, warns on soft ones, escalates the ambiguous.'},
   'human-replica':{role:'Stand-in reviewer',model:'sonnet',modelWhy:'Sonnet &#8212; judgement approximation.',
     objective:'Approximate the architect on low-stakes calls so work is not blocked waiting on a human.',
-    skills:['low-stakes approval','escalation'],tools:['Read'],collaborators:['critic'],
+    skills:['low-stakes approval','escalation'],tools:['Read','Glob','Grep','Edit'],collaborators:['critic'],
     what:'Approximates the architect on low-stakes calls so work is not blocked waiting on a human &#8212; flags anything it is unsure about for a real decision.'},
   'memory-keeper':{role:'Knowledge steward',model:'sonnet',modelWhy:'Sonnet.',
     objective:'Keep the lessons-learned + memory tiers clean and promote durable lessons.',
-    skills:['lesson promotion','dedup','memory-tier selection'],tools:['Read','Edit','Write'],collaborators:['eac'],
+    skills:['lesson promotion','dedup','memory-tier selection'],tools:['Read','Glob','Grep','Edit','Write'],collaborators:['eac'],
     what:'Owns the lessons-learned and memory tiers &#8212; promotes durable lessons, keeps the record clean.'},
   hr:{role:'Dispatcher',model:'haiku',modelWhy:'Haiku &#8212; keyword-match dispatch is mechanical.',
     objective:'Map requirements to work items and assign the right specialists.',
-    skills:['work-graph generation','specialist registration','intent classification'],tools:['Read','Edit'],collaborators:['eac'],
+    skills:['work-graph generation','specialist registration','intent classification'],tools:['Read','Glob','Grep','Edit','Write'],collaborators:['eac'],
     what:'Maps requirements to work items and assigns specialists (the work-graph). Registers new specialists EAC creates.'}
 };
 let AGENTS={};
@@ -70,7 +70,6 @@ const el=h=>{const t=document.createElement('template');t.innerHTML=h.trim();ret
 const fmtTok=n=>n>=1e6?(n/1e6).toFixed(2)+'M':n>=1e3?(n/1e3).toFixed(0)+'K':''+n;
 const decChip=d=>`<span class="chip ${d}">${d}</span>`;
 const confPill=(c,esc)=>{const cls=esc?'warn':c>=.66?'good':c>=.4?'info':'warn';return `<span class="pill ${cls}"><span class="dot"></span>conf ${c.toFixed(2)}${esc?' &#183; escalate':''}</span>`;};
-const spark=(v,c)=>{const w=52,h=17,mx=Math.max(...v),mn=Math.min(...v),p=v.map((x,i)=>`${i/(v.length-1)*w},${h-(x-mn)/(mx-mn||1)*h}`).join(' ');return `<svg class="spark" width="${w}" height="${h}"><polyline points="${p}" fill="none" stroke="${c}" stroke-width="1.6"/></svg>`;};
 let current='overview';
 const navItem=n=>`<button class="nav-item ${n.k===current?'active':''}" data-k="${n.k}">${svg(ICON[n.k])}<span>${n.t}</span>${n.tag?`<span class="tag">${n.tag}</span>`:''}</button>`;
 function renderNav(){const groups=[];NAV.forEach(n=>{let g=groups.find(x=>x.name===n.grp);if(!g){g={name:n.grp,items:[]};groups.push(g);}g.items.push(n);});
@@ -112,7 +111,7 @@ const VIEWS={
  },
  governance(){return `<div class="view-head"><div class="eyebrow">Governance</div><h1>The rules, the policy, and every risky op &#8212; mapped to its run and user</h1>
    <p>Each operation shows the guard&#8217;s decision, why, which <b>run</b> it belonged to, and <b>who</b> initiated it. These are dev/test runs of the guard; the live hook writes prod entries here too.</p></div>
-   <div class="row" style="margin-bottom:12px"><span class="sec-title" style="margin:0">Operations handled</span><span class="spacer"></span><div class="seg"><button class="on">All</button><button>dev/test</button><button>prod</button></div></div>
+   <div class="row" style="margin-bottom:12px"><span class="sec-title" style="margin:0">Operations handled</span></div>
    <div class="tbl-wrap"><table class="dt"><thead><tr><th>Operation</th><th>Tool</th><th>Decision</th><th>Run</th><th>By</th><th>Env</th><th>Why</th></tr></thead><tbody id="opBody"></tbody></table></div>
    <div class="grid-2" style="margin-top:16px">
      <div class="card"><h3 style="font-size:var(--fs-title);margin-bottom:6px">Policy &#8212; destructive actions</h3><p style="color:var(--dim);font-size:var(--fs-sm);margin:0 0 10px">From <code>loom-permissions.yaml</code>.</p>
@@ -148,7 +147,7 @@ const VIEWS={
    <p>Set the price of each connected model, cap what it may spend, choose what happens at the cap (hard stop, or auto-fall-back), and order the fallback chain agents cascade through. Per-agent routing runs via the LiteLLM proxy (ADR-0045); cost discipline per LR-06.</p></div>
    <div id="modelsRoot"></div>`;}
 };
-function tile(label,val,foot,strip,vals,nav){const c=strip==='good'?'var(--good)':strip==='accent'?'var(--accent)':strip==='warn'?'var(--warn)':'var(--info)';return `<div class="tile link" data-nav="${nav}" tabindex="0" role="button" aria-label="${label} &#8212; open ${nav}"><span class="strip ${strip}"></span><div class="label">${label}</div><div class="val num">${val}</div><div class="foot">${foot}</div>${vals?spark(vals,c):''}</div>`;}
+function tile(label,val,foot,strip,_vals,nav){return `<div class="tile link" data-nav="${nav}" tabindex="0" role="button" aria-label="${label} &#8212; open ${nav}"><span class="strip ${strip}"></span><div class="label">${label}</div><div class="val num">${val}</div><div class="foot">${foot}</div></div>`;}
 const emptyState=(what,how)=>`<div class="empty-state">${what}<br><span class="req-id">${how}</span></div>`;
 
 let FEED=[];
@@ -332,7 +331,7 @@ function hConsti(){
     <span class="fb-sep"></span><div class="seg" id="constiCited" role="group" aria-label="Citation filter">${[['all','All rules'],['cited','Cited this run']].map(([k,l])=>`<button type="button" class="${(k==='cited')===constiFilter.cited?'on':''}" aria-pressed="${(k==='cited')===constiFilter.cited}" data-c="${k}">${l}</button>`).join('')}</div>
     <span class="spacer" style="flex:1"></span><span class="pill"><span class="dot"></span>Kernel V6 installed</span>
   </div>
-  <div class="note" style="margin-bottom:14px">This panel shows the <b>operationally critical subset</b> &#8212; the 7 kernel rules CLAUDE.md names as the constitutional baseline, plus this project&#8217;s local rules. The full 23-rule text lives in <code>constitution/kernel-v6.md</code>. Citation counts fill in as governance ops cite rules; none recorded yet means the rule is in force but hasn&#8217;t been invoked this window.</div>
+  <div class="note" style="margin-bottom:14px">This panel shows the <b>operationally critical subset</b> &#8212; the 7 kernel rules CLAUDE.md names as the constitutional baseline, plus this project&#8217;s local rules. The full 23-rule text lives in <code>constitution/kernel-v6.md</code>. Citations are derived from the one instrumented signal so far: destructive-op holds cite <b>Rule 20</b>. Other rules read &#8220;not yet cited&#8221; until broader citation instrumentation lands.</div>
   <div id="ruleGroups"></div>`;
  document.getElementById('constiSearch').oninput=e=>{constiFilter.q=e.target.value;renderRules();};
  root.querySelectorAll('#constiGroup button').forEach(b=>b.onclick=()=>{constiFilter.group=b.dataset.g;root.querySelectorAll('#constiGroup button').forEach(x=>{const on=x.dataset.g===constiFilter.group;x.classList.toggle('on',on);x.setAttribute('aria-pressed',on);});renderRules();});
@@ -433,7 +432,7 @@ function bindModels(){
  root.querySelectorAll('[data-raise]').forEach(b=>b.onclick=e=>{e.stopPropagation();const s=b.dataset.raise,j=s.indexOf(':');raiseCap(s.slice(0,j),+s.slice(j+1));});
  const rev=document.getElementById('mRevert'),ap=document.getElementById('mApply');
  if(rev)rev.onclick=()=>{restoreSnap();DIRTY_CELLS.clear();toast('Reverted to last saved routing');renderModels();};
- if(ap)ap.onclick=()=>{MSNAP=snapModels();BUDGET.dirty=false;DIRTY_CELLS.clear();toast('Routing applied (writes tools/litellm/config.yaml)');renderModels();};
+ if(ap)ap.onclick=()=>{MSNAP=snapModels();BUDGET.dirty=false;DIRTY_CELLS.clear();toast('Routing applied for this session &#8212; the tools/litellm/config.yaml write isn&#8217;t wired yet');renderModels();};
 }
 function editCell(c){if(c.querySelector('input'))return;const m=MODELS.find(x=>x.id===c.dataset.mid),field=c.dataset.field;
  const lbl=`${m.label} &#8212; ${field==='cap'?'spend cap ($)':field==='priceIn'?'price per 1M input tokens ($)':'price per 1M output tokens ($)'}`;
@@ -444,7 +443,7 @@ function editCell(c){if(c.querySelector('input'))return;const m=MODELS.find(x=>x
 }
 function moveChain(id,dir){const i=FALLBACK.indexOf(id),j=i+dir;if(j<0||j>=FALLBACK.length)return;const localIdx=FALLBACK.findIndex(x=>MODELS.find(m=>m.id===x).local);if(dir>0&&j>=localIdx)return;[FALLBACK[i],FALLBACK[j]]=[FALLBACK[j],FALLBACK[i]];BUDGET.dirty=true;renderModels();}
 
-function wireDnD(){let dragId=null;document.querySelectorAll('.kb-card').forEach(card=>{card.addEventListener('dragstart',()=>{dragId=card.dataset.id;card.classList.add('dragging');});card.addEventListener('dragend',()=>card.classList.remove('dragging'));});document.querySelectorAll('.kb-col').forEach(col=>{col.addEventListener('dragover',e=>{e.preventDefault();col.classList.add('drop');});col.addEventListener('dragleave',()=>col.classList.remove('drop'));col.addEventListener('drop',e=>{e.preventDefault();col.classList.remove('drop');const to=col.dataset.col;let moved;for(const c of KB_ORDER){const i=KANBAN[c].findIndex(x=>x.id===dragId);if(i>=0){moved=KANBAN[c].splice(i,1)[0];break;}}if(moved){KANBAN[to].unshift(moved);hWork();toast('Moved '+moved.id+' &#8594; '+KB_LABEL[to]+' (emits a ticket transition)');}});});}
+function wireDnD(){let dragId=null;document.querySelectorAll('.kb-card').forEach(card=>{card.addEventListener('dragstart',()=>{dragId=card.dataset.id;card.classList.add('dragging');});card.addEventListener('dragend',()=>card.classList.remove('dragging'));});document.querySelectorAll('.kb-col').forEach(col=>{col.addEventListener('dragover',e=>{e.preventDefault();col.classList.add('drop');});col.addEventListener('dragleave',()=>col.classList.remove('drop'));col.addEventListener('drop',e=>{e.preventDefault();col.classList.remove('drop');const to=col.dataset.col;let moved;for(const c of KB_ORDER){const i=KANBAN[c].findIndex(x=>x.id===dragId);if(i>=0){moved=KANBAN[c].splice(i,1)[0];break;}}if(moved){KANBAN[to].unshift(moved);hWork();toast('Moved '+moved.id+' &#8594; '+KB_LABEL[to]+' &#8212; view-only; record it with /ticket to persist');}});});}
 
 /* drawer */
 let _drawerTrigger=null;
@@ -839,6 +838,12 @@ function deriveViewModel(state){
 
   const liveFeed = deriveFeed(state.activity);
   FEED = liveFeed || []; SOURCE.activity = liveFeed?'live':'empty';
+
+  // Rule citations — the one instrumented signal today: every destructive-op
+  // hold is a Rule 20 citation (temporal weighting / confirm destructive ops).
+  const r20 = CONSTI.kernel.find(r=>r.id==='R20');
+  if(r20) r20.cites = (((state.compliance||{}).destructive_ops)||[]).slice(-12).map(o=>({
+    op: escapeHtml(o.pattern||o.tool||'op'), v:'ask', t:String(o.timestamp||'').replace('T',' ').slice(5,16) }));
 
   SESSIONS = { active:(state.sessions&&state.sessions.active)||[], history:(state.sessions&&state.sessions.history)||[] };
   RUNS = deriveRuns(state.sessions, state.cost, state.compliance);
