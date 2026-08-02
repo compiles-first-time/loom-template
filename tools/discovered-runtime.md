@@ -4,7 +4,7 @@
 
 > Manual additions: write below the `<!-- end-of-generated -->` marker. The auto-generated section above will be overwritten on next run; your manual section will be preserved.
 
-Generated: 2026-06-15T19:32:29.703Z
+Generated: 2026-08-02T15:35:35.656Z
 
 ## MCP servers available to this Claude Code installation
 
@@ -23,20 +23,20 @@ Marketplace / runtime-injected MCPs may not appear in static config files. Add t
 
 | File | Status |
 |---|---|
-| `auth.md` | ✓ in registry (assumed loaded at session start) |
-| `ci.md` | ✓ in registry (assumed loaded at session start) |
-| `constitution-service.md` | ✓ in registry (assumed loaded at session start) |
+| `auth.md` | **STALE** — newer than discovery sentinel; not invokable until Claude Code restart |
+| `ci.md` | **STALE** — newer than discovery sentinel; not invokable until Claude Code restart |
+| `constitution-service.md` | **STALE** — newer than discovery sentinel; not invokable until Claude Code restart |
 | `credential-setup.md` | **STALE** — newer than discovery sentinel; not invokable until Claude Code restart |
-| `critic.md` | ✓ in registry (assumed loaded at session start) |
-| `db-migration.md` | ✓ in registry (assumed loaded at session start) |
-| `deploy.md` | ✓ in registry (assumed loaded at session start) |
-| `eac.md` | ✓ in registry (assumed loaded at session start) |
-| `email.md` | ✓ in registry (assumed loaded at session start) |
+| `critic.md` | **STALE** — newer than discovery sentinel; not invokable until Claude Code restart |
+| `db-migration.md` | **STALE** — newer than discovery sentinel; not invokable until Claude Code restart |
+| `deploy.md` | **STALE** — newer than discovery sentinel; not invokable until Claude Code restart |
+| `eac.md` | **STALE** — newer than discovery sentinel; not invokable until Claude Code restart |
+| `email.md` | **STALE** — newer than discovery sentinel; not invokable until Claude Code restart |
 | `error-tracking.md` | **STALE** — newer than discovery sentinel; not invokable until Claude Code restart |
 | `file-storage.md` | **STALE** — newer than discovery sentinel; not invokable until Claude Code restart |
-| `hr.md` | ✓ in registry (assumed loaded at session start) |
-| `human-replica.md` | ✓ in registry (assumed loaded at session start) |
-| `memory-keeper.md` | ✓ in registry (assumed loaded at session start) |
+| `hr.md` | **STALE** — newer than discovery sentinel; not invokable until Claude Code restart |
+| `human-replica.md` | **STALE** — newer than discovery sentinel; not invokable until Claude Code restart |
+| `memory-keeper.md` | **STALE** — newer than discovery sentinel; not invokable until Claude Code restart |
 | `monitoring.md` | **STALE** — newer than discovery sentinel; not invokable until Claude Code restart |
 | `oauth.md` | **STALE** — newer than discovery sentinel; not invokable until Claude Code restart |
 | `payments.md` | **STALE** — newer than discovery sentinel; not invokable until Claude Code restart |
