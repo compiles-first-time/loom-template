@@ -1,7 +1,7 @@
 # ADR-0031: Handoff documentation maintenance policy
 
-**Status:** Accepted
-**Date:** 2026-05-20
+**Status:** Retired — 2026-08-02. The `handoff/` snapshots were removed at the architect's direction (repo cleanup); context transfer now flows through session auto-memory, CLAUDE.md, and L8 discovery. Snapshots remain in git history, and the `/handoff` skill can regenerate one if a frozen snapshot is ever needed again. The policy below is kept as the operating manual for that case.
+**Date:** 2026-05-20 (accepted) · 2026-08-02 (retired)
 **Author:** Architect handoff — approved by Nick
 **Confidence:** [H]
 
