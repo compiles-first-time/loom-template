@@ -115,13 +115,13 @@ const VIEWS={
    <div class="row" style="margin-bottom:12px"><span class="sec-title" style="margin:0">Operations handled</span><span class="spacer"></span><div class="seg"><button class="on">All</button><button>dev/test</button><button>prod</button></div></div>
    <div class="tbl-wrap"><table class="dt"><thead><tr><th>Operation</th><th>Tool</th><th>Decision</th><th>Run</th><th>By</th><th>Env</th><th>Why</th></tr></thead><tbody id="opBody"></tbody></table></div>
    <div class="grid-2" style="margin-top:16px">
-     <div class="card"><h3 style="font-size:15px;margin-bottom:6px">Policy &#8212; destructive actions</h3><p style="color:var(--dim);font-size:12.5px;margin:0 0 10px">From <code>loom-permissions.yaml</code>.</p>
-       <div style="display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--dim)">
+     <div class="card"><h3 style="font-size:var(--fs-title);margin-bottom:6px">Policy &#8212; destructive actions</h3><p style="color:var(--dim);font-size:var(--fs-sm);margin:0 0 10px">From <code>loom-permissions.yaml</code>.</p>
+       <div style="display:flex;flex-direction:column;gap:6px;font-size:var(--fs-sm);color:var(--dim)">
          <div class="row"><span class="chip deny">deny</span> force-push &#183; edit kernel &#183; hand-edit hook-managed files</div>
          <div class="row"><span class="chip ask">ask</span> rm -rf &#183; git reset --hard &#183; DROP &#183; <b style="color:var(--text)">curl|sh (RCE)</b></div>
          <div class="row"><span class="chip allow">allow</span> destructive op contained in a worktree</div></div></div>
-     <div class="card"><h3 style="font-size:15px;margin-bottom:6px">Governing ADRs</h3>
-       <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
+     <div class="card"><h3 style="font-size:var(--fs-title);margin-bottom:6px">Governing ADRs</h3>
+       <div style="display:flex;flex-direction:column;gap:8px;font-size:var(--fs-sm)">
          <div class="row"><code class="req-id">ADR-0047</code><span>Hook-enforced destructive-action confirmation</span></div>
          <div class="row"><code class="req-id">ADR-0053</code><span>Agent reputation (projection only)</span></div>
          <div class="row"><code class="req-id">ADR-0054</code><span>Proof-first efficacy program</span></div>
@@ -133,7 +133,7 @@ const VIEWS={
  },
  cost(){return `<div class="view-head"><div class="eyebrow">Cost</div><h1>Spend, broken out by model</h1>
    <p>Every model this run used &#8212; a single build often fans out across Claude tiers and a local model, so you can see which is costing what.</p></div>
-   <div class="card"><div style="font-family:var(--mono);font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Share of spend</div><div class="cost-bar" id="costBar"></div><div style="display:flex;gap:14px;margin-top:10px;flex-wrap:wrap;font-size:12px" id="costLegend"></div></div>
+   <div class="card"><div style="font-family:var(--mono);font-size:var(--fs-label);color:var(--faint);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Share of spend</div><div class="cost-bar" id="costBar"></div><div style="display:flex;gap:14px;margin-top:10px;flex-wrap:wrap;font-size:var(--fs-label)" id="costLegend"></div></div>
    <div class="tbl-wrap" style="margin-top:14px"><table class="dt"><thead><tr><th>Model</th><th style="text-align:right">Calls</th><th style="text-align:right">Input</th><th style="text-align:right">Output</th><th style="text-align:right">Cost</th></tr></thead><tbody id="costBody"></tbody></table></div>`;
  },
  activity(){return `<div class="view-head"><div class="eyebrow">Activity</div><h1>The live event stream</h1><p>Everything the run did, newest first. Click a row for the full event &#8212; the exact command or check, who ran it, what validated it, and the result.</p></div><div class="card"><div class="feed" id="actFeed"></div></div>`;},
@@ -184,7 +184,7 @@ function hDec(){document.getElementById('decList').innerHTML=DECISIONS.length?DE
 function hGov(){document.getElementById('opBody').innerHTML=OPS.length?OPS.map(o=>`<tr><td><code>${o.op}</code></td><td style="color:var(--dim)">${o.tool}</td><td>${decChip(o.decision)}</td><td><span class="run-tag">${o.run}</span></td><td><span style="color:var(--dim)">${o.actor}</span></td><td><span class="env-tag ${o.env}">${o.env}</span></td><td style="color:var(--dim);max-width:320px">${o.reason}</td></tr>`).join(''):`<tr><td colspan="7">${emptyState('No governed operations recorded yet.','Rows appear when the destructive-op guard fires (ADR-0047).')}</td></tr>`;}
 function hWork(){const kb=document.getElementById('kb');kb.innerHTML=KB_ORDER.map(col=>`<div class="kb-col" data-col="${col}"><h4>${KB_LABEL[col]}<span>${KANBAN[col].length}</span></h4>${KANBAN[col].map(c=>`<div class="kb-card" draggable="true" data-id="${c.id}"><div class="title">${c.title}</div><div class="meta"><code>${c.id}</code>${c.req!=='&#8212;'?`&#8594; <code>${c.req}</code>`:''} ${c.agents.map(a=>ava(a,'sm')).join('')}<span class="run-tag" style="margin-left:auto">${c.run}</span></div></div>`).join('')||'<div style="color:var(--faint);font-size:var(--fs-sm);padding:8px;text-align:center">&#8212;</div>'}</div>`).join('');wireDnD();}
 function hCost(){if(!COST.length){document.getElementById('costBar').parentElement.innerHTML=emptyState('No cost events recorded yet.','Spend appears when tokens events land in the event log.');const w=document.getElementById('costBody');if(w)w.closest('.tbl-wrap').remove();return;}
- document.getElementById('costBar').innerHTML=COST.map(c=>`<span style="flex:${Math.max(c.usd,.15)};background:${c.color}">${c.usd>=1?'$'+c.usd.toFixed(0):''}</span>`).join('');document.getElementById('costLegend').innerHTML=COST.map(c=>`<span class="row" style="gap:6px"><span style="width:10px;height:10px;border-radius:3px;background:${c.color}"></span>${c.model}</span>`).join('');document.getElementById('costBody').innerHTML=COST.map(c=>`<tr><td><code>${c.model}</code></td><td class="num" style="text-align:right">${c.calls}</td><td class="num" style="text-align:right;color:var(--dim)">${fmtTok(c.inTok)}</td><td class="num" style="text-align:right;color:var(--dim)">${fmtTok(c.outTok)}</td><td class="num" style="text-align:right;font-weight:650">$${c.usd.toFixed(2)}</td></tr>`).join('');}
+ document.getElementById('costBar').innerHTML=COST.map(c=>`<span style="flex:${Math.max(c.usd,.15)};background:${c.color}">${c.usd>=1?'$'+c.usd.toFixed(0):''}</span>`).join('');document.getElementById('costLegend').innerHTML=COST.map(c=>`<span class="row" style="gap:6px"><span style="width:10px;height:10px;border-radius:3px;background:${c.color}"></span>${c.model}</span>`).join('');document.getElementById('costBody').innerHTML=COST.map(c=>`<tr><td><code>${c.model}</code></td><td class="num" style="text-align:right">${c.calls}</td><td class="num" style="text-align:right;color:var(--dim)">${fmtTok(c.inTok)}</td><td class="num" style="text-align:right;color:var(--dim)">${fmtTok(c.outTok)}</td><td class="num" style="text-align:right;font-weight:600">$${c.usd.toFixed(2)}</td></tr>`).join('');}
 function hAct(){document.getElementById('actFeed').innerHTML=FEED.length?FEED.map(feedRow).join(''):emptyState('No activity recorded yet.','Every hook-captured event streams here, newest first.');bind('actFeed');}
 function hGloss(){document.getElementById('glossList').innerHTML=GLOSSARY.map(([t,d])=>`<div class="card"><dt>${t}</dt><dd>${d}</dd></div>`).join('');}
 
@@ -259,7 +259,7 @@ function raiseCap(mid,amount){const m=MODELS.find(x=>x.id===mid);if(!m||!m.cap)r
 function toggleCheckpoint(mid){const m=MODELS.find(x=>x.id===mid);if(!m)return;m.checkpoint=!m.checkpoint;BUDGET.dirty=true;budgetLog('edit',`${m.label} checkpoint-at-cap &#8594; ${m.checkpoint?'on':'off'}`);renderModels();if(document.getElementById('drawer').classList.contains('open'))openDrawer('model:'+mid);toast(`${m.label}: checkpoint in-flight on cap &#8594; ${m.checkpoint?'on (work is saved + resumable)':'off (in-flight work is dropped at the cap)'}.`);}
 function tierOf(mid){const m=MODELS.find(x=>x.id===mid);if(!m)return {t:'',cls:''};if(m.local||m.priceOut===0)return {t:'free',cls:'tier-free'};if(m.priceOut>=50)return {t:'premium',cls:'tier-premium'};if(m.priceOut>=10)return {t:'standard',cls:'tier-standard'};return {t:'low',cls:'tier-low'};}
 function routeSelect(r,i){return `<select class="route-select" data-route="${i}" aria-label="Model for ${r.cls}">${MODELS.map(m=>`<option value="${m.id}" ${m.id===r.model?'selected':''}>${m.label}${m.local?' &#183; free':''}</option>`).join('')}</select>`;}
-function ring(pct,color,size,big,small){const r=(size/2)-6,C=2*Math.PI*r,off=C*(1-Math.min(1,Math.max(0,pct)));return `<div class="ring-c" style="width:${size}px;height:${size}px"><svg class="ring" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="var(--surface-2)" stroke-width="6"/><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 ${size/2} ${size/2})"/></svg>${big!==''?`<div class="ring-lbl"><div style="font-size:${size>70?15:12}px;font-weight:680">${big}</div>${small?`<div style="font-size:9px;color:var(--dim)">${small}</div>`:''}</div>`:''}</div>`;}
+function ring(pct,color,size,big,small){const r=(size/2)-6,C=2*Math.PI*r,off=C*(1-Math.min(1,Math.max(0,pct)));return `<div class="ring-c" style="width:${size}px;height:${size}px"><svg class="ring" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="var(--surface-2)" stroke-width="6"/><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 ${size/2} ${size/2})"/></svg>${big!==''?`<div class="ring-lbl"><div style="font-size:var(${size>70?'--fs-title':'--fs-label'});font-weight:700">${big}</div>${small?`<div style="font-size:var(--fs-micro);color:var(--dim)">${small}</div>`:''}</div>`:''}</div>`;}
 
 /* &#9472;&#9472; Runs &#9472;&#9472; */
 let runFilter={q:'',owners:new Set(),projects:new Set(),statuses:new Set(),env:'all',sortKey:'seq',sortDir:-1};
@@ -302,7 +302,7 @@ function renderRunRows(){
  const tb=document.getElementById('runTbody');
  if(!rows.length){tb.innerHTML=`<tr><td colspan="9">${RUNS.length?'<div class="empty-state">No runs match these filters. <button class="btn sm" onclick="document.getElementById(\'runClear\').click()">Clear filters</button></div>':emptyState('No sessions recorded yet.','Each Claude Code session becomes a run here once hooks log session events to memory/event-log/.')}</td></tr>`;return;}
  tb.innerHTML=rows.map(r=>`<tr class="run-row s-${statusStripe[r.status]}" data-run="${r.id}" tabindex="0" role="button" aria-label="${r.label} &#8212; ${r.status}">
-   <td><div class="req-name" style="font-size:13px">${r.project}</div><div class="req-id">${r.label}</div></td>
+   <td><div class="req-name" style="font-size:var(--fs-sm)">${r.project}</div><div class="req-id">${r.label}</div></td>
    <td><span class="pill ${statusPill[r.status]}"><span class="dot"></span>${r.status}</span></td>
    <td>${ava(r.owner.name,'sm')} <span style="color:var(--dim)">${r.owner.name}</span></td>
    <td><span class="chip">${r.branch}</span> <span class="env-tag ${r.env}">${r.env}</span></td>
@@ -373,12 +373,12 @@ const capStopIcon=svg('<rect x="6" y="6" width="12" height="12" rx="1.5"/>');
 const capFbIcon=svg('<path d="M5 7h9a4 4 0 0 1 4 4v3"/><path d="m14 17 4-3-4-3"/>');
 function modelRow(m){const spent=mSpend(m),pct=mPct(m),st=mStat(m),tone=mTone(m),ft=mFallsTo(m.id),atCap=!m.local&&pct>=1;
  return `<tr data-mrow="${m.id}" tabindex="0" role="button" aria-label="${m.label} &#8212; model detail">
-  <td><div class="req-name" style="font-size:13px">${m.label}</div><div class="req-id">${m.provider}${m.local?' &#183; local':''}</div></td>
+  <td><div class="req-name" style="font-size:var(--fs-sm)">${m.label}</div><div class="req-id">${m.provider}${m.local?' &#183; local':''}</div></td>
   <td>${m.roles.map(r=>`<span class="chip">${r}</span>`).join(' ')} ${m.agents.length?`<span class="req-id">${m.agents.join(', ')}</span>`:''}</td>
   <td style="text-align:right">${m.local?'<span class="cell-edit disabled">$0.00</span>':CE(m,'priceIn',m.priceIn)}</td>
   <td style="text-align:right">${m.local?'<span class="cell-edit disabled">$0.00</span>':CE(m,'priceOut',m.priceOut)}</td>
   <td class="num" style="text-align:right;color:var(--dim)">${fmtTok(m.tokensIn)} / ${fmtTok(m.tokensOut)}</td>
-  <td class="num" style="text-align:right;font-weight:650">$${spent.toFixed(2)}</td>
+  <td class="num" style="text-align:right;font-weight:600">$${spent.toFixed(2)}</td>
   <td style="text-align:right">${m.local?'<span class="req-id">&#8212;</span>':CE(m,'cap',m.cap)}</td>
   <td>${m.local?'<span class="req-id">local &#183; $0</span>':`<div class="meter" style="width:88px"><i style="width:${pct*100}%;background:${mColor(m)}"></i></div><div class="fallsto ${m.onCap==='fallback'&&ft?'live':''}">${m.onCap==='fallback'&&ft?'&#8594; '+ft.label:'stop at cap'} &#183; ${(pct*100).toFixed(0)}%</div>`}</td>
   <td>${m.local?'<span class="pill good" style="padding:1px 7px"><span class="dot"></span>always on</span>':`<div class="seg-cap" data-mid="${m.id}" role="group" aria-label="${m.label} at-cap behavior"><button type="button" class="stop ${m.onCap==='stop'?'on':''}" data-cap="stop" aria-pressed="${m.onCap==='stop'}">${capStopIcon} stop</button><button type="button" class="fb ${m.onCap==='fallback'?'on':''}" data-cap="fallback" aria-pressed="${m.onCap==='fallback'}">${capFbIcon} fall back</button></div>`}</td>
@@ -386,8 +386,8 @@ function modelRow(m){const spent=mSpend(m),pct=mPct(m),st=mStat(m),tone=mTone(m)
 function chainItem(id,i){const m=MODELS.find(x=>x.id===id),pct=mPct(m),last=i===FALLBACK.length-1;
  return `<div class="chain-item ${m.local?'pinned':''}"><span class="chain-num">${i+1}${['st','nd','rd'][i]||'th'}</span>
    ${ring(m.local?0:pct,mColor(m),34,'')}
-   <div><div style="font-weight:600;font-size:12.5px">${m.label}</div><div class="req-id">${m.local?'safety net &#183; $0':'$'+mSpend(m).toFixed(2)+' / $'+m.cap.toFixed(2)}</div></div>
-   ${m.local?`<span class="chip allow" style="font-size:9px">pinned last</span>`:`<div class="chain-reord"><button type="button" data-up="${id}" aria-label="Move ${m.label} earlier in fallback chain" ${i===0?'disabled':''}>${svg('<path d="m6 15 6-6 6 6"/>')}</button><button type="button" data-down="${id}" aria-label="Move ${m.label} later in fallback chain" ${i>=FALLBACK.length-2?'disabled':''}>${svg('<path d="m6 9 6 6 6-6"/>')}</button></div>`}
+   <div><div style="font-weight:600;font-size:var(--fs-sm)">${m.label}</div><div class="req-id">${m.local?'safety net &#183; $0':'$'+mSpend(m).toFixed(2)+' / $'+m.cap.toFixed(2)}</div></div>
+   ${m.local?`<span class="chip allow" style="font-size:var(--fs-micro)">pinned last</span>`:`<div class="chain-reord"><button type="button" data-up="${id}" aria-label="Move ${m.label} earlier in fallback chain" ${i===0?'disabled':''}>${svg('<path d="m6 15 6-6 6 6"/>')}</button><button type="button" data-down="${id}" aria-label="Move ${m.label} later in fallback chain" ${i>=FALLBACK.length-2?'disabled':''}>${svg('<path d="m6 9 6 6 6-6"/>')}</button></div>`}
  </div>${last?'':'<span class="chain-sep">&#8594;</span>'}`;}
 function renderModels(){
  const root=document.getElementById('modelsRoot');if(!root)return;
@@ -399,7 +399,7 @@ function renderModels(){
  root.innerHTML=`
   ${cappedCk?`<div class="cap-banner"><span class="feed-glyph g-warn cb-ico">${svg('<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>')}</span><div style="flex:1;min-width:260px"><b>${cappedCk.label} hit its $${cappedCk.cap.toFixed(2)} cap.</b> Its ${checkpointedOf(cappedCk).length} in-flight task(s) are <b>checkpointed</b> &#8212; completed steps are saved and won&#8217;t be recomputed. New work is routing to ${(mFallsTo(cappedCk.id)||{}).label||'the fallback'}. Raise the cap to resume them from their last checkpoint.</div><button class="btn primary sm" data-raise="${cappedCk.id}:100">Raise cap +$100 &amp; resume</button></div>`:''}
   <div class="tiles">
-    <div class="tile"><div class="label">Session budget</div><div style="display:flex;align-items:center;gap:12px;margin-top:6px">${ring(pct,pct>=1?'var(--crit)':pct>=.8?'var(--warn)':'var(--good)',60,Math.round(pct*100)+'%')}<div><div class="num" style="font-size:18px;font-weight:680">$${spent.toFixed(2)}</div><div class="foot">of $${BUDGET.runCap.toFixed(2)} session cap</div></div></div></div>
+    <div class="tile"><div class="label">Session budget</div><div style="display:flex;align-items:center;gap:12px;margin-top:6px">${ring(pct,pct>=1?'var(--crit)':pct>=.8?'var(--warn)':'var(--good)',60,Math.round(pct*100)+'%')}<div><div class="num" style="font-size:var(--fs-title);font-weight:700">$${spent.toFixed(2)}</div><div class="foot">of $${BUDGET.runCap.toFixed(2)} session cap</div></div></div></div>
     <div class="tile"><span class="strip ${capped?'crit':'good'}"></span><div class="label">Models capped</div><div class="val num">${capped} / ${frontier.length}</div><div class="foot">frontier models</div></div>
     <div class="tile"><span class="strip ${ckN?'warn':'good'}"></span><div class="label">Checkpointed work</div><div class="val num">${ckN}</div><div class="foot">resume from last checkpoint (ADR-0052)</div></div>
     <div class="tile link" data-drawer="model:${nearest?nearest.id:''}" tabindex="0" role="button"><span class="strip warn"></span><div class="label">Nearest cap</div><div class="val txt">${nearest?nearest.label:'&#8212;'}</div><div class="foot">${nearest?(mPct(nearest)*100).toFixed(0)+'% of $'+nearest.cap.toFixed(2):''}</div></div>
@@ -410,7 +410,7 @@ function renderModels(){
   <div class="row" style="margin:22px 0 10px"><span class="sec-title" style="margin:0">Per-model config</span><span class="spacer" style="flex:1"></span><span class="req-id">click a price or cap to edit &#183; budget spans this session (the Cost view shows per-run spend)</span></div>
   <div class="tbl-wrap"><table class="dt"><thead><tr><th>Model</th><th>Task class</th><th style="text-align:right">$ / 1M in</th><th style="text-align:right">$ / 1M out</th><th style="text-align:right">Tokens in/out</th><th style="text-align:right">Spend</th><th style="text-align:right">Cap</th><th>Spend vs cap</th><th>At cap</th><th>Status</th></tr></thead><tbody>${MODELS.map(modelRow).join('')}</tbody></table></div>
   <div class="card" style="margin-top:16px">
-    <div class="row"><div><div class="eyebrow">Fallback flow</div><div style="color:var(--dim);font-size:13px;margin-top:3px">When a model hits its cap with <b>auto-fall-back</b> on, agents cascade down this order. Reorder with the arrows.</div></div><span class="spacer" style="flex:1"></span><button class="btn sm" data-drawer="fallback:x">How this works</button></div>
+    <div class="row"><div><div class="eyebrow">Fallback flow</div><div style="color:var(--dim);font-size:var(--fs-sm);margin-top:3px">When a model hits its cap with <b>auto-fall-back</b> on, agents cascade down this order. Reorder with the arrows.</div></div><span class="spacer" style="flex:1"></span><button class="btn sm" data-drawer="fallback:x">How this works</button></div>
     <div class="chain" id="chain">${FALLBACK.map((id,i)=>chainItem(id,i)).join('')}</div>
     <div class="note">With auto-fall-back on, routing resolves down to Llama 3 (local, $0), so those agents never fully halt (LR-06). A model set to &#8220;stop&#8221; halts its own agents at the cap instead of rerouting.</div>
   </div>
@@ -464,24 +464,24 @@ function toast(msg){const t=document.getElementById('toast');t.innerHTML=svg('<p
 
 const DRAWER={
  agent(name){const a=AGENTS[name];const sm=((a.pass+2)/(a.pass+a.fail+4));
-  return `<div class="drawer-head"><div><div class="k">Agent profile</div><h3>${a.name}</h3><div style="color:var(--dim);font-size:12.5px;font-family:var(--mono)">${a.role}</div></div>${closeBtn}</div>
+  return `<div class="drawer-head"><div><div class="k">Agent profile</div><h3>${a.name}</h3><div style="color:var(--dim);font-size:var(--fs-sm);font-family:var(--mono)">${a.role}</div></div>${closeBtn}</div>
   <div class="drawer-body">
    <div class="grid-2" style="gap:10px">
-     <div class="card" style="padding:12px 14px"><div class="req-id" style="text-transform:uppercase;letter-spacing:.06em">Reputation</div><div style="font-size:22px;font-weight:680;margin-top:4px">${a.score.toFixed(3)}</div><div class="meter" style="margin-top:6px"><i style="width:${a.score*100}%"></i></div></div>
-     <div class="card" style="padding:12px 14px"><div class="req-id" style="text-transform:uppercase;letter-spacing:.06em">Reliability</div><div style="font-size:22px;font-weight:680;margin-top:4px">${a.reliability==null?'&#8212;':(a.reliability*100).toFixed(0)+'%'}</div><div style="font-size:11px;color:var(--faint);margin-top:6px">did its job when called</div></div>
+     <div class="card" style="padding:12px 14px"><div class="req-id" style="text-transform:uppercase;letter-spacing:.06em">Reputation</div><div style="font-size:var(--fs-stat);font-weight:700;margin-top:4px">${a.score.toFixed(3)}</div><div class="meter" style="margin-top:6px"><i style="width:${a.score*100}%"></i></div></div>
+     <div class="card" style="padding:12px 14px"><div class="req-id" style="text-transform:uppercase;letter-spacing:.06em">Reliability</div><div style="font-size:var(--fs-stat);font-weight:700;margin-top:4px">${a.reliability==null?'&#8212;':(a.reliability*100).toFixed(0)+'%'}</div><div style="font-size:var(--fs-label);color:var(--faint);margin-top:6px">did its job when called</div></div>
    </div>
-   <h4>Objective</h4><p style="margin:0;color:var(--dim);font-size:13.5px;line-height:1.6">${a.objective}</p>
-   <h4>What it does</h4><p style="margin:0;color:var(--dim);font-size:13px;line-height:1.55">${a.what}</p>
+   <h4>Objective</h4><p style="margin:0;color:var(--dim);font-size:var(--fs-body);line-height:1.6">${a.objective}</p>
+   <h4>What it does</h4><p style="margin:0;color:var(--dim);font-size:var(--fs-sm);line-height:1.55">${a.what}</p>
    <h4>Skills</h4><div class="skills">${a.skills.map(s=>`<span class="skill">${s}</span>`).join('')}</div>
    <h4>Tools &#183; model &#183; collaborators</h4>
-   <div class="kv"><span class="k">Tools</span><span class="v">${a.tools.join(', ')}</span><span class="k">Model</span><span class="v">${a.model}</span><span class="k">Why this model</span><span class="v" style="text-align:right;max-width:250px;white-space:normal;font-family:var(--sans);color:var(--dim);font-size:12px">${a.modelWhy}</span><span class="k">Works with</span><span class="v">${a.collaborators.join(', ')||'&#8212;'}</span><span class="k">Last updated</span><span class="v">${a.updated}</span></div>
+   <div class="kv"><span class="k">Tools</span><span class="v">${a.tools.join(', ')}</span><span class="k">Model</span><span class="v">${a.model}</span><span class="k">Why this model</span><span class="v" style="text-align:right;max-width:250px;white-space:normal;font-family:var(--sans);color:var(--dim);font-size:var(--fs-label)">${a.modelWhy}</span><span class="k">Works with</span><span class="v">${a.collaborators.join(', ')||'&#8212;'}</span><span class="k">Last updated</span><span class="v">${a.updated}</span></div>
    <h4>Reputation &#8212; how this score is built</h4>
    <div class="formula">rate = (pass + 2) / (pass + fail + 4) = (${a.pass}+2)/(${a.pass}+${a.fail}+4) = <b>${sm.toFixed(3)}</b>
 score = rate&#183;1.0 + lessons&#183;.05 + critic&#183;.05 &#8722; retract&#183;.10
       = ${sm.toFixed(3)} + ${a.lessons}&#183;.05 + ${a.critic}&#183;.05 &#8722; ${a.retr}&#183;.10 = <b>${a.score.toFixed(3)}</b></div>
    <div class="kv" style="margin-top:12px"><span class="k">Verified pass / fail</span><span class="v">${a.pass} / ${a.fail}</span><span class="k">n (sample size)</span><span class="v">${a.n}</span><span class="k">Lessons &#183; critic-approvals &#183; retractions</span><span class="v">${a.lessons} &#183; ${a.critic} &#183; ${a.retr}</span></div>
    <h4>Audit trail &#8212; what it did, in which run, on which model</h4>
-   ${a.audit.length?`<div class="audit">${a.audit.map(e=>`<div class="ev"><div class="at"><span class="run-tag">${e.run}</span> ${e.time} &#183; ${e.model}</div><div class="aw">${e.what}</div><div class="ay">&#8594; ${e.outcome}</div></div>`).join('')}</div>`:'<p style="color:var(--faint);font-size:13px">No recorded actions in this window.</p>'}
+   ${a.audit.length?`<div class="audit">${a.audit.map(e=>`<div class="ev"><div class="at"><span class="run-tag">${e.run}</span> ${e.time} &#183; ${e.model}</div><div class="aw">${e.what}</div><div class="ay">&#8594; ${e.outcome}</div></div>`).join('')}</div>`:'<p style="color:var(--faint);font-size:var(--fs-sm)">No recorded actions in this window.</p>'}
    <div class="note" style="margin-top:14px">Reputation is <b>projection only</b> &#8212; it can weight this agent&#8217;s vote in a decision, but never chooses which agent is dispatched (that&#8217;s ADR-0053 Step 3, gated on a constitution-service review).</div>
   </div>`;
  },
@@ -504,7 +504,7 @@ score = rate&#183;1.0 + lessons&#183;.05 + critic&#183;.05 &#8722; retract&#183;
   </div>`;
  },
  decision(i){const d=DECISIONS[i];const claudeVoices=d.votes.filter(v=>v.fam==='claude').length;
-  return `<div class="drawer-head"><div><div class="k">Decision &#183; ${d.run}</div><h3 style="font-size:16px">${d.q}</h3></div>${closeBtn}</div>
+  return `<div class="drawer-head"><div><div class="k">Decision &#183; ${d.run}</div><h3 style="font-size:var(--fs-title)">${d.q}</h3></div>${closeBtn}</div>
   <div class="drawer-body">
    <div class="row" style="gap:8px;flex-wrap:wrap"><span class="pill accent"><span class="dot"></span>${d.answer}</span>${confPill(d.conf,d.escalate)}</div>
    <div class="kv" style="margin-top:16px"><span class="k">Asked by</span><span class="v">${d.asker}</span><span class="k">When</span><span class="v">${d.time}</span><span class="k">Resolved</span><span class="v" style="text-align:right;max-width:230px;white-space:normal">${d.approver}</span><span class="k">Method</span><span class="v">${d.method}</span></div>
@@ -514,7 +514,7 @@ score = rate&#183;1.0 + lessons&#183;.05 + critic&#183;.05 &#8722; retract&#183;
    <div class="note">${d.votes.length} voices, but <b>${claudeVoices} share the Claude family</b> &#8212; correlated, so they count as ~one independent source. With the ${d.votes.length-claudeVoices>0?'llama':'other'} family, <b>effective independence = ${d.indep}</b>. That&#8217;s why unanimous-looking votes don&#8217;t automatically mean high confidence.</div>
    <h4>Who voted &#8212; and how much it counted</h4>
    ${d.votes.map(v=>`<div class="vote"><span class="ava md" style="background:${avaColor(v.a)}">${v.a.slice(0,2).toUpperCase()}</span>
-     <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px;display:flex;align-items:center;gap:7px">${v.a} <span class="chip ${v.kind==='agent'?'BR':'TR'}" style="font-size:9px">${v.kind==='agent'?'agent':v.kind==='model'?'model':'model &#215;3'}</span> <span class="indep-badge ${v.indep?'y':'n'}">${v.indep?'independent':v.fam+' family'}</span></div><div style="font-size:11.5px;color:var(--faint)">${v.r}</div></div>
+     <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:var(--fs-sm);display:flex;align-items:center;gap:7px">${v.a} <span class="chip ${v.kind==='agent'?'BR':'TR'}" style="font-size:var(--fs-micro)">${v.kind==='agent'?'agent':v.kind==='model'?'model':'model &#215;3'}</span> <span class="indep-badge ${v.indep?'y':'n'}">${v.indep?'independent':v.fam+' family'}</span></div><div style="font-size:var(--fs-label);color:var(--faint)">${v.r}</div></div>
      <div style="text-align:right"><span class="chip ${v.v==='reject'?'deny':v.v==='approve'?'allow':'none'}">${v.v}</span><div class="req-id" style="margin-top:3px" title="${v.wr}">weight ${v.w.toFixed(2)}</div></div></div>`).join('')}
    <h4>Why the weights differ</h4>
    <div class="note">Agents are weighted by their <b>live reputation score</b> (hover a weight to see the source). <b>Models</b> aren&#8217;t reputation-tracked yet, so they vote at <b>baseline 1</b>. Weights are then capped so no single voice can exceed the others combined.</div>
@@ -522,14 +522,14 @@ score = rate&#183;1.0 + lessons&#183;.05 + critic&#183;.05 &#8722; retract&#183;
   </div>`;
  },
  run(id){const r=RUNS.find(x=>x.id===id);
-  return `<div class="drawer-head"><div><div class="k">Run &#183; ${r.status}</div><h3 style="font-size:16px">${r.label}</h3><div style="color:var(--dim);font-size:12px;margin-top:4px">${ava(r.owner.name,'sm')} ${r.owner.name} &#183; <span class="chip">${r.branch}</span> <span class="env-tag ${r.env}">${r.env}</span></div></div>${closeBtn}</div>
+  return `<div class="drawer-head"><div><div class="k">Run &#183; ${r.status}</div><h3 style="font-size:var(--fs-title)">${r.label}</h3><div style="color:var(--dim);font-size:var(--fs-label);margin-top:4px">${ava(r.owner.name,'sm')} ${r.owner.name} &#183; <span class="chip">${r.branch}</span> <span class="env-tag ${r.env}">${r.env}</span></div></div>${closeBtn}</div>
   <div class="drawer-body">
    <div class="note">${r.goal}</div>
    <div class="tiles" style="margin-top:14px">
-     <div class="tile"><div class="label">Requirements</div><div class="val num" style="font-size:20px">${r.req.total?r.req.pass+'/'+r.req.total:'&#8212;'}</div><div class="foot">${r.req.pend?r.req.pend+' pending':(r.req.total?'all checked':'none')}</div></div>
-     <div class="tile"><div class="label">Safety-catches</div><div class="val num" style="font-size:20px">${r.safety.deny+r.safety.ask}</div><div class="foot">${r.safety.deny} deny &#183; ${r.safety.ask} ask</div></div>
-     <div class="tile"><div class="label">Decisions</div><div class="val num" style="font-size:20px">${r.decisions}</div><div class="foot">governed</div></div>
-     <div class="tile"><div class="label">Cost</div><div class="val num" style="font-size:20px">$${r.cost.toFixed(2)}</div><div class="foot">${r.ops} ops</div></div>
+     <div class="tile"><div class="label">Requirements</div><div class="val num" style="font-size:var(--fs-stat)">${r.req.total?r.req.pass+'/'+r.req.total:'&#8212;'}</div><div class="foot">${r.req.pend?r.req.pend+' pending':(r.req.total?'all checked':'none')}</div></div>
+     <div class="tile"><div class="label">Safety-catches</div><div class="val num" style="font-size:var(--fs-stat)">${r.safety.deny+r.safety.ask}</div><div class="foot">${r.safety.deny} deny &#183; ${r.safety.ask} ask</div></div>
+     <div class="tile"><div class="label">Decisions</div><div class="val num" style="font-size:var(--fs-stat)">${r.decisions}</div><div class="foot">governed</div></div>
+     <div class="tile"><div class="label">Cost</div><div class="val num" style="font-size:var(--fs-stat)">$${r.cost.toFixed(2)}</div><div class="foot">${r.ops} ops</div></div>
    </div>
    <h4>Identity</h4>
    <div class="kv"><span class="k">Run ID</span><span class="v">${r.id}</span><span class="k">Project &#183; epic</span><span class="v">${r.project} &#183; ${r.epic}</span><span class="k">Owner</span><span class="v">${r.owner.name}</span><span class="k">Branch &#183; env</span><span class="v">${r.branch} &#183; ${r.env}</span><span class="k">Started</span><span class="v">${r.started}</span><span class="k">Duration</span><span class="v">${r.duration}</span><span class="k">Commits</span><span class="v">${r.commits}</span></div>
