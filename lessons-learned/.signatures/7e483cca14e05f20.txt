@@ -1,0 +1,1 @@
+Auto-suggested 2026-07-18 from session acd974f4-8167-417f-8319-c48466e584b9. Draft: lessons-learned/draft-2026-07-18-bash-shell-cwd-was-reset-to-c-users-14134-dev-loom.md
