@@ -74,3 +74,11 @@ desktop.ini
 
 # Efficacy eval run artifacts (regenerable)
 observability/eval-suite/efficacy/runs/
+
+# Hook-generated session artifacts (regenerable, rewritten every session/turn by
+# scripts/hooks/ — the Stop hook appends ledger rows, session-start regenerates
+# the runtime snapshot. Tracking them churns the tree on every turn. Both are
+# hook-managed per scripts/lib/destructive-guard.test.mjs and read from disk,
+# not from git, so untracking breaks nothing.)
+orchestration/progress-ledger.md
+tools/discovered-runtime.md
