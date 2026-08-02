@@ -4,7 +4,7 @@
 
 > Manual additions: write below the `<!-- end-of-generated -->` marker. The auto-generated section above will be overwritten on next run; your manual section will be preserved.
 
-Generated: 2026-08-02T17:15:32.161Z
+Generated: 2026-08-02T19:42:14.606Z
 
 ## MCP servers available to this Claude Code installation
 
