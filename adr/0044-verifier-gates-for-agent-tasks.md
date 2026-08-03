@@ -52,6 +52,22 @@ The L5 supervisor must not dispatch an agent task that lacks a declared verifier
 - **Corroborating:** Cemri et al. multi-agent failure modes (arXiv:2503.13657) — task verification failures are the primary failure mode in multi-agent pipelines. `[primary][M]`
 - **What would change this call:** Evidence that verifier declarations add significant engineering overhead without reliability gain would justify dropping to advisory-only. Current evidence strongly supports the convention.
 
+### External corroboration (2026-08-03)
+
+**Verification-first is a design principle, not just a mechanism.** Five independent external sources, of different types, converge on the same conclusion this ADR reached from the literature: **verification/enforcement infrastructure is the highest-leverage reliability lever for agent systems — invest there before investing in more elaborate instructions or prompts.** `[multi-source][80–95%]`
+
+1. Boris Cherny (head of Claude Code), YC interview: *"verification … is probably the single most important thing that people do not get right."* `[cherny-primary: ycombinator.com/library/UN-boris-cherny-building-claude-code][founder interview — Anthropic is the vendor of Loom's first adapter runtime, so treat as vendor-adjacent; weight comes from the four independent sources below][80–95%]` (secondary report: searchenginejournal.com/head-of-anthropics-claude-code-says-prompt-engineering-not-that-important/584286/)
+2. LangChain's harness-tuning playbook — a verify-before-promote eval loop is the engine of its improvement cycle (see ADR-0021 §D). `[langchain-harness: langchain.com/blog/tuning-the-harness-not-the-model-a-nemotron-3-ultra-playbook][vendor self-report]`
+3. Every.to "Compound Engineering" — review/verify loop as the compounding step (Tier-4 newsletter; cited for convergence only, not for its productivity numbers — see the METR RCT, arXiv:2507.09089, which contradicts them). `[compound: every.to/guides/compound-engineering][Tier-4]`
+4. Stanford DeLM (decentralized agents, VentureBeat 2026-06-16) — compress-**and-verify**: only *verified* findings are shared between agents. `[delm][Tier-3 reporting]`
+5. The-Claude-Protocol (github.com/AvivK5498/The-Claude-Protocol, MIT; single-author OSS project) — hooks that *block*, not warn. `[claude-protocol][primary for its own design][60–80%]`
+
+Independent peer-track corroboration that the harness/verification layer dominates outcomes: the agent-evaluation survey (arXiv 2503.16416 — **arXiv preprint, peer-review status unconfirmed**) finds scaffold/harness choice causes **>30%** performance variation on the same model. `[scaffold-survey][preprint][80–95%]`
+
+**Principle (elevated by this corroboration):** *prefer verification infrastructure (verifier gates, enforcing hooks, eval loops) over elaborate instructions.* This was already this ADR's mechanism; the convergence makes it a stated Loom design principle (see the CLAUDE.md working agreement "Verification-first").
+
+*What would raise to >95%:* a controlled Loom eval showing verifier-gated agent tasks beat ungated ones on a fixed golden set (candidate: extend the ADR-0054 efficacy harness).
+
 ## Consequences
 
 **Locks in:**

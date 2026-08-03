@@ -144,6 +144,14 @@ Action agent (executes only on approved signal)
 
 Agentum investment platform (bootstrap prompt at `docs/bootstrap-prompt-investment-platform.md`): 5 scout agents (SEC Form 4, 13F filings, Fed speech sentiment, on-chain whale movements, portfolio drift), consensus agent requires 3 of 5 before generating a trade signal. Signal = `P(bull) − P(bear)`; sign = direction, magnitude = conviction.
 
+## Harness discipline (authoring skills, prompts, middleware)
+
+> **Per [ADR-0021 §D](../adr/0021-subagent-evals.md).** The harness/scaffold axis dominates agent outcomes: >30% performance variation from scaffold choice alone (arXiv 2503.16416, preprint) `[scaffold-survey][preprint][80–95%]`; up to 76-point accuracy swings from prompt format alone (Sclar et al., ICLR 2024, peer-reviewed) `[sclar][H]`.
+
+1. **Tune the harness before the model.** Eval-driven loop: evaluate → observe traces → diagnose → **one targeted change** → re-evaluate on a cost ladder.
+2. **Rule placement beats rule presence.** Put rules where the model meets them at decision time — tool return values, point-of-need messages — not only in front-loaded instruction blocks.
+3. **Core vs profile.** Harness improvements that help any model live in shared skills/spec; model-specific prompt tweaks are profile config with the routing layer ([ADR-0045](../adr/0045-per-agent-model-routing.md)) — keeping skills model-agnostic ([ADR-0048](../adr/0048-north-star-model-agnostic-spec-and-adapters.md)).
+
 ## Confidence calibration
 
 Every agent reports confidence on every claim — see thresholds in [`../CLAUDE.md`](../CLAUDE.md). Every agent must be able to answer **"what would raise this to 95%?"**

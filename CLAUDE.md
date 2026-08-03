@@ -89,6 +89,7 @@ Always be ready to answer: **"What would raise confidence to 95%?"**
 - **ADRs for consequential choices.** Format under [`adr/`](./adr/).
 - **Lessons-learned for failures.** Surface to [`lessons-learned/`](./lessons-learned/).
 - **Provenance tags `[source][confidence]`** on every non-trivial claim, per Kernel Rule 22.
+- **Verification-first.** Reliability comes from verifier gates + enforcement (ADR-0044/0011/0047), not from more prompt detail — invest there first. `[multi-source][80–95%]` (convergence record: [ADR-0044 §External corroboration](./adr/0044-verifier-gates-for-agent-tasks.md#external-corroboration-2026-08-03)).
 - **Token-cost awareness.** Per [LR-06](./constitution/local-rules.md#lr-06): before running multi-agent operations, estimate the cost and surface it to the architect. Prefer targeted agents over workflow fan-outs. Run a canary agent before fleet fan-out. Use the cheapest model sufficient for mechanical tasks. See [L5 §Token-cost-aware orchestration](./layers/L5-orchestration.md#token-cost-aware-orchestration) for the full discipline.
 - **RAG-aware guidance.** When the project involves retrieval (search, knowledge base, document QA), consult [L3 §Retrieval pipeline](./layers/L3-memory.md#retrieval-pipeline) for the default pipeline, confidence gating, reranker alternatives, GraphRAG decision tree, and iterative pattern cost guidance. All drawn from peer-reviewed evidence per [ADR-0037](./adr/0037-retrieval-pipeline-evidence-review.md).
 - **Workflow redesign is the investment.** Agent capability gains materialize only after workflow redesign, not just tool adoption — the productivity J-curve (Brynjolfsson et al., AEJ:Macro 2021 `[H]`). Budget for the dip; track workflow changes in lessons-learned with tag `[workflow-redesign]`.
@@ -122,7 +123,9 @@ Use `Bash` with a single-line `echo` redirect (POSIX) or `Add-Content` (PowerShe
 
 *(track only questions blocking current work; archive resolved ones to `lessons-learned/`)*
 
-- *(none yet)*
+- **Evaluate decentralized (orchestrator-less) topology for L5 (Stanford DeLM).** Read the primary arXiv paper first — current basis is Tier-3 reporting only `[delm][<60%]`; benchmarks/cost unverified. Removing the orchestrator removes a governance chokepoint, and a wrongly-"verified" gist poisons downstream agents. Cross-ref ADR-0002/0010/0044/0055. No L5 change until then.
+- **Evaluate Beads git-native tickets vs progress-ledger/kanban** (The-Claude-Protocol; single-author project `[claude-protocol][60–80%]`). Would overlap Loom's kanban (ADR-0048); worth a small mapping trial only.
+- **TRACE Step-1 contrastive capability-gap diagnosis** for lessons/reputation signals — see the note in ADR-0055 `[trace preprint][60–80%]`; diagnosis only, never its training stack.
 
 ---
 
@@ -132,7 +135,7 @@ Use `Bash` with a single-line `echo` redirect (POSIX) or `Add-Content` (PowerShe
 
 - *(none — ADR-0002 and ADR-0034 accepted 2026-07-07; no ADRs currently in `Proposed` status)*
 
-**Recent ADRs (Accepted):** 0003–0010 (batch 01: retrieval + context engineering) · 0011–0016 (v0.2: enforcement runtime, subagents, bootstrap, lessons, doctor, Update Bus stub) · 0017–0030 (v0.3–v1.0: intent classifier, secrets, deploy, discovery, specialists, permissions, HR) · 0031 (handoff policy) · 0032–0033 (deploy terminal states, loom-spec maintenance) · 0034–0036 (v0.3.3: specialist invocation, provisioning specialist, credential collection) · 0037–0038 (v0.3.4: RAG research arc + LR-06, hook capture gap detection) · 0039–0041 (Observatory: architecture, projection schemas, Update-Bus integration — accepted 2026-07-07) · 0042 (credential-setup specialist) · 0043 (cwd-robust project-root resolution) · 0044 (verifier gates for agent tasks) · 0045 (per-agent model routing + LiteLLM proxy) · 0046–0047 (test-case registry + hook-enforced destructive-action confirmation, BR_01) · **0048–0053 (north star: model-agnostic spec + adapters; policy engine native-first; 2nd adapter LangGraph; OTel OTLP audit; durable execution; agent reputation)** · **0054 (path to top-tier: governance axis + proof-first program)** · **0055 (shared lessons-learned service)** · **0056 (multi-LLM deliberation panel)**.
+**Recent ADRs (Accepted):** 0003–0047 — retrieval/context batch, v0.2 enforcement runtime, v0.3–v1.0 governance, Observatory (0039–0041), verifier gates (0044), model routing (0045), test-case registry + destructive-action hooks (0046–0047); full index in [`adr/`](./adr/) · **0048–0053 (north star: model-agnostic spec + adapters; native-first policy; LangGraph 2nd adapter; OTel audit; durable execution; agent reputation)** · **0054–0056 (proof-first program; shared lessons service; deliberation panel)**. 0031 (handoff policy) retired 2026-08-02.
 
 ---
 
