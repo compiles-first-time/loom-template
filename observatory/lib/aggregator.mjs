@@ -202,6 +202,13 @@ function recordActivity(state, ev) {
         detail: `${ev.id || "ticket"} → ${ev.state || "backlog"}${ev.parent_id ? ` (${ev.parent_id})` : ""}`,
       });
       break;
+    case "ticket_deleted":
+      pushActivity(state, {
+        timestamp: ev.timestamp, session_id: ev.session_id,
+        kind: "ticket", tool: "deleted",
+        detail: `${ev.id || "ticket"} removed from the board (verified by ${ev.deleted_by || "human"})`,
+      });
+      break;
     case "reputation_event":
       pushActivity(state, {
         timestamp: ev.timestamp, session_id: ev.session_id,
@@ -658,6 +665,20 @@ const EVENT_HANDLERS = {
       state.kanban.tickets = tickets.slice(-KANBAN_MAX);
     }
     state.kanban.by_state = rollupKanban(state.kanban.tickets);
+  },
+
+  // Human-verified removal of a completed ticket. This event is only ever
+  // appended by the Observatory UI's delete endpoint (router.mjs), which
+  // enforces the done-state guard — agents' /ticket path has no delete verb.
+  // Idempotent so the router's direct ingest + the file-watcher tail of the
+  // same audit line can't double-apply.
+  ticket_deleted(state, ev) {
+    if (!ev.id) return;
+    const before = state.kanban.tickets.length;
+    state.kanban.tickets = state.kanban.tickets.filter((t) => t.id !== ev.id);
+    if (state.kanban.tickets.length !== before) {
+      state.kanban.by_state = rollupKanban(state.kanban.tickets);
+    }
   },
 
   subagent_suggestion(state, ev) {
