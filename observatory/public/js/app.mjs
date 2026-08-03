@@ -152,13 +152,17 @@ const emptyState=(what,how)=>`<div class="empty-state">${what}<br><span class="r
 
 let FEED=[];
 
-function go(k){current=k;document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.k===k));
+function go(k,opts){const keep=!!(opts&&opts.keepScroll&&k===current);current=k;document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.k===k));
  const m=document.getElementById('main');
- m.innerHTML=`${bannerHtml()}<div class="view">${VIEWS[k]()}</div>`;m.scrollTop=0;
+ const st=keep?m.scrollTop:0;
+ // Live refreshes (keep=true) replace content in place: no entry animation, and
+ // the scroll position is restored after the view handler fills its tables.
+ m.innerHTML=`${bannerHtml()}<div class="view"${keep?' style="animation:none"':''}>${VIEWS[k]()}</div>`;
  ({overview:hOv,requirements:hReq,decisions:hDec,agents:hAg,governance:hGov,work:hWork,cost:hCost,activity:hAct,glossary:hGloss,runs:hRuns,constitution:hConsti,models:hModels}[k])?.();
  const _eb=m.querySelector('.view-head .eyebrow'); if(_eb) _eb.insertAdjacentHTML('beforeend', sourceBadge(k));
  m.querySelectorAll('[data-nav]').forEach(e=>{e.onclick=()=>go(e.dataset.nav);e.onkeydown=ev=>{if((ev.key==='Enter'||ev.key===' ')&&e.hasAttribute('tabindex')){ev.preventDefault();go(e.dataset.nav);}};});
  m.querySelectorAll('[data-drawer]').forEach(e=>{e.onclick=ev=>{ev.stopPropagation();openDrawer(e.dataset.drawer);};e.onkeydown=ev=>{if((ev.key==='Enter'||ev.key===' ')&&e.hasAttribute('tabindex')){ev.preventDefault();ev.stopPropagation();openDrawer(e.dataset.drawer);}};});
+ m.scrollTop=st;
 }
 function bind(id){const r=document.getElementById(id);if(!r)return;r.querySelectorAll('[data-drawer]').forEach(e=>e.onclick=ev=>{ev.stopPropagation();openDrawer(e.dataset.drawer);});r.querySelectorAll('[data-nav]').forEach(e=>e.onclick=()=>go(e.dataset.nav));}
 const feedRow=f=>`<div class="feed-item" ${f.d?`data-drawer="${f.d}"`:f.nav?`data-nav="${f.nav}"`:''}><span class="feed-glyph g-${f.g}">${svg(f.g==='good'?'<path d="m5 12 4 4 10-10"/>':f.g==='crit'?'<path d="M12 3l8 3v5c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/>':f.g==='warn'?'<path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>':f.g==='accent'?'<path d="M3 12h4l3 8 4-16 3 8h4"/>':'<circle cx="12" cy="12" r="9"/>')}</span><div class="feed-body"><div class="t">${f.t}</div><div class="m">${f.m}</div></div><div class="feed-time">${f.time}</div></div>`;
@@ -860,7 +864,24 @@ function setStatus(ok){
   if(connText) connText.textContent = ok?'live':'connecting…';
 }
 
-function paint(){ deriveViewModel(getState()||{}); renderNav(); go(current); }
+/* Live repaint discipline: hooks emit events every few seconds while a session
+   is active, and each SSE delta lands here. Re-rendering unconditionally reset
+   the scroll position and made the page unreadable. So: (1) skip entirely when
+   the derived view-model hasn't changed, (2) never repaint while the user is
+   typing in a control or dragging a kanban card, (3) when we do repaint, keep
+   the scroll position and skip the entry animation. */
+let _lastPaintSnap='';
+function paint(){
+  deriveViewModel(getState()||{});
+  const snap=JSON.stringify([REQS,DECISIONS,OPS,COST,KANBAN,FEED,RUNS,AGENTS,LEDGER,SESSIONS,KEY_CASES]);
+  if(snap===_lastPaintSnap) return;
+  const m=document.getElementById('main'),ae=document.activeElement;
+  if(m&&ae&&m.contains(ae)&&['INPUT','SELECT','TEXTAREA'].includes(ae.tagName)) return; // next delta repaints
+  if(m&&m.querySelector('.dragging')) return;
+  _lastPaintSnap=snap;
+  renderNav();
+  go(current,{keepScroll:true});
+}
 
 let _refreshTimer = null;
 async function refreshState(){
@@ -873,7 +894,9 @@ async function refreshState(){
 }
 function scheduleRefresh(){
   if(_refreshTimer) return;
-  _refreshTimer = setTimeout(()=>{ _refreshTimer = null; refreshState(); }, 200);
+  // 2.5s batch window: hook events arrive in bursts while a session is active;
+  // repainting per-event made the page unreadable (see paint() discipline).
+  _refreshTimer = setTimeout(()=>{ _refreshTimer = null; refreshState(); }, 2500);
 }
 
 const sse = new SSEClient('/api/events/stream', {
