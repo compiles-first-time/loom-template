@@ -71,7 +71,7 @@
 
 ## Phase 1 proof-first backlog (2026-07-15 handoff)
 
-> From `handoff/2026-07-15-deliberation-panel-and-research-findings.md`. Each item has a Requirements & Exceptions register (ADR-0046, `observability/eval-suite/requirements/BR_NN.md`) as its definition-of-done and a kanban ticket. An item is DONE only when its register PASSES. Seeded as `ticket` events → Observatory Kanban panel.
+> From `handoff/2026-07-15-deliberation-panel-and-research-findings.md` (handoff snapshots retired 2026-08-02 — recover via git history; see ADR-0031). Each item has a Requirements & Exceptions register (ADR-0046, `observability/eval-suite/requirements/BR_NN.md`) as its definition-of-done and a kanban ticket. An item is DONE only when its register PASSES. Seeded as `ticket` events → Observatory Kanban panel.
 
 | ID | Task | Status | BR | Notes |
 |---|---|---|---|---|

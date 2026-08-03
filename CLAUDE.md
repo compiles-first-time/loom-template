@@ -8,7 +8,7 @@
 
 This file is the **primary entry point** for Claude (chat) and Claude Code into this project. Keep it small — hard cap ~10 KB. Detail belongs in [`layers/`](./layers/), not here.
 
-> **Fresh Claude instance? Read [`handoff/2026-07-07-option-b-complete-and-agent-engagement.md`](./handoff/2026-07-07-option-b-complete-and-agent-engagement.md) first (current state — Option-B re-architecture complete; agent-reputation/reward system decided — ADR-0053 accepted), THEN [`handoff/2026-07-05-research-evaluation.md`](./handoff/2026-07-05-research-evaluation.md), THEN [`handoff/2026-06-04-observatory-context.md`](./handoff/2026-06-04-observatory-context.md) for Observatory context.** See [`handoff/README.md`](./handoff/README.md) for the dated-snapshot convention.
+> **Fresh Claude instance?** Current state lives in session auto-memory and this file; run [`loom doctor`](./scripts/) and L8 discovery ([layers/L8-discovery.md](./layers/L8-discovery.md)) to audit project state. The dated `handoff/` snapshots were retired 2026-08-02 (recoverable from git history; the `/handoff` skill can regenerate one if a frozen snapshot is ever needed again — see ADR-0031).
 
 ---
 
