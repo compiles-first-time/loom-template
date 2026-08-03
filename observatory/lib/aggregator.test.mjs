@@ -434,6 +434,41 @@ console.log("\nticket (kanban)");
   assert(agg.state.kanban.tickets.length === 500,    "kanban tickets capped at 500");
 }
 
+// ─── ticket_deleted — human-verified removal (Observatory UI write-back) ─────
+console.log("\nticket_deleted");
+{
+  const agg = new Aggregator();
+  agg.ingestEvent(ev("ticket", { id: "T3", title: "ship it", state: "done" }));
+  agg.ingestEvent(ev("ticket", { id: "T4", title: "other", state: "todo" }));
+  agg.ingestEvent(ev("ticket_deleted", { id: "T3", prior_state: "done", deleted_by: "human-observatory-ui" }));
+  assert(agg.state.kanban.tickets.length === 1,                       "deleted ticket removed from projection");
+  assert(agg.state.kanban.tickets[0].id === "T4",                     "other tickets untouched");
+  assert(agg.state.kanban.by_state.done === undefined,                "by_state rollup no longer counts the deleted ticket");
+  assert(agg.state.kanban.by_state.todo === 1,                        "by_state keeps remaining ticket");
+  assert(agg.state.activity.feed.some(e => e.kind === "ticket" && /ticket_deleted recorded/.test(e.detail)), "deletion appears in activity feed");
+  // idempotent: the router appends the audit line the watcher also tails
+  agg.ingestEvent(ev("ticket_deleted", { id: "T3" }));
+  assert(agg.state.kanban.tickets.length === 1,                       "re-applying the same deletion is a no-op");
+  agg.ingestEvent(ev("ticket_deleted", {}));
+  assert(agg.state.kanban.tickets.length === 1,                       "ticket_deleted without id is ignored");
+}
+
+// ingestion-layer guard: the event log is writable by any local process, so
+// the done-only rule must hold HERE, not just at the HTTP endpoint. A forged
+// ticket_deleted for open work is ignored.
+{
+  const agg = new Aggregator();
+  agg.ingestEvent(ev("ticket", { id: "T5", state: "todo" }));
+  agg.ingestEvent(ev("ticket", { id: "T6", state: "in_progress" }));
+  agg.ingestEvent(ev("ticket_deleted", { id: "T5" }));
+  agg.ingestEvent(ev("ticket_deleted", { id: "T6", prior_state: "done", deleted_by: "forged" }));
+  assert(agg.state.kanban.tickets.length === 2,                       "deleting non-done tickets is ignored (even with forged prior_state)");
+  agg.ingestEvent(ev("ticket", { id: "T5", state: "done" }));
+  agg.ingestEvent(ev("ticket_deleted", { id: "T5" }));
+  assert(agg.state.kanban.tickets.length === 1,                       "same ticket deletable once it is genuinely done");
+  assert(agg.state.kanban.tickets[0].id === "T6",                     "open ticket survives");
+}
+
 // ─── Report ──────────────────────────────────────────────────────────────────
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);

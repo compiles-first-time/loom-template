@@ -32,8 +32,59 @@ export function createRouter(aggregator, { projectRoot = process.cwd() } = {}) {
       return handleUpdateBusDecision(req, res, url, projectRoot, aggregator);
     }
 
+    if (url.pathname.startsWith("/api/tickets/") && url.pathname.endsWith("/delete") && req.method === "POST") {
+      return handleTicketDelete(req, res, url, projectRoot, aggregator);
+    }
+
     return serveStatic(res, url.pathname);
   };
+}
+
+// Deleting a ticket is a human-verification act (third-party sign-off that the
+// work is really complete). Honest scope of enforcement: this endpoint is
+// unauthenticated on localhost, so "human-only" is a POLICY boundary, held by
+// (a) the agent-facing /ticket path having no delete verb and instructing
+// agents never to emit ticket_deleted (ticket.md), and (b) the aggregator
+// ignoring deletions of non-done tickets at the ingestion layer. What IS
+// technically enforced here: only tickets currently in `done` may be removed,
+// and every deletion appends an audited event (actor label, prior state, note).
+export function ticketDeleteGuard(state, id) {
+  const tickets = (state && state.kanban && state.kanban.tickets) || [];
+  const t = tickets.find((x) => x.id === id);
+  if (!t) return { ok: false, status: 404, error: `No ticket with id: ${id}` };
+  if (t.state !== "done") {
+    return { ok: false, status: 409, error: `Ticket ${id} is in '${t.state}' — only tickets in the done column can be deleted (finish the work first)` };
+  }
+  return { ok: true, ticket: t };
+}
+
+async function handleTicketDelete(req, res, url, projectRoot, aggregator) {
+  const id = decodeURIComponent(url.pathname.split("/")[3] || "");
+  const guard = ticketDeleteGuard(aggregator.state, id);
+  if (!guard.ok) return jsonResponse(res, guard.status, { error: guard.error });
+
+  const body = (await readBody(req)) || {};
+  const record = {
+    timestamp: new Date().toISOString(),
+    event_type: "ticket_deleted",
+    id,
+    prior_state: guard.ticket.state,
+    deleted_by: "observatory-ui", // the human surface; not cryptographic proof of identity
+    note: typeof body.note === "string" ? body.note.slice(0, 500) : "",
+  };
+
+  // Append the audit line (Rule 22 — the deletion IS the event). The file
+  // watcher tails the same log the hooks write to, ingests the line, and
+  // broadcasts the SSE delta — one path, no double-application.
+  const logDir = path.join(projectRoot, "memory", "event-log");
+  const logFile = path.join(logDir, `${record.timestamp.slice(0, 10)}.jsonl`);
+  try {
+    await fs.mkdir(logDir, { recursive: true });
+    await fs.appendFile(logFile, JSON.stringify(record) + "\n", "utf8");
+  } catch (err) {
+    return jsonResponse(res, 500, { error: `Could not append audit event: ${err.message}` });
+  }
+  return jsonResponse(res, 202, { status: "recorded", id, deleted_by: record.deleted_by });
 }
 
 function jsonResponse(res, status, data) {
