@@ -41,9 +41,13 @@ export function createRouter(aggregator, { projectRoot = process.cwd() } = {}) {
 }
 
 // Deleting a ticket is a human-verification act (third-party sign-off that the
-// work is really complete), so it is only reachable through the Observatory UI
-// — the agent-facing /ticket path deliberately has no delete verb. Guard:
-// only tickets currently in `done` may be removed.
+// work is really complete). Honest scope of enforcement: this endpoint is
+// unauthenticated on localhost, so "human-only" is a POLICY boundary, held by
+// (a) the agent-facing /ticket path having no delete verb and instructing
+// agents never to emit ticket_deleted (ticket.md), and (b) the aggregator
+// ignoring deletions of non-done tickets at the ingestion layer. What IS
+// technically enforced here: only tickets currently in `done` may be removed,
+// and every deletion appends an audited event (actor label, prior state, note).
 export function ticketDeleteGuard(state, id) {
   const tickets = (state && state.kanban && state.kanban.tickets) || [];
   const t = tickets.find((x) => x.id === id);
@@ -65,7 +69,7 @@ async function handleTicketDelete(req, res, url, projectRoot, aggregator) {
     event_type: "ticket_deleted",
     id,
     prior_state: guard.ticket.state,
-    deleted_by: "human-observatory-ui",
+    deleted_by: "observatory-ui", // the human surface; not cryptographic proof of identity
     note: typeof body.note === "string" ? body.note.slice(0, 500) : "",
   };
 

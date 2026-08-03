@@ -206,7 +206,7 @@ function recordActivity(state, ev) {
       pushActivity(state, {
         timestamp: ev.timestamp, session_id: ev.session_id,
         kind: "ticket", tool: "deleted",
-        detail: `${ev.id || "ticket"} removed from the board (verified by ${ev.deleted_by || "human"})`,
+        detail: `ticket_deleted recorded for ${ev.id || "?"} (by ${ev.deleted_by || "unattributed"}) — applied only if the ticket was in done`,
       });
       break;
     case "reputation_event":
@@ -667,18 +667,19 @@ const EVENT_HANDLERS = {
     state.kanban.by_state = rollupKanban(state.kanban.tickets);
   },
 
-  // Human-verified removal of a completed ticket. This event is only ever
-  // appended by the Observatory UI's delete endpoint (router.mjs), which
-  // enforces the done-state guard — agents' /ticket path has no delete verb.
-  // Idempotent so the router's direct ingest + the file-watcher tail of the
-  // same audit line can't double-apply.
+  // Removal of a completed ticket (intended path: the Observatory UI's delete
+  // endpoint in router.mjs, which appends an audited event). The event log is
+  // writable by any local process — CLAUDE.md documents direct JSONL appends —
+  // so the done-only guard is re-enforced HERE at the ingestion layer:
+  // a ticket_deleted for a ticket not currently in `done` is ignored. That
+  // makes the human-verification convention hold regardless of who wrote the
+  // line, and keeps the handler idempotent under watcher re-tails.
   ticket_deleted(state, ev) {
     if (!ev.id) return;
-    const before = state.kanban.tickets.length;
-    state.kanban.tickets = state.kanban.tickets.filter((t) => t.id !== ev.id);
-    if (state.kanban.tickets.length !== before) {
-      state.kanban.by_state = rollupKanban(state.kanban.tickets);
-    }
+    const t = state.kanban.tickets.find((x) => x.id === ev.id);
+    if (!t || t.state !== "done") return;
+    state.kanban.tickets = state.kanban.tickets.filter((x) => x.id !== ev.id);
+    state.kanban.by_state = rollupKanban(state.kanban.tickets);
   },
 
   subagent_suggestion(state, ev) {

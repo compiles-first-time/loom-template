@@ -128,7 +128,7 @@ const VIEWS={
          <div class="row"><code class="req-id">ADR-0056</code><span>Multi-LLM deliberation panel</span></div></div></div></div>`;
  },
  work(){return `<div class="view-head"><div class="eyebrow">Work</div><h1>The board &#8212; tickets plus the register, one truth</h1>
-   <p>Cards tagged <b>register</b> are derived from the requirement registers (ADR-0046): each solution step and exception is its own unit of work, and a requirement rolls up to Done exactly when <em>all</em> its cases pass. They follow test results and can&#8217;t be dragged. Regular tickets move via <code>/ticket</code> (dragging here is view-only). The <b>&#215;</b> on a Done ticket is a human-verification act &#8212; it records an audited deletion.</p></div>
+   <p>Cards tagged <b>register</b> are derived from the requirement registers (ADR-0046): each solution step and exception is its own unit of work, and a requirement rolls up to Done exactly when <em>all</em> its cases pass. They follow test results and can&#8217;t be dragged. Regular tickets move via <code>/ticket</code> (dragging here is view-only). The <b>&#215;</b> on a Done ticket records your third-party verification as an audited deletion event &#8212; agents are instructed never to delete, and the projection ignores deletions of anything not in Done.</p></div>
    <div class="kb" id="kb"></div>`;
  },
  cost(){return `<div class="view-head"><div class="eyebrow">Cost</div><h1>Spend, broken out by model</h1>
@@ -186,9 +186,9 @@ function hDec(){document.getElementById('decList').innerHTML=DECISIONS.length?DE
    <div class="dec-main"><div class="dec-q">${d.q}</div><div class="dec-badges"><span class="pill accent"><span class="dot"></span>${d.answer}</span>${confPill(d.conf,d.escalate)}<span class="pill"><span class="dot"></span>${d.indep} independent voices</span><span class="pill" style="color:var(--dim)">${d.approver.startsWith('Escalated')?'&#8594; human':'auto-resolved'}</span></div></div></div>`).join(''):emptyState('No governed decisions recorded yet.','Decisions appear when the deliberation panel runs (ADR-0056).');
  document.querySelectorAll('.dec-card').forEach(c=>c.onclick=()=>openDrawer(c.dataset.drawer));}
 function hGov(){document.getElementById('opBody').innerHTML=OPS.length?OPS.map(o=>`<tr><td><code>${o.op}</code></td><td style="color:var(--dim)">${o.tool}</td><td>${decChip(o.decision)}</td><td><span class="run-tag">${o.run}</span></td><td><span style="color:var(--dim)">${o.actor}</span></td><td><span class="env-tag ${o.env}">${o.env}</span></td><td style="color:var(--dim);max-width:320px">${o.reason}</td></tr>`).join(''):`<tr><td colspan="7">${emptyState('No governed operations recorded yet.','Rows appear when the destructive-op guard fires (ADR-0047).')}</td></tr>`;}
-function hWork(){const kb=document.getElementById('kb');kb.innerHTML=KB_ORDER.map(col=>`<div class="kb-col" data-col="${col}"><h4>${KB_LABEL[col]}<span>${KANBAN[col].length}</span></h4>${KANBAN[col].map(c=>`<div class="kb-card${c.derived?' derived':''}" ${c.derived?'':'draggable="true"'} data-id="${c.id}">
-   ${c.deletable&&!c.derived?`<button type="button" class="kb-del" data-del="${c.id}" title="Human verification: confirm this work is completed and remove the ticket (records an audited ticket_deleted event)" aria-label="Verify and delete ${c.id}">&#215;</button>`:''}
-   <div class="title">${c.title}</div><div class="meta"><code>${c.id}</code>${c.req&&c.req!=='&#8212;'&&c.req!==c.id?`&#8594; <code>${c.req}</code>`:''} ${c.agents.map(a=>ava(a,'sm')).join('')}${c.derived?`<span class="chip TR" style="margin-left:auto" title="Derived from the ADR-0046 register &#8212; its state follows test results">register${c.caseStatus?' &#183; '+c.caseStatus:''}</span>`:''}</div></div>`).join('')||'<div style="color:var(--faint);font-size:var(--fs-sm);padding:8px;text-align:center">&#8212;</div>'}</div>`).join('');
+function hWork(){const kb=document.getElementById('kb');kb.innerHTML=KB_ORDER.map(col=>`<div class="kb-col" data-col="${col}"><h4>${KB_LABEL[col]}<span>${KANBAN[col].length}</span></h4>${KANBAN[col].map(c=>{const eid=escapeHtml(c.id),etitle=escapeHtml(c.title),ereq=escapeHtml(c.req||'');return `<div class="kb-card${c.derived?' derived':''}" ${c.derived?'':'draggable="true"'} data-id="${eid}">
+   ${c.deletable&&!c.derived?`<button type="button" class="kb-del" data-del="${eid}" title="Verify work completed &amp; remove &#8212; appends an audited ticket_deleted event" aria-label="Verify and delete ${eid}">&#215;</button>`:''}
+   <div class="title">${etitle}</div><div class="meta"><code>${eid}</code>${ereq&&c.req!==c.id?`&#8594; <code>${ereq}</code>`:''} ${c.agents.map(a=>ava(a,'sm')).join('')}${c.derived?`<span class="chip TR" style="margin-left:auto" title="Derived from the ADR-0046 register &#8212; its state follows test results">register${c.caseStatus?' &#183; '+escapeHtml(c.caseStatus):''}</span>`:''}</div></div>`;}).join('')||'<div style="color:var(--faint);font-size:var(--fs-sm);padding:8px;text-align:center">&#8212;</div>'}</div>`).join('');
  kb.querySelectorAll('[data-del]').forEach(b=>b.onclick=e=>{e.stopPropagation();const id=b.dataset.del;
   if(!confirm(`Third-party verification — ${id}\n\nYou confirm this work is completed and verified, and want it removed from the board. This appends an audited ticket_deleted event to the event log.\n\nProceed?`))return;
   fetch('/api/tickets/'+encodeURIComponent(id)+'/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({note:'verified & removed via Observatory UI'})})
@@ -457,7 +457,7 @@ function editCell(c){if(c.querySelector('input'))return;const m=MODELS.find(x=>x
 }
 function moveChain(id,dir){const i=FALLBACK.indexOf(id),j=i+dir;if(j<0||j>=FALLBACK.length)return;const localIdx=FALLBACK.findIndex(x=>MODELS.find(m=>m.id===x).local);if(dir>0&&j>=localIdx)return;[FALLBACK[i],FALLBACK[j]]=[FALLBACK[j],FALLBACK[i]];BUDGET.dirty=true;renderModels();}
 
-function wireDnD(){let dragId=null;document.querySelectorAll('.kb-card').forEach(card=>{card.addEventListener('dragstart',()=>{dragId=card.dataset.id;card.classList.add('dragging');});card.addEventListener('dragend',()=>card.classList.remove('dragging'));});document.querySelectorAll('.kb-col').forEach(col=>{col.addEventListener('dragover',e=>{e.preventDefault();col.classList.add('drop');});col.addEventListener('dragleave',()=>col.classList.remove('drop'));col.addEventListener('drop',e=>{e.preventDefault();col.classList.remove('drop');const to=col.dataset.col;let moved;for(const c of KB_ORDER){const i=KANBAN[c].findIndex(x=>x.id===dragId);if(i>=0){moved=KANBAN[c].splice(i,1)[0];break;}}if(moved){KANBAN[to].unshift(moved);hWork();toast('Moved '+moved.id+' &#8594; '+KB_LABEL[to]+' &#8212; view-only; record it with /ticket to persist');}});});}
+function wireDnD(){let dragId=null;document.querySelectorAll('.kb-card').forEach(card=>{card.addEventListener('dragstart',()=>{dragId=card.dataset.id;card.classList.add('dragging');});card.addEventListener('dragend',()=>card.classList.remove('dragging'));});document.querySelectorAll('.kb-col').forEach(col=>{col.addEventListener('dragover',e=>{e.preventDefault();col.classList.add('drop');});col.addEventListener('dragleave',()=>col.classList.remove('drop'));col.addEventListener('drop',e=>{e.preventDefault();col.classList.remove('drop');const to=col.dataset.col;let moved;for(const c of KB_ORDER){const i=KANBAN[c].findIndex(x=>x.id===dragId&&!x.derived);if(i>=0){moved=KANBAN[c].splice(i,1)[0];break;}}if(moved){KANBAN[to].unshift(moved);hWork();toast('Moved '+moved.id+' &#8594; '+KB_LABEL[to]+' &#8212; view-only; record it with /ticket to persist');}});});}
 
 /* drawer */
 let _drawerTrigger=null;
@@ -699,7 +699,7 @@ function updateTopbar(){
 }
 
 // ── small helpers ──
-function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function shortSid(s){ if(!s) return '&#8212;'; const t=String(s); return t.length>10?t.slice(0,8):t; }
 function fmtIO(v){
   if(v==null) return '&#8212;';
@@ -802,10 +802,12 @@ function deriveCost(cost){
 }
 
 function deriveKanban(kb, rq){
+  // Model values stay RAW here (ids round-trip to the delete endpoint);
+  // hWork escapes everything exactly once at render time.
   const tickets = kb && kb.tickets ? kb.tickets : [];
   const out = KB_EMPTY();
   for(const t of tickets){ const col = out[t.state]?t.state:'backlog';
-    out[col].push({ id:t.id, title:t.title||t.id, req:t.parent_id||'&#8212;',
+    out[col].push({ id:t.id, title:t.title||t.id, req:t.parent_id||'',
       agents: t.assignee?[t.assignee]:[], deletable: t.state==='done' }); }
   // Derived requirement cards — the architect's rule: every solution step and
   // exception is its own unit of work, and a requirement passes exactly when
@@ -817,12 +819,12 @@ function deriveKanban(kb, rq){
   for(const brId of Object.keys(roll).sort()){
     const r = roll[brId]; if(!r || !r.total) continue;
     if(r.pass === r.total){
-      out.done.push({ id:brId, title:`${escapeHtml(brId)} &#8212; all ${r.total} cases pass`, req:brId, agents:[], derived:true });
+      out.done.push({ id:brId, title:`${brId} — all ${r.total} cases pass`, req:brId, agents:[], derived:true });
     } else {
       for(const c of cases){
         if((c.parent_id||c.id)!==brId || c.status==='pass') continue;
         const col = c.status==='blocked'?'blocked':c.status==='fail'?'in_progress':'todo';
-        out[col].push({ id:c.id||'case', title:escapeHtml(c.title||c.id||'case'), req:brId, agents:[], derived:true, caseStatus:c.status||'pending' });
+        out[col].push({ id:c.id||'case', title:c.title||c.id||'case', req:brId, agents:[], derived:true, caseStatus:c.status||'pending' });
       }
     }
   }
