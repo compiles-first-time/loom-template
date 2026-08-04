@@ -22,6 +22,7 @@
 
 import { promises as fs, existsSync } from "node:fs";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 const ROOT = process.cwd();
 const INBOX = path.join(ROOT, "update-bus", "inbox");
@@ -33,16 +34,36 @@ const SCHEMA = path.join(ROOT, "update-bus", "schema.json");
 // Minimal frontmatter parser for the README's item shape: `key: value` lines,
 // inline arrays `[a, b]`, booleans, quoted or bare strings. Returns null when
 // the file has no frontmatter block.
+// BOM strip: Windows writers (PowerShell Out-File/Set-Content) prepend a BOM
+// by default, which breaks the ^--- anchor — same bug already fixed once in
+// observatory/lib/file-watcher.mjs for these exact files.
 export function parseFrontmatter(text) {
-  const m = /^---\r?\n([\s\S]*?)\r?\n---/.exec(String(text || ""));
+  let src = String(text || "");
+  if (src.charCodeAt(0) === 0xfeff) src = src.slice(1);
+  const m = /^---\r?\n([\s\S]*?)\r?\n---/.exec(src);
   if (!m) return null;
   const out = {};
+  let pendingList = null; // key whose value may continue as a block list (`- item` lines)
   for (const rawLine of m[1].split(/\r?\n/)) {
     const line = rawLine.replace(/\s+#.*$/, ""); // strip trailing comments
-    const kv = /^([A-Za-z_][A-Za-z0-9_]*):\s*(.*)$/.exec(line.trim());
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const li = /^-\s+(.*)$/.exec(trimmed);
+    if (li && pendingList) {
+      if (!Array.isArray(out[pendingList])) out[pendingList] = [];
+      out[pendingList].push(stripQuotes(li[1].trim()));
+      continue;
+    }
+    const kv = /^([A-Za-z_][A-Za-z0-9_]*):\s*(.*)$/.exec(trimmed);
     if (!kv) continue;
     const [, key, rawVal] = kv;
+    if (rawVal.trim() === "") {
+      out[key] = ""; // stays "" unless block-list items follow
+      pendingList = key;
+      continue;
+    }
     out[key] = parseScalar(rawVal.trim());
+    pendingList = null;
   }
   return out;
 }
@@ -188,8 +209,8 @@ async function listFilesRecursive(dir) {
   return out;
 }
 
-const isDirectRun = process.argv[1] && import.meta.url.endsWith(path.basename(process.argv[1]));
-if (isDirectRun) {
+// CLI (guarded — importing never runs it); same idiom as verify-gate/lessons.
+if (import.meta.url === pathToFileURL(process.argv[1] || "").href) {
   main().catch((err) => {
     console.error(`error: ${err.message}`);
     process.exit(1);

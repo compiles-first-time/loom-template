@@ -48,6 +48,19 @@ console.log("\nparseFrontmatter");
 
   const commented = parseFrontmatter("---\nrisk: medium   # critic may revise\n---\n");
   assert(commented.risk === "medium", "trailing comment stripped from value");
+
+  const bom = parseFrontmatter("﻿---\nid: bom-item-3c4\n---\nbody");
+  assert(bom !== null && bom.id === "bom-item-3c4", "UTF-8 BOM stripped (PowerShell Out-File writers)");
+
+  // Block-style YAML lists — what LLM writers naturally produce (caught live
+  // by the scout's first verification run: `affects:` as `- item` lines).
+  const block = parseFrontmatter("---\nid: block-item-9e1\naffects:\n  - adapters/langgraph/package.json\n  - adr/0050-second-adapter-langgraph.md\nrisk: medium\n---\n");
+  assert(Array.isArray(block.affects) && block.affects.length === 2, "block-style list parsed as array");
+  assert(block.affects[0] === "adapters/langgraph/package.json", "block-list items trimmed");
+  assert(block.risk === "medium", "key after a block list parsed normally");
+
+  const emptyVal = parseFrontmatter("---\nnote:\nrisk: low\n---\n");
+  assert(emptyVal.note === "" && emptyVal.risk === "low", "empty scalar stays a string when no list items follow");
 }
 
 console.log("\nvalidateInboxItem");

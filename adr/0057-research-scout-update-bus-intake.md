@@ -17,7 +17,7 @@ Add a scheduled **`research-scout` base agent** — the feed-driven sibling of t
 
 1. **Discover.** Poll the feeds configured in `update-bus/feeds.yaml` (curated, tier-tagged; Tier 1–3 only).
 2. **Rigor.** Apply the **in-tree** research standards — `agents/eac/SKILL.md` §Research standards, L7 §Source tiering, ADR-0009 — rather than re-deriving them. *(Deviation from the build brief, found in Critic review: the brief instructed invoking a `research-advisor` skill, but no such skill exists in this repo, and ADR-0009 explicitly decided Loom owns these standards in-tree precisely so no external skill dependency exists. The in-tree sources are the real backing of steps 3–7 below.)* `[adr-0009][eac][internal][H]`
-3. **Filter (stage 1).** Assign `source_tier` per L7/ADR-0009; **drop Rejected/Tier-4 before any inbox write**. `[adr-0007][adr-0009]`
+3. **Filter (stage 1).** Assign `source_tier` per L7/ADR-0009; **drop Rejected-tier before any inbox write**. `[adr-0007][adr-0009]`
 4. **Dedupe.** Grep `adr/`, `lessons-learned/`, `update-bus/inbox/`, `update-bus/archive/` before filing; already-decided or already-queued topics are skipped (or noted, never re-proposed).
 5. **Validate.** Cross-check load-bearing claims against ≥2 independent sources (ADR-0037 faithfulness discipline applied to extraction); assign `risk` + `collapse_risk` (`true` for anything touching evaluation/governance); attach confidence + "what would raise to 95%." **Below-autonomy-bar confidence ⇒ the proposal is framed "evaluate," never "implement."**
 6. **File.** Write `update-bus/inbox/<id>.md` conforming to `update-bus/schema.json` (`source: research-feed`, `proposed_by: research-scout`), README body sections included, Critic/Human-Replica/User sections left blank.
@@ -67,7 +67,7 @@ A live scheduler trigger (cron/Routine firing the tick, or a scheduled scout run
 
 **Locks in:** the L7 intake stage exists; research intake is tier-filtered, deduped, validated, rate-limited, and always human-gated; the manual find-read-score loop becomes review-only; the EAC/Scout split (on-demand vs scheduled) per ADR-0009's documented reopening path.
 
-**Locks out:** auto-applied external updates (unchanged — Rule 19); Tier-4 sources entering the inbox; the Scout reviewing its own output; unbounded research spend (LR-06 cost model above).
+**Locks out:** auto-applied external updates (unchanged — Rule 19); Rejected-tier sources entering the inbox; the Scout reviewing its own output; unbounded research spend (LR-06 cost model above).
 
 **Migration path if it fails:** delete the agent file + `feeds.yaml`; the tick's schema validation remains useful for manually-filed items; the pipeline downstream is untouched.
 
