@@ -76,8 +76,8 @@ When the user accepts an update:
 
 ## Open work for this layer
 
-- [ ] Configure research feed sources (RSS / arXiv / GitHub releases) — tag each feed with its expected tier
-- [ ] Define monthly internal-audit cadence for the Critic
+- [x] Configure research feed sources (RSS / arXiv / GitHub releases) — tag each feed with its expected tier ([`update-bus/feeds.yaml`](../update-bus/feeds.yaml), ADR-0057; scheduler arms on ADR acceptance)
+- [x] Define monthly internal-audit cadence for the Critic — checklist in [`.claude/agents/critic.md`](../.claude/agents/critic.md) §7; liveness enforced by doctor's `internal-audit-freshness` soft check (>35 days → warn)
 - [ ] Decide cross-project propagation policy for this project
 - [ ] Implement the source-tiering filter as the first Update Bus pipeline stage per [ADR-0007](../adr/0007-content-trust-boundary.md)
 - [ ] Confirm the EAC's research discipline aligns with [Source tiering](#source-tiering) per [ADR-0009](../adr/0009-research-standards.md)

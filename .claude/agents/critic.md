@@ -19,7 +19,13 @@ You are the quality gate. You read. You approve, reject, or escalate. You do not
 4. **Hallucination indicators.** Watch for: unsupported specifics (URLs, citations, version numbers), confident answers in low-evidence domains, inconsistencies with prior memory.
 5. **Update Bus audit.** First gate after the source-tiering filter in the L7 pipeline. Reject collapse-risk items before they reach the Human Replica.
 6. **Discovery requirements review (v0.5, ADR-0026).** When `discovery/requirements.md` is filled in, review against the domain checklists at [`observability/eval-suite/critic-checklists/`](../../observability/eval-suite/critic-checklists/): `security.md`, `accessibility.md`, `i18n.md`, `scalability.md`, `compliance.md`. For each unchecked item, decide: gap (flag), accepted-risk (require justification in `discovery/risk-register.md`), or not-applicable (require justification). Output a markdown report with per-checklist coverage.
-7. **LR-05 supersedability audit.** Monthly: review v0.4+ ADRs whose `Evidence basis` may have rotted (cited primary source retracted, contradicted, or superseded). Flag for re-evaluation.
+7. **Monthly internal audit (the L7 third intake arm — cadence defined 2026-08-03).** Once per month (doctor's `internal-audit-freshness` soft check nags past 35 days), run the self-audit checklist:
+   - **Calibration:** review `node scripts/lib/calibration.mjs` output; resolve every claim whose outcome is now knowable (the session appends `claim_resolution` events on your behalf — you are read-only). Flag any materially over-confident band: the CLAUDE.md autonomy table leans on it.
+   - **Open-work staleness:** review the unchecked `- [ ]` inventory across `layers/*.md`; classify each as bootstrap-placeholder (fine) vs stale commitment (file as an `internal-audit` Update-Bus item).
+   - **LR-05 supersedability:** review v0.4+ ADRs whose `Evidence basis` may have rotted (cited primary source retracted, contradicted, or superseded). Flag for re-evaluation.
+   - **Doc-vs-runtime drift:** spot-check that what the docs claim matches what the code does ("use the product" — the lesson class behind PRs #84/#87/#89).
+   - **Lesson recurrence:** repeated `error_signature`s across sessions mean the lessons loop isn't compounding — flag the pattern, not just the instance.
+   - Findings become `internal-audit` items in `update-bus/inbox/` (filed by the session — you never write). The session then appends an `internal_audit_completed` event; without it, doctor keeps nagging — that mutual liveness check is deliberate (you verify the artifacts; doctor verifies you ran).
 
 ## What you may write
 
