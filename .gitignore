@@ -2,10 +2,17 @@
 .env
 .env.*
 !.env.example
+!.env.local.example
 *.pem
 *.key
 /secrets/
 credentials.json
+
+# Last Epoch Build Assistant — real extracted game data (rebuilt per patch by
+# tools/data-pipeline; authoritative data is user-owned and not committed).
+# The hand-curated sample dataset under data/sample/ IS committed so the app runs.
+/data/game/
+/tools/data-pipeline/raw/
 
 # Loom memory artifacts (rebuildable from source)
 memory/vector-index/*
@@ -34,11 +41,16 @@ venv/
 .mypy_cache/
 .ruff_cache/
 
-# Build artifacts
-dist/
-build/
-out/
+# Build artifacts (root-anchored so they don't match app source dirs like lib/build/)
+/dist/
+/build/
+/out/
 *.egg-info/
+
+# Next.js (Last Epoch Build Assistant)
+/.next/
+next-env.d.ts
+*.tsbuildinfo
 
 # IDE / editor
 .vscode/

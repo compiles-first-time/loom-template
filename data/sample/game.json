@@ -1,0 +1,269 @@
+{
+  "meta": {
+    "source": "sample",
+    "gameVersion": "hand-curated-illustrative",
+    "note": "NON-AUTHORITATIVE hand-curated sample so the app runs before extraction. Numbers are illustrative, not verified against the live game. Replace with data/game/game.json produced by tools/data-pipeline (Phase 2)."
+  },
+  "classes": [
+    {
+      "id": "sentinel",
+      "name": "Sentinel",
+      "description": "A heavily-armoured melee class built around weapons, shields, and sustain.",
+      "masteries": [
+        {
+          "id": "paladin",
+          "name": "Paladin",
+          "classId": "sentinel",
+          "description": "Holy warrior with healing and fire/holy damage.",
+          "playstyle": "Tanky, self-sustaining, strong for monolith pushing via healing effect and armour stacking."
+        },
+        {
+          "id": "forge-guard",
+          "name": "Forge Guard",
+          "classId": "sentinel",
+          "description": "Summons forged weapons/sentinels and stacks armour.",
+          "playstyle": "Minion-hybrid bruiser; forged weapons scale with melee stats."
+        },
+        {
+          "id": "void-knight",
+          "name": "Void Knight",
+          "classId": "sentinel",
+          "description": "Void-damage melee with time-warp mechanics.",
+          "playstyle": "High single-target and clear via Erasing Strike / Abyssal Echoes; scales void and mana."
+        }
+      ]
+    },
+    {
+      "id": "primalist",
+      "name": "Primalist",
+      "description": "Nature/elemental hybrid with strong minions, totems, and transformations.",
+      "masteries": [
+        {
+          "id": "beastmaster",
+          "name": "Beastmaster",
+          "classId": "primalist",
+          "description": "Commands companions that fight alongside you.",
+          "playstyle": "Companion-scaling minion build; strong survivability, good for hands-off monolith clear."
+        },
+        {
+          "id": "shaman",
+          "name": "Shaman",
+          "classId": "primalist",
+          "description": "Totems and storm/elemental spellcasting.",
+          "playstyle": "Totem stacking (e.g. Storm Totem) for high DPS from a safe distance."
+        },
+        {
+          "id": "druid",
+          "name": "Druid",
+          "classId": "primalist",
+          "description": "Shapeshifting into Werebear/Spriggan/Swarmblade forms.",
+          "playstyle": "Form-based bruiser or swarm/DoT; strong tankiness in Werebear."
+        }
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "id": "erasing-strike",
+      "name": "Erasing Strike",
+      "classId": "sentinel",
+      "masteryId": "void-knight",
+      "description": "A charged void melee strike that releases an Abyssal Echo on hit.",
+      "tags": ["melee", "void", "single-target", "channel"],
+      "nodes": [
+        { "id": "es-mana-efficiency", "name": "Time Legion", "description": "Reduces mana cost and adds echoes.", "maxPoints": 5, "tags": ["mana", "damage"] },
+        { "id": "es-crit", "name": "Devouring Edge", "description": "Increased critical strike chance and multiplier.", "maxPoints": 8, "tags": ["crit", "damage"] },
+        { "id": "es-echo", "name": "Everlasting Wounds", "description": "Abyssal Echoes deal damage over time.", "maxPoints": 4, "tags": ["dot", "void"] }
+      ]
+    },
+    {
+      "id": "warpath",
+      "name": "Warpath",
+      "classId": "sentinel",
+      "description": "A spinning channelled melee attack that hits everything around you.",
+      "tags": ["melee", "channel", "aoe", "clear"],
+      "nodes": [
+        { "id": "wp-mana", "name": "Volatility", "description": "Reduces mana cost as you channel.", "maxPoints": 5, "tags": ["mana"] },
+        { "id": "wp-fire", "name": "Ignivar's Head", "description": "Converts damage to fire and ignites.", "maxPoints": 3, "tags": ["fire", "ailment"] },
+        { "id": "wp-move", "name": "Juggernaut", "description": "Increased movement speed and stability while channelling.", "maxPoints": 4, "tags": ["defence", "movement"] }
+      ]
+    },
+    {
+      "id": "storm-totem",
+      "name": "Storm Totem",
+      "classId": "primalist",
+      "masteryId": "shaman",
+      "description": "Summons a totem that strikes enemies with lightning.",
+      "tags": ["totem", "lightning", "spell", "minion"],
+      "nodes": [
+        { "id": "st-count", "name": "Fury Leap Synergy", "description": "Additional totems can be active.", "maxPoints": 2, "tags": ["minion"] },
+        { "id": "st-shock", "name": "Static", "description": "Totem hits shock enemies.", "maxPoints": 4, "tags": ["ailment", "lightning"] },
+        { "id": "st-crit", "name": "Focus of the Storm", "description": "Totems gain critical strike chance.", "maxPoints": 6, "tags": ["crit", "damage"] }
+      ]
+    }
+  ],
+  "passives": [
+    {
+      "id": "sentinel-base",
+      "name": "Sentinel",
+      "scope": "class",
+      "classId": "sentinel",
+      "nodes": [
+        { "id": "sen-armour", "name": "Juggernaut", "description": "+Armour and +Health.", "maxPoints": 8, "tags": ["defence"] },
+        { "id": "sen-time", "name": "Time and Faith", "description": "Increased damage and mana efficiency.", "maxPoints": 5, "tags": ["damage", "mana"] },
+        { "id": "sen-attunement", "name": "Blademaster", "description": "Melee attack speed and crit.", "maxPoints": 6, "tags": ["damage", "crit"] }
+      ]
+    },
+    {
+      "id": "void-knight-tree",
+      "name": "Void Knight",
+      "scope": "mastery",
+      "classId": "sentinel",
+      "masteryId": "void-knight",
+      "nodes": [
+        { "id": "vk-anomaly", "name": "Anomaly", "description": "Void damage over time on hit.", "maxPoints": 5, "tags": ["void", "dot"] },
+        { "id": "vk-ward", "name": "World Eater", "description": "Gain ward on void damage.", "maxPoints": 4, "tags": ["defence", "ward"] }
+      ]
+    },
+    {
+      "id": "shaman-tree",
+      "name": "Shaman",
+      "scope": "mastery",
+      "classId": "primalist",
+      "masteryId": "shaman",
+      "nodes": [
+        { "id": "sh-totem-dmg", "name": "Storm Bolt", "description": "Increased totem damage.", "maxPoints": 8, "tags": ["damage", "totem"] },
+        { "id": "sh-storm", "name": "Ancestral Guidance", "description": "Totems grant you increased damage and haste.", "maxPoints": 5, "tags": ["buff", "damage"] }
+      ]
+    }
+  ],
+  "affixes": [
+    {
+      "id": "increased-health",
+      "name": "Increased Health",
+      "type": "prefix",
+      "slots": ["helmet", "body-armour", "belt", "boots", "gloves"],
+      "tags": ["defence", "health"],
+      "tiers": [
+        { "tier": 1, "min": 8, "max": 15 },
+        { "tier": 5, "min": 41, "max": 55 },
+        { "tier": 7, "min": 71, "max": 100 }
+      ]
+    },
+    {
+      "id": "void-damage",
+      "name": "Increased Void Damage",
+      "type": "prefix",
+      "slots": ["weapon", "amulet", "ring"],
+      "tags": ["damage", "void"],
+      "tiers": [
+        { "tier": 1, "min": 6, "max": 12 },
+        { "tier": 5, "min": 40, "max": 55 },
+        { "tier": 7, "min": 71, "max": 90 }
+      ]
+    },
+    {
+      "id": "crit-multi",
+      "name": "Increased Critical Strike Multiplier",
+      "type": "suffix",
+      "slots": ["weapon", "amulet", "ring", "gloves"],
+      "tags": ["damage", "crit"],
+      "tiers": [
+        { "tier": 1, "min": 8, "max": 14 },
+        { "tier": 5, "min": 41, "max": 55 },
+        { "tier": 7, "min": 76, "max": 100 }
+      ]
+    },
+    {
+      "id": "all-resist",
+      "name": "All Resistances",
+      "type": "suffix",
+      "slots": ["helmet", "body-armour", "belt", "boots", "gloves", "amulet", "ring", "relic"],
+      "tags": ["defence", "resistance"],
+      "tiers": [
+        { "tier": 1, "min": 4, "max": 8 },
+        { "tier": 5, "min": 24, "max": 32 },
+        { "tier": 7, "min": 43, "max": 55 }
+      ]
+    },
+    {
+      "id": "minion-damage",
+      "name": "Increased Minion Damage",
+      "type": "prefix",
+      "slots": ["helmet", "amulet", "ring", "relic"],
+      "tags": ["damage", "minion"],
+      "tiers": [
+        { "tier": 1, "min": 10, "max": 18 },
+        { "tier": 5, "min": 50, "max": 66 },
+        { "tier": 7, "min": 86, "max": 110 }
+      ]
+    }
+  ],
+  "uniques": [
+    {
+      "id": "exsanguinous",
+      "name": "Exsanguinous",
+      "slot": "body-armour",
+      "baseType": "Silk Robes",
+      "isSet": false,
+      "mods": [
+        { "text": "Converts a % of missing health to ward per second", "min": 10, "max": 15 },
+        { "text": "Increased ward retention" }
+      ],
+      "note": "Cornerstone of low-life ward builds; pairs with Last Steps of the Living.",
+      "tags": ["ward", "defence", "low-life"]
+    },
+    {
+      "id": "the-fang",
+      "name": "The Fang",
+      "slot": "weapon",
+      "baseType": "Dagger",
+      "isSet": false,
+      "mods": [
+        { "text": "Gain a stack on hit that increases minion damage", "min": 1, "max": 3 }
+      ],
+      "note": "Popular for minion/companion Beastmaster builds.",
+      "tags": ["minion", "damage"]
+    },
+    {
+      "id": "red-ring-atlaria",
+      "name": "Red Ring of Atlaria",
+      "slot": "ring",
+      "baseType": "Ring",
+      "isSet": false,
+      "mods": [
+        { "text": "All resistances equal to your fire/cold/lightning resistance sum", "min": 0, "max": 0 },
+        { "text": "Increased elemental damage" }
+      ],
+      "note": "Chase item; trivializes resistance capping and boosts elemental damage.",
+      "tags": ["defence", "resistance", "elemental"]
+    }
+  ],
+  "ailments": [
+    { "id": "ignite", "name": "Ignite", "kind": "damage-over-time", "description": "Fire damage over time; stacks.", "tags": ["fire", "dot"] },
+    { "id": "bleed", "name": "Bleed", "kind": "damage-over-time", "description": "Physical damage over time; stacks.", "tags": ["physical", "dot"] },
+    { "id": "shock", "name": "Shock", "kind": "debuff", "description": "Increases damage the target takes; stacks.", "tags": ["lightning", "debuff"] },
+    { "id": "time-rot", "name": "Time Rot", "kind": "damage-over-time", "description": "Void damage over time from Void Knight sources.", "tags": ["void", "dot"] }
+  ],
+  "idols": [
+    {
+      "id": "idol-totem-dmg",
+      "name": "Ornate Idol of Storms",
+      "size": "3x1",
+      "mods": [{ "text": "Increased Storm Totem damage", "min": 15, "max": 30 }],
+      "tags": ["totem", "damage"]
+    },
+    {
+      "id": "idol-health",
+      "name": "Grand Idol of Vigor",
+      "size": "1x2",
+      "mods": [{ "text": "Increased Health", "min": 20, "max": 40 }],
+      "tags": ["defence", "health"]
+    }
+  ],
+  "blessings": [
+    { "id": "bless-fire-res", "name": "Grand Barrier of Wisdom", "timeline": "Fall of the Outcasts", "description": "Increased fire resistance.", "min": 30, "max": 45 },
+    { "id": "bless-crit-avoid", "name": "Grand Body of Obsidian", "timeline": "The Black Sun", "description": "Increased critical strike avoidance.", "min": 30, "max": 45 },
+    { "id": "bless-ward-gain", "name": "Grand Spirit of Exsanguination", "timeline": "Ending the Storm", "description": "Increased ward gained on hit sources.", "min": 20, "max": 35 }
+  ]
+}

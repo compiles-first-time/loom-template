@@ -1,7 +1,7 @@
 ﻿# CLAUDE.md — Project Index
 
-> **Project:** `loom-template` *(replace at bootstrap)*
-> **Description:** `<one-sentence description>` *(replace at bootstrap)*
+> **Project:** `last-epoch-build-assistant`
+> **Description:** A local-first, LLM-assisted Last Epoch build planner focused on designing monolith-pushing builds.
 > **Loom version:** 1.0.0
 > **Kernel version:** v6
 > **Initialized:** `2026-06-14`
@@ -14,20 +14,18 @@ This file is the **primary entry point** for Claude (chat) and Claude Code into 
 
 ## Project identity
 
-- **What this is:** *(one paragraph — replace at bootstrap)*
-- **Why it exists:** *(the problem this solves)*
-- **Who uses it:** *(intended users — at v1, usually just the author)*
-- **What success looks like:** *(concrete, measurable outcome)*
+- **What this is:** A local-first web app (Next.js, runs on `localhost`) with a pristine build editor, a browsable game-data database, and an LLM assistant (Claude) wired directly into the game data via tool-calling — so it reasons over accurate skills/passives/affixes/uniques rather than guessing.
+- **Why it exists:** Existing planners (lastepochtools, the PoB fork) are strong calculators but have no LLM that understands the data. The goal is a tool that helps *design* and *critique* builds you can push monoliths with.
+- **Who uses it:** The author, running it locally with their own Anthropic API key and their own extracted game data.
+- **What success looks like:** From a stated goal, the assistant proposes a coherent, accurate build (class/mastery, skills, passives, gear targets, defensive layers) and critiques the user's live build — grounded in real game numbers.
 
 ---
 
 ## Current goals
 
-*(replace this list with your current goals; keep it under 5 items)*
-
-1. *(Goal 1)*
-2. *(Goal 2)*
-3. *(Goal 3)*
+1. **Phase 1 (this PR):** shippable local app on the sample dataset — data browser, build editor, and tool-connected assistant, all working end to end.
+2. **Phase 2:** accurate data via `tools/data-pipeline` — extract from the author's game install and normalize into `data/game/game.json` (collaborative; needs real asset samples).
+3. **Phase 3+:** import builds from lastepochtools; deeper assistant iteration; optional approximate EHP/ward estimates.
 
 ---
 
