@@ -31,6 +31,20 @@ For the **minimal-3** mode (per §E.2): HR-Agent + Critic + Memory-Keeper. Trim 
 
 ---
 
+## Base-adjacent agents
+
+Agents adopted via ADR proposal, with runtime contracts established. Design files pending.
+
+| Agent | Runtime | Status |
+|---|---|---|
+| **Research Scout** | [`.claude/agents/research-scout.md`](./.claude/agents/research-scout.md) | ADR-0057 (Proposed) |
+
+**Role:** Scheduled (weekly) update-bus research intake; polls `update-bus/feeds.yaml`, applies source-tier filters, cross-validates, files proposals in `update-bus/inbox/`. Proposal-only, never auto-applies (human-gated per L7). Sibling to EAC for on-demand research.
+
+**Write scope:** `update-bus/inbox/`, `lessons-learned/`, event log.
+
+---
+
 ## Specialist agents (the weft — created on demand)
 
 Specialists live under [`agents/specialists/<name>/`](./agents/specialists/) and are spawned by the EAC for single tasks, then **terminated at end of project lifecycle**. Their lessons-learned persist in [`lessons-learned/`](./lessons-learned/).

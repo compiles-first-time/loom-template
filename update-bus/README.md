@@ -78,9 +78,9 @@ Per [§B.8 of the spec](../spec/loom-spec-v0.1-full.md):
 
 The markdown frontmatter shape above is formalized in [`schema.json`](./schema.json) (JSON Schema draft 2020-12), per [ADR-0016](../adr/0016-update-bus-stub.md). Required fields: `id`, `source`, `proposed_by`, `date`, `affects`, `risk`, `collapse_risk`. Optional sub-objects fill in as items move through the pipeline: `source_tier`, `critic_review`, `human_replica_recommendation`, `user_decision`.
 
-## Receiver API (v0.2 stub)
+## Receiver (v0.3, ADR-0057)
 
-v0.2 ships the **wire-up**, not live feed polling. The no-op tick lives at [`../scripts/update-bus-tick.sh`](../scripts/update-bus-tick.sh) and [`../scripts/update-bus-tick.ps1`](../scripts/update-bus-tick.ps1) (wrappers around [`../scripts/lib/update-bus-tick.mjs`](../scripts/lib/update-bus-tick.mjs)). It reports inbox/archive counts and validates `schema.json` parses.
+The tick at [`../scripts/update-bus-tick.sh`](../scripts/update-bus-tick.sh) / [`../scripts/update-bus-tick.ps1`](../scripts/update-bus-tick.ps1) (wrappers around [`../scripts/lib/update-bus-tick.mjs`](../scripts/lib/update-bus-tick.mjs)) now **validates every `inbox/*.md` against `schema.json`** (required fields, id pattern, enums, types — malformed items are reported and not surfaced), **surfaces the pending-Critic queue**, emits an `update_bus_tick` audit event, and keeps the counts report. It exits non-zero on malformed items. It still **never applies or archives anything** — that stays behind user approval (Rule 19). Feed discovery itself is the `research-scout` agent's job ([`../.claude/agents/research-scout.md`](../.claude/agents/research-scout.md), weekly cadence, config in [`feeds.yaml`](./feeds.yaml)).
 
 Run it manually:
 
