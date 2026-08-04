@@ -42,8 +42,12 @@ async function main() {
     actual = "";
   }
 
+  // Compare content, not bytes: with `core.autocrlf true` (the git-for-Windows
+  // default) a fresh clone checks settings.json out as CRLF while `expected`
+  // is always LF — a byte compare reports phantom "drift" on every fresh
+  // Windows clone (hit live 2026-08-03; doctor hard-failed on a clean repo).
   if (checkOnly) {
-    if (actual === expected) {
+    if (normalizeEol(actual) === normalizeEol(expected)) {
       process.stdout.write("ok: .claude/settings.json mcpServers matches tools/mcp-servers/config.yaml\n");
       process.exit(0);
     }
@@ -53,13 +57,17 @@ async function main() {
     process.exit(1);
   }
 
-  if (actual === expected) {
+  if (normalizeEol(actual) === normalizeEol(expected)) {
     process.stdout.write("no change: .claude/settings.json mcpServers already up to date\n");
     return;
   }
 
   await fs.writeFile(JSON_PATH, expected, "utf8");
   process.stdout.write(`wrote .claude/settings.json (mcpServers block regenerated from tools/mcp-servers/config.yaml)\n`);
+}
+
+export function normalizeEol(s) {
+  return String(s).replace(/\r\n/g, "\n");
 }
 
 // ── YAML parser for the known schema ─────────────────────────────────────
