@@ -26,3 +26,8 @@ First monthly internal audit, finding 3: promised in layers/L2-agents.md ("orche
 ## Human Replica recommendation
 
 ## User decision
+
+verdict: approve
+decided_by: Nick Noel
+decided_at: 2026-08-04
+note: Wired the mechanical floor (scripts/lib/admission-check.mjs, 20 tests) for all three ADR-0008 axes; distractor axis explicitly deferred to Critic judgment (no embedding index). ADR-0008/critic.md/L2 reference it.

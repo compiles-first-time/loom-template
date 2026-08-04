@@ -91,7 +91,7 @@ Before an agent runs, its **assembled context** is checked by the Critic for:
 2. **Source-tier compliance** — retrieved items come from acceptable source tiers ([ADR-0007](../adr/0007-content-trust-boundary.md); tier definitions in [L7](./L7-extension.md#source-tiering)).
 3. **Obvious-pattern check** — screens for obvious prompt-injection and obvious distractor characteristics (near-duplicate but off-topic chunks).
 
-Failures **escalate**; they do not silently run.
+Failures **escalate**; they do not silently run. The mechanical floor of all three axes is implemented at [`../scripts/lib/admission-check.mjs`](../scripts/lib/admission-check.mjs) (ADR-0008 §Implementation); the Critic's judgment covers the subtle cases the floor defers (obfuscated injection, semantic distractors — which need the not-yet-built embedding index).
 
 ## Trust boundary protocol
 
