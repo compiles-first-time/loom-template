@@ -133,7 +133,7 @@ Use `Bash` with a single-line `echo` redirect (POSIX) or `Add-Content` (PowerShe
 
 *(list ADRs in `Proposed` status; once `Accepted` they fall off this list)*
 
-- *(none — ADR-0002 and ADR-0034 accepted 2026-07-07; no ADRs currently in `Proposed` status)*
+- [ADR-0057](./adr/0057-research-scout-update-bus-intake.md) — Research Scout: automated Update-Bus intake (proposal-only, human-gated). Awaiting Critic → Human Replica → user review; the weekly trigger stays un-armed until accepted.
 
 **Recent ADRs (Accepted):** 0003–0047 — retrieval/context batch, v0.2 enforcement runtime, v0.3–v1.0 governance, Observatory (0039–0041), verifier gates (0044), model routing (0045), test-case registry + destructive-action hooks (0046–0047); full index in [`adr/`](./adr/) · **0048–0053 (north star: model-agnostic spec + adapters; native-first policy; LangGraph 2nd adapter; OTel audit; durable execution; agent reputation)** · **0054–0056 (proof-first program; shared lessons service; deliberation panel)**. 0031 (handoff policy) retired 2026-08-02.
 

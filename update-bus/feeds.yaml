@@ -1,0 +1,40 @@
+# Update Bus research feeds — polled weekly by the research-scout agent (ADR-0057).
+#
+# Rules (L7 §Source tiering + ADR-0009):
+#   - Tier 1–3 sources ONLY. Never add Rejected-tier sources (forums, social
+#     media, Medium/Substack, general newsletters, undated/anonymous).
+#   - expected_tier is a PRIOR for the feed, not a verdict — the scout tiers
+#     every individual item at the filter.
+#   - Every url must be a real, verified feed. If you cannot verify a URL,
+#     leave a "TODO:" placeholder — never invent one.
+#
+# All non-TODO URLs below were fetched live and confirmed valid on 2026-08-03.
+
+max_proposals_per_run: 5
+
+feeds:
+  - url: "http://export.arxiv.org/rss/cs.AI"
+    expected_tier: 1
+    type: arxiv
+    keywords: [agent, orchestration, verification, evaluation, retrieval, RAG, governance, constitution]
+
+  - url: "http://export.arxiv.org/rss/cs.MA"
+    expected_tier: 1
+    type: arxiv
+    keywords: [multi-agent, coordination, consensus, deliberation, topology, supervisor]
+
+  - url: "https://github.com/langchain-ai/langgraphjs/releases.atom"
+    expected_tier: 1            # official release notes of a tracked dependency (ADR-0050 adapter)
+    type: github-releases
+    keywords: [breaking change, security, checkpoint, interrupt, deprecation]
+
+  - url: "https://opentelemetry.io/blog/index.xml"
+    expected_tier: 1            # official CNCF project blog (ADR-0051 audit target)
+    type: vendor-blog
+    keywords: [logs data model, OTLP, semantic conventions, GenAI, collector]
+
+  # TODO: official model-vendor release feed (e.g. an Anthropic/provider changelog RSS)
+  #   — no public RSS endpoint verified yet; add only after confirming the URL resolves.
+  # TODO: security-advisory feed for tracked dependencies (NVD publishes JSON data
+  #   feeds, not RSS; GitHub advisories lack a simple per-ecosystem feed). Until a
+  #   feed is verified, the ADR-0050 security-preconditions review covers this manually.
