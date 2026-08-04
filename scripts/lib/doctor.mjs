@@ -43,6 +43,7 @@ async function main() {
   await checkDiscoveryAuthored();
   await checkLessonSchema();
   await checkHandoffFreshness();
+  await checkInternalAuditFreshness();
   await checkPlaybookFreshness();
   await checkSkeleton();
   await checkPs1Bom();
@@ -418,6 +419,47 @@ async function checkHandoffFreshness() {
       `${milestoneCommits.length} milestone commits since latest handoff (${latest}). Consider writing a new handoff per ADR-0031.`);
   }
   soft("handoff-freshness", true, `latest handoff ${latest} (${daysSince} days old; ${milestoneCommits.length} milestone commits since)`);
+}
+
+// Who monitors the monitors: doctor (mechanical) verifies the Critic's
+// monthly internal audit (L7 cadence; judgment-based) actually RUNS, and the
+// audit reviews what doctor can't judge — open-work staleness, confidence
+// calibration (scripts/lib/calibration.mjs), doc-vs-runtime drift. Neither
+// layer grades itself; each checks the other's liveness/output (Rule 19).
+async function checkInternalAuditFreshness() {
+  const eventDir = path.join(ROOT, "memory", "event-log");
+  let lastAudit = null;
+  if (existsSync(eventDir)) {
+    const files = (await fs.readdir(eventDir))
+      .filter((f) => /^\d{4}-\d{2}-\d{2}\.jsonl$/.test(f))
+      .sort()
+      .reverse();
+    for (const f of files) {
+      const text = await fs.readFile(path.join(eventDir, f), "utf8");
+      if (text.includes('"event_type":"internal_audit_completed"')) {
+        lastAudit = f.replace(".jsonl", "");
+        break;
+      }
+    }
+  }
+  let boxes = 0;
+  const layersDir = path.join(ROOT, "layers");
+  if (existsSync(layersDir)) {
+    for (const f of (await fs.readdir(layersDir)).filter((x) => x.endsWith(".md"))) {
+      const t = await fs.readFile(path.join(layersDir, f), "utf8");
+      boxes += (t.match(/^- \[ \]/gm) || []).length;
+    }
+  }
+  if (!lastAudit) {
+    return soft("internal-audit-freshness", false,
+      `no internal_audit_completed event on record — the L7 monthly Critic audit has never run (${boxes} unchecked open-work boxes await its review)`);
+  }
+  const days = Math.floor((Date.now() - new Date(lastAudit + "T00:00:00Z").getTime()) / 86400000);
+  if (days > 35) {
+    return soft("internal-audit-freshness", false,
+      `last internal audit ${lastAudit} (${days}d ago) — monthly cadence overdue (${boxes} unchecked open-work boxes in inventory)`);
+  }
+  soft("internal-audit-freshness", true, `last internal audit ${lastAudit} (${days}d ago); ${boxes} unchecked open-work boxes in inventory`);
 }
 
 async function checkPlaybookFreshness() {

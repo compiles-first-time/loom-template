@@ -20,6 +20,8 @@ OTel GenAI alignment satisfies Kernel Rules 22–23 simultaneously. v0.2 ships t
 
 ## Dashboard signals
 
+> **Honesty note (2026-08 internal audit):** these are **target** signals. The shipped Observatory *displays* live state read-only (L9: it does not modify L0–L8 artifacts); the threshold **actions** below (restart/alert/escalate/archive) are integration targets, not shipped automation. Rows become "shipped" only when a real actuator exists.
+
 | Signal | Threshold | Action |
 |---|---|---|
 | Agent heartbeat | > 60s silent | Restart agent |
@@ -80,6 +82,20 @@ A `PreToolUse` / `PostToolUse` hook sees the tool name and arg payload. It does 
 The combined log satisfies Rule 22 in spirit (every action has provenance; every non-trivial claim has confidence) while being honest about what each emitter can actually fill.
 
 **Non-optional.** Projects whose hooks don't emit the mechanical subset are not Loom v0.2 compliant.
+
+### Claim resolution — scoring confidence against outcomes (added 2026-08-03)
+
+Confidence values are only meaningful if they are **calibrated** — self-reported confidence is unreliable on its own (Kadavath et al., above). When a claim's outcome becomes knowable, the monthly internal audit (Critic checklist §7) records it:
+
+```json
+{ "timestamp": "<iso>", "event_type": "claim_resolution",
+  "resolves": "<claim timestamp>|<claim agent>", "outcome": true,
+  "resolved_by": "<who>", "note": "<what settled it>" }
+```
+
+Two rules from the first audit's findings: **batch-appended claims must carry unique timestamps** (a shared shell `$TS` across several claims makes them indistinguishable), and where a collision already exists, `resolves` must use the disambiguated form `<timestamp>|<agent>|<claim-hash>` (`claimKeyHashed()` in `scripts/lib/calibration.mjs`) — an ambiguous base-key resolution deliberately resolves **nothing**.
+
+`scripts/lib/calibration.mjs` scores resolved claims per confidence band (observed accuracy + Brier score) and exits non-zero when a band with ≥5 resolutions is materially over-confident — because the CLAUDE.md autonomy thresholds lean on those bands being real.
 
 ### Loop cost summary — emitted at completion of iterative LLM patterns
 
