@@ -27,7 +27,9 @@ export const BANDS = [
 ];
 
 export function claimKey(ev) {
-  return `${ev.timestamp}|${ev.agent || "unknown"}`;
+  // Degrade, never throw, on a null/non-object record (dirty log lines happen).
+  const e = ev && typeof ev === "object" ? ev : {};
+  return `${e.timestamp}|${e.agent || "unknown"}`;
 }
 
 // Batch-appended claims can share one timestamp+agent (found by the first

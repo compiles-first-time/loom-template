@@ -148,7 +148,7 @@ A platform this specialist targets must have a `collect-credentials.{sh,ps1}` en
 ## References
 
 - 2026-06-07 architect session (this decision)
-- [`handoff/2026-06-07-credential-agent-and-sovereign-forge.md`](../handoff/2026-06-07-credential-agent-and-sovereign-forge.md)
+- `handoff/2026-06-07-credential-agent-and-sovereign-forge.md` *(handoff snapshots retired 2026-08-02, ADR-0031; recoverable from git history)*
 - Lesson 2026-05-22 (`browser-gated-provisioning-friction.md`)
 - ADR-0035 (provisioning), ADR-0036 (credential collection)
 - Alpaca Trading API — account endpoint `GET /v2/account`, paper base `https://paper-api.alpaca.markets` (https://docs.alpaca.markets/reference/getaccount)

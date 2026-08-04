@@ -46,7 +46,9 @@ export const ADMITTED_TIERS = new Set(["1", "2", "3", "internal"]);
  * @returns {{decision:"admit"|"escalate", findings:Array, checked:string[], estimated_tokens:number}}
  */
 export function admissionCheck(ctx = {}) {
-  const { contextText = "", items = [], budget = null } = ctx;
+  // Degrade, never throw, on a null/non-object ctx (dirty input must not crash).
+  const safeCtx = ctx && typeof ctx === "object" ? ctx : {};
+  const { contextText = "", items = [], budget = null } = safeCtx;
   const findings = [];
   const checked = [];
 

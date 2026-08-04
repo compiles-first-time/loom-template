@@ -1,0 +1,5 @@
+# Kernel integrity pin (ADR-0058). SHA-256 of constitution/kernel-v6.md, EOL-normalized (\r\n -> \n).
+# RE-PINNING IS A DELIBERATE CONSTITUTIONAL ACT: only after a human, consent-based kernel
+# amendment recorded in an ADR with override-authority sign-off (Rule 19). Never re-pin to
+# silence a mismatch you did not intend. Regenerate: node scripts/lib/kernel-integrity.mjs --repin
+0f8d29c62b142e722e9d15098e71d861e82264c3ef8534392388b9a4472c2342

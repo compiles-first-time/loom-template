@@ -30,7 +30,9 @@ Rules 1, 2, 8, 19, 20, 22, 23 — summarized in [`../constitution/kernel-v6.md`]
 | Soft warning | Advisory rule violation |
 | Escalation | Ambiguous case → human approver queue |
 
-> Destructive operations (file deletion, force-push, schema drops) additionally require an explicit confirmation gate, hook-enforced per [ADR-0047](../adr/0047-hook-enforced-destructive-action-confirmation.md) (Kernel Rule 20). On model-agnostic hosts, this constitutional policy is enforced at the host's pre-action seam by a Loom adapter per [ADR-0048](../adr/0048-north-star-model-agnostic-spec-and-adapters.md) — hard where the host exposes a real seam, advisory + logged otherwise.
+> Destructive operations (file deletion, force-push, schema drops) additionally require an explicit confirmation gate, hook-enforced per [ADR-0047](../adr/0047-hook-enforced-destructive-action-confirmation.md) (Kernel Rule 20).
+>
+> **Kernel immutability is enforced two ways** (Rule 19; the kernel is never overwritten by code): the destructive-guard hook **denies** edits to `constitution/kernel-v6.md` (prevention, ADR-0047), and `loom doctor`'s `kernel-integrity` hard check **detects** any change vs. the committed hash pin (`constitution/kernel-v6.sha256`), failing the build until a human re-pins deliberately alongside an ADR + override-authority sign-off ([ADR-0058](../adr/0058-kernel-integrity-pin.md)). On model-agnostic hosts, this constitutional policy is enforced at the host's pre-action seam by a Loom adapter per [ADR-0048](../adr/0048-north-star-model-agnostic-spec-and-adapters.md) — hard where the host exposes a real seam, advisory + logged otherwise.
 
 ## Project-local overrides
 

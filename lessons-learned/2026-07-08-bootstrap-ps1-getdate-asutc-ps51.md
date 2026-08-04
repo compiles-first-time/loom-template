@@ -60,4 +60,4 @@ Re-ran; bootstrap completed all steps (event log `2026-07-09.jsonl` created, MCP
 - `scripts/bootstrap.ps1:127` (fixed in this project's copy 2026-07-08)
 - Sibling POSIX path `scripts/bootstrap.sh` — unaffected
 - Kindred Windows-portability lesson: [2026-07-06-fileurl-to-path-windows-drive-letter](./2026-07-06-fileurl-to-path-windows-drive-letter.md)
-- Phase-1 kickoff: [handoff/2026-07-08-phase1-uipath-3d-visualizer.md](../handoff/2026-07-08-phase1-uipath-3d-visualizer.md)
+- Phase-1 kickoff: `handoff/2026-07-08-phase1-uipath-3d-visualizer.md` *(handoff snapshots retired 2026-08-02, ADR-0031; recoverable from git history)*
