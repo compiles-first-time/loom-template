@@ -31,11 +31,34 @@ export function toAnyValue(v) {
   return { stringValue: JSON.stringify(v) };
 }
 
-function attributesFrom(ev) {
+// GenAI semantic-convention aliases (ADR-0051 follow-up, inbox item
+// otel-genai-semconv-alignment). Events that carry LLM-call fields under Loom's
+// own key names (loop_cost_summary, session_token_usage) ALSO get the standard
+// OTel gen_ai.* names so GenAI-aware backends recognize them. ADDITIVE: the
+// original keys stay, so no existing backend breaks, and a semconv rename
+// (the convention was mid-relocation as of 2026-08) is a one-line edit here.
+// Names per the OTel GenAI semconv as of the 2026-05 blog `[otel][M]`.
+export const GENAI_ALIASES = new Map([
+  ["model", "gen_ai.request.model"],
+  ["input_tokens", "gen_ai.usage.input_tokens"],
+  ["output_tokens", "gen_ai.usage.output_tokens"],
+  ["estimated_input_tokens", "gen_ai.usage.input_tokens"],
+  ["estimated_output_tokens", "gen_ai.usage.output_tokens"],
+]);
+
+export function attributesFrom(ev) {
   const out = [];
+  const seenAlias = new Set();
   for (const [k, v] of Object.entries(ev)) {
     if (SKIP_KEYS.has(k)) continue;
     out.push({ key: k, value: toAnyValue(v) });
+    const alias = GENAI_ALIASES.get(k);
+    // Add the gen_ai.* alias once (first non-null source wins, so estimated_*
+    // doesn't overwrite an exact count already emitted).
+    if (alias && !seenAlias.has(alias) && v != null && v !== "") {
+      out.push({ key: alias, value: toAnyValue(v) });
+      seenAlias.add(alias);
+    }
   }
   return out;
 }

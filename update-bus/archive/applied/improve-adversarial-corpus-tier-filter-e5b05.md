@@ -25,3 +25,8 @@ Audit ranked this the highest-leverage improvement candidate: the harness machin
 ## Human Replica recommendation
 
 ## User decision
+
+verdict: approve
+decided_by: Nick Noel
+decided_at: 2026-08-04
+note: Built the obvious-reject tier floor (source-tier-classifier.mjs, 17 tests) + a labeled adversarial corpus that measures the floor AND documents the judgment-only attack classes (disguised host, injection-in-abstract, fabricated benchmark). Wired into scout step 4. NIST AI RMF Measure grounding noted; primary-source pull happens in the NIST/OWASP item.

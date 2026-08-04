@@ -46,7 +46,7 @@ The architecture is documented as **spec-as-codebase**. Each layer has its own f
 | L6 — Observability & eval | [layers/L6-observability.md](./layers/L6-observability.md) | When debugging or shipping |
 | L7 — Self-extension / Update Bus | [layers/L7-extension.md](./layers/L7-extension.md) | When the system changes itself |
 | L8 — Discovery | [layers/L8-discovery.md](./layers/L8-discovery.md) | When onboarding or auditing project state |
-| L9 — Observatory | [layers/L9-observatory.md](./layers/L9-observatory.md) | When monitoring operations or reviewing Update Bus proposals |
+| L9 — Observatory | [layers/L9-observatory.md](./layers/L9-observatory.md) | When monitoring operations (12 live panels; no Update-Bus review panel yet) |
 
 Quick agent reference: [`AGENTS.md`](./AGENTS.md).
 Canonical spec: [`loom-spec.md`](./loom-spec.md) (executive) → [`spec/loom-spec-v0.1-full.md`](./spec/loom-spec-v0.1-full.md) (complete).

@@ -25,3 +25,8 @@ Audit finding 5: v0.5 closed long ago (project at v1.0.0); the spec has zero hit
 ## Human Replica recommendation
 
 ## User decision
+
+verdict: approve
+decided_by: Nick Noel
+decided_at: 2026-08-04
+note: Retired the mirror promise: layers/ is the canonical spec-as-codebase surface; monolith B.9 mirror not required.

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Unit tests for observatory/lib/otel.mjs — the OTLP mapper (ADR-0051).
 
-import { toOtelLogRecord, toOtlpLogs, toUnixNano, toAnyValue, severityFor } from "./otel.mjs";
+import { toOtelLogRecord, toOtlpLogs, toUnixNano, toAnyValue, severityFor, attributesFrom, GENAI_ALIASES } from "./otel.mjs";
 
 let passed = 0;
 let failed = 0;
@@ -63,6 +63,26 @@ console.log("\ntoOtlpLogs — envelope");
   assert(payload.resourceLogs[0].scopeLogs[0].scope.version === "9.9.9", "scope version passthrough");
   assert(payload.resourceLogs[0].scopeLogs[0].logRecords.length === 1, "one logRecord per event");
   assert(toOtlpLogs([]).resourceLogs[0].scopeLogs[0].logRecords.length === 0, "empty events → empty logRecords");
+}
+
+console.log("\nattributesFrom — GenAI semconv aliases (additive)");
+{
+  const attrs = attributesFrom({ event_type: "loop_cost_summary", model: "claude-sonnet-5", estimated_input_tokens: 500, estimated_output_tokens: 200 });
+  const keys = attrs.map((a) => a.key);
+  assert(keys.includes("model") && keys.includes("gen_ai.request.model"), "model → additive gen_ai.request.model (original kept)");
+  assert(keys.includes("gen_ai.usage.input_tokens") && keys.includes("gen_ai.usage.output_tokens"), "estimated_* → gen_ai.usage.* aliases");
+  const genaiIn = attrs.find((a) => a.key === "gen_ai.usage.input_tokens");
+  assert(genaiIn.value.intValue === "500", "alias carries the same typed value");
+
+  const exact = attributesFrom({ event_type: "session_token_usage", model: "m", input_tokens: 10, output_tokens: 20, estimated_input_tokens: 999 });
+  const inAliases = exact.filter((a) => a.key === "gen_ai.usage.input_tokens");
+  assert(inAliases.length === 1 && inAliases[0].value.intValue === "10", "first source wins — exact input_tokens, not estimated, and emitted once");
+
+  const none = attributesFrom({ event_type: "tool_call", tool: "Read" });
+  assert(none.every((a) => !a.key.startsWith("gen_ai.")), "non-LLM events get no gen_ai attributes");
+  const nullModel = attributesFrom({ event_type: "loop_cost_summary", model: "" });
+  assert(nullModel.every((a) => a.key !== "gen_ai.request.model"), "empty value does not emit an alias");
+  assert(GENAI_ALIASES.get("output_tokens") === "gen_ai.usage.output_tokens", "alias map exported for maintainers");
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

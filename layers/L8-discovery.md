@@ -69,4 +69,4 @@ Every assertion in `requirements.md` and `risk-register.md` is supersedable by e
 - [ ] Critic domain checklists + skeleton-amendment proposals (PR-O / ADR-0026)
 - [ ] Discovery gate on deploy.sh (PR-O / ADR-0026)
 - [ ] HR consumes requirements.md to generate work items (PR-R / ADR-0029)
-- [ ] Mirror this layer's substantive content into `spec/loom-spec-v0.1-full.md` §B.9 when v0.5 closes
+- [x] ~~Mirror this layer's substantive content into `spec/loom-spec-v0.1-full.md` §B.9 when v0.5 closes~~ — **retired 2026-08-04** (inbox item `audit-l8-spec-mirror-missing-c3d03`). Superseded by the spec-as-codebase convention: per CLAUDE.md, the architecture *is* documented as per-layer files under `layers/`, with the monolithic `spec/loom-spec-v0.1-full.md` as a secondary artifact. This layer doc is the canonical Discovery surface; a duplicate §B.9 mirror would create exactly the two-copies-drift this project keeps fixing. The monolith is not required to grow a Discovery section.

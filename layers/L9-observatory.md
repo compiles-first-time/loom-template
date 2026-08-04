@@ -22,28 +22,34 @@ Single-process Node.js HTTP server at `localhost:4040`. No external dependencies
 
 The JSONL event stream the Observatory consumes is the same audit stream targeted for OpenTelemetry OTLP export ([ADR-0051](../adr/0051-opentelemetry-otlp-audit.md)); the Observatory reads it locally while OTLP carries it to external backends.
 
-## Projections
+## Projections → panels
 
-| Projection | Source | Dashboard panel |
+> **Reconciled to shipped runtime 2026-08-04** (inbox item `audit-l9-openwork-checklist-stale-d4c04`). The redesign (PR #85 → live-or-empty PR #87) reorganized the panel set; this table now reflects what the client at `observatory/public/js/app.mjs` actually renders. Where a projection exists in the aggregator but no panel renders it, that is stated — per the capability-claims discipline ([lesson 2026-08-04](../lessons-learned/2026-08-04-capability-claims-must-move-with-the-feature.md)), a claimed capability with no UI surface must say so.
+
+| Projection (aggregator) | Source | Rendered by panel |
 |---|---|---|
-| Sessions | session_start, session_end, tool_call | Overview, Agents |
-| Agents | specialist_spawned/retired, manifest.yaml | Agents |
-| Tasks | work-graph.json, task-ledger.md | Tasks |
-| Cost | loop_cost_summary events | Cost |
-| Failures | tool_result (exit!=0), lessons-learned/ | Failures |
-| Deploys | deployment_* events | Deploys |
-| Compliance | constitution_check_missing, destructive_op, oauth_preference_hint | Compliance |
-| Update Bus | update-bus/inbox/*.md | Update Bus |
+| Sessions / runs | session_start, session_end, tool_call | Overview, Runs |
+| Requirements | test_case events (ADR-0046 register) | Requirements |
+| Decisions | deliberation events (ADR-0056) | Decisions |
+| Agents / reputation | reputation_event, specialist_spawned/retired | Agents |
+| Compliance / governance | destructive_op, constitution_check_missing | Governance |
+| Constitution | kernel-v6 + local-rules (+ Rule-20 citations from destructive_op) | Constitution |
+| Kanban / work | ticket, ticket_deleted events | Work |
+| Models & budget | routing config + tokens events | Models & Budget |
+| Cost | tokens / loop_cost_summary events | Cost |
+| Activity | the full event feed | Activity |
+| Update Bus | update-bus/inbox/*.md | **backend only — no panel renders it** (aggregator tracks the inbox; the router serves the ADR-0041 decision endpoint; review via files, `scripts/update-bus-tick.sh`, or chat) |
 
 ## Redaction boundary
 
 All data passes through `observatory/lib/redactor.mjs` before reaching the browser. The redactor wraps `scripts/lib/secret-patterns.mjs` (HIGH-confidence token patterns) and adds email, IP, and user-path scrubbing. No raw event data bypasses this module.
 
-## Panels (10)
+## Panels (12, as shipped)
 
-Overview, Agents, Tasks, Cost, Failures, Deploys, Compliance, Update Bus, Testing, Systems.
+Overview, Runs, Requirements, Decisions, Agents (group *Monitor*); Governance, Constitution (*Govern*); Work, Models & Budget, Cost, Activity, Glossary (*Operate*).
 
-The Testing panel surfaces the requirements & exceptions test-case registry ([ADR-0046](../adr/0046-requirements-exceptions-testcase-registry.md)); pass / fail rollups per requirement come from that register.
+- The **Requirements** panel surfaces the requirements & exceptions test-case registry ([ADR-0046](../adr/0046-requirements-exceptions-testcase-registry.md)); pass / fail rollups per requirement come from that register, and register cases also decompose onto the **Work** board (ADR-0057-era kanban).
+- **Not carried over from the pre-redesign UI:** standalone Tasks, Failures, Deploys, Systems, and **Update Bus** panels. Their data (where the aggregator still tracks it) surfaces inside Activity/Governance/Work or, for the Update Bus, has no UI surface yet — a candidate follow-up, not a shipped capability.
 
 ## Relationship to other layers
 
@@ -55,8 +61,9 @@ The Testing panel surfaces the requirements & exceptions test-case registry ([AD
 
 ## Open work
 
-- [ ] PR-2: Wire all 8 projections + Overview panel with live data
-- [ ] PR-3–7: Remaining panels (Agents, Tasks, Cost, Failures, Deploys, Compliance, Update Bus, Testing, Systems)
-- [ ] PR-8: Dark/light theme toggle, responsive layout, per-model cost rates
+- [x] Wire projections + panels with live data — shipped in the redesign (PR #85) and made live-or-empty (PR #87); all 12 panels above render from real aggregator state
+- [x] Dark/light theme toggle, responsive layout, per-model cost rates — shipped (theme toggle + Models & Budget panel)
+- [ ] **Update Bus review surface** — the backend integration exists (aggregator inbox tracking + ADR-0041 decision endpoint) but no panel renders it; a review panel is the main missing capability (surfaced by the 2026-08 internal audit)
+- [ ] Cost accuracy — token accounting overstates spend (ticket `OB-COST-01`); the Cost/Models panels are only trustworthy once fixed
 - [ ] v2: Agent-to-agent message visualization (blocked on A2A/ACP implementation)
 - [ ] v2: RAGAS faithfulness scoring display (blocked on eval runner implementation)

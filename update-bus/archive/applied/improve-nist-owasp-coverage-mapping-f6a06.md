@@ -25,3 +25,8 @@ Audit ranked #2 by leverage/effort: cheap cross-referencing exercise, feeds exis
 ## Human Replica recommendation
 
 ## User decision
+
+verdict: approve
+decided_by: Nick Noel
+decided_at: 2026-08-04
+note: Coverage matrix built at observability/eval-suite/critic-checklists/ai-standards-coverage.md against OWASP LLM Top 10:2025 (genai.owasp.org, verified) + NIST AI RMF 4 functions (airc.nist.gov, verified). Covered/Partial across the board, zero uncovered Govern rows; top gap is LLM08 gap-on-build (embedding index). Wired into critic discovery-review + monthly audit.
