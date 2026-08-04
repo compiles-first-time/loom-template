@@ -26,3 +26,8 @@ Audit finding 4: the ledger has sat at "(none yet)" through weeks of real subage
 ## Human Replica recommendation
 
 ## User decision
+
+verdict: approve
+decided_by: Nick Noel
+decided_at: 2026-08-04
+note: Formally retired: superseded by ADR-0029 work-graph regeneration; L5 + task-ledger docs reconciled.

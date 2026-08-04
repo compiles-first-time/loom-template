@@ -158,7 +158,7 @@ The exploration budget is an **exit condition** and must be declared per [LR-06]
 ## Open work for this layer
 
 - [x] Wire the session-as-supervisor to populate the progress ledger via the Stop hook (v0.2, [ADR-0011](../adr/0011-claude-code-enforcement-runtime.md))
-- [ ] Wire subagents to update the Task Ledger on dispatch / completion (PR-2 of v0.2)
+- [x] ~~Wire subagents to update the Task Ledger on dispatch / completion (PR-2 of v0.2)~~ — **superseded 2026-08-04** (inbox item `audit-task-ledger-wiring-never-built-b2e02`). The per-dispatch-update model was replaced by [ADR-0029](../adr/0029-hr-work-graph.md): `orchestration/task-ledger.md` is a **regenerated mirror** of `orchestration/work-graph.json` (HR work-graph generator), driven by `discovery/requirements.md`. In loom-template itself the ledger stays empty because the template is not a product build with a requirements doc; a project built on Loom populates it via HR. The live per-run execution record is the Observatory's Runs/Work panels + the event log, not this ledger.
 - [ ] Implement long-running task heartbeat
 - [ ] Define checkpoint cadence ("closing the books" interval) beyond once-per-session
 - [ ] Wire just-in-time context assembly + `context_budget:` enforcement per [ADR-0004](../adr/0004-context-budget.md)

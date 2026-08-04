@@ -25,3 +25,8 @@ Audit finding 6: a checklist that contradicts its own file ten lines up trains r
 ## Human Replica recommendation
 
 ## User decision
+
+verdict: approve
+decided_by: Nick Noel
+decided_at: 2026-08-04
+note: Reconciled L9 projections/panels/open-work + CLAUDE.md layer map to the 12 shipped panels; Update-Bus-panel absence stated explicitly.
