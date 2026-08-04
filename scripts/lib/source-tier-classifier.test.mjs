@@ -18,6 +18,9 @@ console.log("\nunit — obvious rejects");
   assert(classifySourceTier({ url: "https://x.substack.com/p/y", date: "2026-01-01", author: "a" }).tier === "rejected", "substack → rejected");
   assert(classifySourceTier({ url: "https://e.example/p", date: null, author: null }).tier === "rejected", "undated+anon → rejected");
   assert(classifySourceTier({ url: "https://e.example/p", date: "2026-01-01", author: null }).tier === null, "dated-but-anon is NOT auto-rejected (judge it)");
+  // flag 6 (2026-08-04 review): a recognized Tier-1 host must win over the
+  // undated+anon heuristic — no false-reject of arxiv/NVD on missing metadata.
+  assert(classifySourceTier({ url: "https://arxiv.org/abs/1", date: null, author: null }).tier === "1", "tier-1 host with no date+author → 1, NOT rejected");
   assert(REJECTED_HOST_PATTERNS.length >= 10 && TIER1_HOST_PATTERNS.length >= 5, "pattern sets populated");
 }
 

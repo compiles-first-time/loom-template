@@ -53,7 +53,12 @@ export function admissionCheck(ctx = {}) {
   // Axis 1 — budget compliance (ADR-0004).
   checked.push("budget");
   const estimated = estimateTokens(contextText);
-  if (typeof budget === "number" && budget > 0 && estimated > budget) {
+  if (budget != null && (typeof budget !== "number" || Number.isNaN(budget))) {
+    // A malformed budget (e.g. an unparsed string) must escalate, not silently
+    // disable the axis — an undeclared budget is `null`, not "12000" (flag 7).
+    findings.push({ axis: "budget", severity: "escalate",
+      detail: `context_budget is present but not a number (${JSON.stringify(budget)}) — cannot verify budget compliance` });
+  } else if (typeof budget === "number" && budget > 0 && estimated > budget) {
     findings.push({ axis: "budget", severity: "escalate",
       detail: `assembled context ~${estimated} tokens exceeds declared context_budget ${budget}` });
   }

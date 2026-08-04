@@ -28,6 +28,8 @@ console.log("\naxis 1 — budget");
   assert(estimateTokens("abcd") === 1 && estimateTokens("") === 0, "token estimate ~4 chars/token");
   const ok = admissionCheck({ contextText: "short", budget: 0 });
   assert(ok.findings.every((f) => f.axis !== "budget"), "budget<=0 (undeclared) is not a budget failure");
+  assert(admissionCheck({ contextText: "x", budget: null }).findings.every((f) => f.axis !== "budget"), "budget:null (undeclared) is not a failure");
+  assert(admissionCheck({ contextText: "x", budget: "12000" }).findings.some((f) => f.axis === "budget"), "malformed non-numeric budget escalates, not silently disabled (flag 7)");
 }
 
 console.log("\naxis 2 — source tier");

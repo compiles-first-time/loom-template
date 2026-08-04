@@ -47,4 +47,4 @@ source_tier: "1"
 verdict: approve (implemented)
 decided_by: Nick Noel
 decided_at: 2026-08-04
-note: The open question resolved YES — loop_cost_summary + session_token_usage carry model+token fields. Implemented additive gen_ai.* aliases in observatory/lib/otel.mjs (GENAI_ALIASES), originals kept, 6 new tests. Upstream semconv still reorganizing, so aliases are centralized for a one-line rename. ADR-0051 updated.
+note: The open question resolved YES — loop_cost_summary + session_token_usage carry model+token fields. Implemented additive gen_ai.* aliases in observatory/lib/otel.mjs (GENAI_ALIASES), originals kept, 7 new tests. Upstream semconv still reorganizing, so aliases are centralized for a one-line rename. ADR-0051 updated.

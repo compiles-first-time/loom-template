@@ -72,20 +72,26 @@ export function classifySourceTier(item = {}) {
   const { url = "", date = null, author = null } = item;
   const host = hostOf(url);
 
+  // Blatant UGC/social hosts are Rejected regardless of metadata.
   for (const re of REJECTED_HOST_PATTERNS) {
     if (re.test(host)) {
       return { tier: "rejected", reason: `UGC/social host ${host} is Rejected-tier by definition (L7)`, mechanical: true };
     }
   }
-  // Undated AND anonymous is the "undated/anonymous" Rejected case — both
-  // missing, since a dated-but-anonymous official doc can still be Tier 1.
-  if ((date == null || date === "") && (author == null || author === "")) {
-    return { tier: "rejected", reason: "undated AND anonymous — Rejected-tier (L7)", mechanical: true };
-  }
+  // A recognized primary/official host IS the credential — check it BEFORE the
+  // undated/anonymous heuristic so an arxiv/NVD item with unextracted date or
+  // author is not false-rejected (flag 6, 2026-08-04 critic review). The host's
+  // editorial model, not the scraped byline, is what makes it Tier 1.
   for (const re of TIER1_HOST_PATTERNS) {
     if (re.test(host)) {
       return { tier: "1", reason: `recognized primary/official host ${host}`, mechanical: true };
     }
+  }
+  // Undated AND anonymous on an UNRECOGNIZED host is the "undated/anonymous"
+  // Rejected case (both missing; a dated-but-anonymous official doc is handled
+  // by the tier-1 check above).
+  if ((date == null || date === "") && (author == null || author === "")) {
+    return { tier: "rejected", reason: "undated AND anonymous on an unrecognized host — Rejected-tier (L7)", mechanical: true };
   }
   return { tier: null, reason: "not obviously rejected or tier-1 — the scout must tier this by judgment", mechanical: false };
 }
