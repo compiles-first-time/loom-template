@@ -29,6 +29,11 @@ OTel GenAI alignment satisfies Kernel Rules 22–23 simultaneously. v0.2 ships t
 | Memory growth | > 100 KB per markdown file | Archive + compress |
 | Faithfulness drift (primary) | Declining trend against the fixed golden set (RAGAS-style faithfulness/groundedness) | Investigate; pause auto-merges via the Update Bus until cleared `[research-p1][H]` (per [ADR-0006](../adr/0006-retrieval-evaluation.md)) |
 | Confidence drift (secondary) | Declining average self-reported confidence | Weak signal; investigate if corroborated by faithfulness drift — self-reported confidence is unreliable on its own (Kadavath et al.) `[research-p1][H]` |
+| **Pipeline export-success ratio** (`sent/accepted`) | Below target SLO (pick per project, e.g. ≥ 99%) | Investigate the *pipeline* before trusting any other signal on this dashboard |
+
+### Monitor the monitoring
+
+An observability pipeline that silently drops data is worse than none — every other signal above reads "healthy" while being blind. So the pipeline **self-instruments**, and its **export-success ratio (`sent/accepted`) is treated as a first-class SLO**, alongside queue-saturation and refused-data-points alarms. Principle from Tier-1 vendor documentation (AWS OTel-gateway guide: aws.amazon.com/blogs/mt/deploy-opentelemetry-gateway-on-aws-monitoring-your-observability-pipeline/) `[aws-otel][>95% on the principle]` — stated here **vendor-neutrally**: it applies to any OTel Collector → backend path (Langfuse, Grafana, …), and to Loom's own JSONL → OTLP export ([ADR-0051](../adr/0051-opentelemetry-otlp-audit.md)). Like the rest of the OTel row above, this is an **integration target, not shipped infrastructure** — Loom's shipped analogue today is the hook-capture gap detection of [ADR-0038](../adr/0038-hook-capture-gap-detection.md) (is the event log itself being written?).
 
 ## Epistemic transparency record (Kernel Rule 22)
 

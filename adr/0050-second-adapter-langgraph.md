@@ -38,9 +38,34 @@ Raw Gemini-API-direct is deferred: it's the *bare-model / advisory* complement a
 - **Corroborating:** ADR-0048 (conformance milestone), ADR-0049 (JS-evaluator reuse). `[internal][H]`
 - **What would change this call:** if LangGraph's seams turned out insufficient for hard enforcement (they aren't — HIL is a first-class feature), or if the primary target shifted to a non-JS host (then Gemini/OPA leads instead).
 
+## Security preconditions (added 2026-08-03)
+
+Widely-deployed agent frameworks in this exact ecosystem have shipped classic-AppSec vulnerabilities. **The claim is inherited attack surface *if adopted* — not that Loom is currently vulnerable or exploited.** Loom's LangGraph adapter (and the Phase-4 production host) must satisfy the preconditions below before any deployment beyond dev.
+
+**CVE record — verified directly on NVD 2026-08-03, except where noted in-row** `[nvd.nist.gov][80–95%]`:
+
+| CVE | Component | Class | Severity (NIST unless noted) | Fixed in |
+|---|---|---|---|---|
+| CVE-2025-67644 | LangGraph SQLite checkpoint | SQL injection via metadata filter keys (CWE-89) | 7.8 HIGH | 3.0.1 |
+| CVE-2026-28277 | LangGraph ≤ 1.0.9 | unsafe deserialization of msgpack checkpoints (CWE-502) | 7.2 HIGH | no patch at record time |
+| CVE-2026-27022 | @langchain/langgraph-checkpoint-redis < 1.0.2 | RediSearch query injection (CWE-74) | 6.5 MEDIUM | 1.0.2 |
+| CVE-2026-34070 | langchain_core < 1.2.22 | path-traversal file read in prompt loading (CWE-22) | 7.5 HIGH | 1.2.22 |
+| CVE-2025-68664 | LangChain < 0.3.81, 1.0.0–1.2.4 | serialization injection via `lc` keys (CWE-502) | 8.2 HIGH (GitHub CNA: 9.3 CRITICAL) | 0.3.81 / 1.2.5 |
+| CVE-2026-5027 | Langflow `POST /api/v2/files` | path-traversal arbitrary file write (CWE-22) | 8.8 HIGH (Tenable; NVD enrichment pending) | — |
+
+Reporting-level context, **not** NVD-verified — keep hedged: Langflow reportedly had ~7,000 exposed instances, active in-the-wild exploitation, and an auto-login-on default; the traversal is reported as chaining to RCE. `[venturebeat/security-reporting (Check Point, VulnCheck, Tenable, Cyera, Censys)][60–80%]`
+
+**Preconditions (testable):**
+
+1. **Pin framework versions** at or above every fixed version in the table; record the pins in the adapter's manifest. A `loom doctor` soft check comparing pins to a known-fixed floor is a candidate follow-up.
+2. **Prefer the Postgres checkpointer over SQLite** for any persistent deployment (CVE-2025-67644 lived in the SQLite checkpointer; this also feeds the roadmap OB-P4-02 saver choice).
+3. **Never expose checkpoint/history endpoints to untrusted input.** Checkpoint stores are code-execution-adjacent (CWE-502 ×2 above): an attacker with checkpoint write access is an RCE-adjacent attacker.
+4. **Treat stored agent state and tool output as untrusted** on load, not just on ingestion — per [ADR-0007](./0007-content-trust-boundary.md)/LR-01; deserialization is a trust boundary.
+5. **No insecure defaults.** The Langflow pattern (auto-login + exposed port) is the anti-pattern: audit Loom's own auto-started surfaces (Observatory binds `127.0.0.1` only — keep it that way; any future exposure needs auth first).
+
 ## Consequences
 
-**Locks in:** a second, conformant adapter → the first real evidence for the agnosticism thesis; LangGraph as both proof-host (Phase 2) and production-host candidate (Phase 4).
+**Locks in:** a second, conformant adapter → the first real evidence for the agnosticism thesis; LangGraph as both proof-host (Phase 2) and production-host candidate (Phase 4); the security preconditions above as adoption gates for any non-dev deployment.
 
 **Locks out:** nothing — cross-language/OPA remains a clean future step.
 

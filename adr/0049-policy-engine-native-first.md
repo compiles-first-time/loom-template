@@ -27,6 +27,21 @@ To keep a future migration cheap:
 - **Policy complexity outgrows data + simple functions** (rule composition, RBAC hierarchies, external data joins) — OPA's strengths.
 - **An auditor/compliance requirement** demands a standard, independently-auditable policy language.
 
+## Reference implementation & build-vs-buy (added 2026-08-03)
+
+**LangSmith LLM Gateway** (public beta) is a near feature-for-feature match to the runtime policy layer this ADR governs: hard spend caps at org/workspace/user/API-key granularity (HTTP 402 at cap), rate limits, model fallbacks, PII/secret redaction (Enterprise-only), per-customer policies via request header, and every policy event logged as a trace; it fronts any client that can change `base_url` (including Claude Code). `[langsmith-gateway: langchain.com/blog/langsmith-llm-gateway-runtime-controls-for-production-agents][vendor self-report, public beta][80–95% on the feature set]` No independent evaluation of its efficacy or limits at scale exists yet — that is what would raise confidence.
+
+**Decision input, not an adoption:** use the gateway's control set as the **feature spec to build toward**, and stay native-first. Adopting a public-beta vendor gateway would trade Loom's zero-dep, no-lock-in posture for convenience at the exact control point (policy) where lock-in hurts most. The native path already has each control's home:
+
+| Gateway control | Native-first equivalent |
+|---|---|
+| Spend caps / rate limits / model fallbacks | LiteLLM proxy per [ADR-0045](./0045-per-agent-model-routing.md) (+ the Observatory Models & Budget panel) |
+| PII/secret redaction | Microsoft Presidio (candidate; open-source) + Loom's existing hook-side redaction (LR-03) |
+| Policy-event audit trail | event log → OTLP export per [ADR-0051](./0051-opentelemetry-otlp-audit.md) |
+| Policy decisions themselves | `spec/policy/` data + pure evaluators (this ADR) |
+
+**No gateway code or integration ships with this section** — it records the comparison so a future re-evaluation starts from a written baseline. Revisit if the gateway exits beta *and* an independent evaluation appears, or if maintaining the native controls' parity becomes more expensive than the lock-in risk.
+
 ## Evidence basis
 
 > Required v0.4+ per [LR-05](../constitution/local-rules.md#lr-05).

@@ -52,6 +52,17 @@ The runner requires `claude` on PATH. This is a documented trade-off (v0.3 plan 
 
 If `claude` isn't installed, the runner exits 2 with a clear error. `--dry-run` prints the plan without dispatching.
 
+### D. Harness eval loop + rule placement (added 2026-08-03)
+
+When a subagent under-performs its rubric, tune the **harness** (system prompt, tool descriptions, middleware, return values) before reaching for a bigger model. The evidence of record that this axis dominates: the agent-evaluation survey (arXiv 2503.16416 — arXiv preprint, peer-review status unconfirmed) finds **scaffold/harness choice causes >30% performance variation** on the same model `[scaffold-survey][preprint][80–95%]`, and Sclar et al. (ICLR 2024, arXiv 2310.11324, peer-reviewed) show prompt *format alone* can swing accuracy by up to 76 points `[sclar][H]`. A worked methodology is LangChain's Nemotron harness-tuning playbook — its loop, not its self-reported figures, is the durable content (its quality/cost numbers are vendor self-reported on one suite; do not cite them as independent evidence). `[langchain-harness][vendor self-report]`
+
+The loop: **Evaluate** (run the rubric/eval set) → **Observe traces** → **Diagnose** one failure mode → **one targeted change** → **Re-evaluate**, climbing a cost ladder (cheap smoke set before full set). One change per iteration, or you can't attribute the delta.
+
+Two transferable lessons for authoring SKILL.md / subagent prompts / middleware:
+
+1. **Where a rule appears matters more than whether it's present.** In the playbook's reported traces, a "keep reading" rule did nothing as a tool-description line but worked when moved into the tool's *return value* / an in-conversation message at point-of-need. Place rules where the model encounters them at decision time, not in front-loaded instruction blocks. (Consistent with Sclar et al.: models are highly sensitive to surface placement/format.)
+2. **Separate core harness from profile config.** Core harness improvements (clearer tool contracts, better return values, verifier gates) help *any* model behind the adapter and belong in the shared spec/skills; model-specific prompt tweaks are *profile config* and belong with the per-model routing layer (ADR-0045), never hard-coded into shared skills — this is what keeps harness tuning compatible with the model-agnostic north star (ADR-0048).
+
 ## Consequences
 
 **Locks in:**

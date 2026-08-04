@@ -6,6 +6,8 @@
 **Confidence:** [H]
 
 > **Update (2026-07-07 audit):** The "transparency layer, **not** an enforcement layer" stance in this ADR was **superseded on that point by [ADR-0047](./0047-hook-enforced-destructive-action-confirmation.md)** — the `PreToolUse` hook now *blocks* (`deny`) / *confirms* (`ask`) destructive actions via `decideDestructiveAction`. The hook-emits-Rule-22-events design here remains accurate; only the no-blocking posture changed.
+>
+> **Update (2026-08-03):** this enforcement runtime is one half of Loom's **verification-first** design principle — five independent external sources converge on verification/enforcement as the highest-leverage reliability lever. The convergence record lives in [ADR-0044 §External corroboration](./0044-verifier-gates-for-agent-tasks.md#external-corroboration-2026-08-03); verifier gates (ADR-0044) are the task-level half, this hook runtime is the action-level half. `[multi-source][80–95%]`
 
 ## Context
 
