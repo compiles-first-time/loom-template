@@ -28,7 +28,12 @@ const BOOTSTRAP_GENERATED = [
   "discovery/quick-scan.md", "discovery/requirements.md", "discovery/risk-register.md",
   "discovery/open-questions.md", "orchestration/work-graph.json", "self-knowledge.md",
 ];
-const isBootstrapForwardRef = (target) => BOOTSTRAP_GENERATED.some((g) => target.replace(/\\/g, "/").endsWith(g));
+// Path-boundary-anchored so a typo like `old-self-knowledge.md` is NOT
+// mistaken for the allowlisted `self-knowledge.md` (critic flag 1, 2026-08-04).
+const isBootstrapForwardRef = (target) => {
+  const t = target.replace(/\\/g, "/");
+  return BOOTSTRAP_GENERATED.some((g) => t === g || t.endsWith("/" + g));
+};
 
 function walk(dir, filter, out = []) {
   for (const e of readdirSync(dir, { withFileTypes: true })) {

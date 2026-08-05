@@ -31,7 +31,7 @@ console.log("\nload-bearing checks are present (a dropped check must fail here)"
 {
   for (const check of [
     "placeholders",
-    "CLAUDE.md",              // size cap
+    "≤ 10 KB",                // size cap (unique string — not the bare "CLAUDE.md" that other checks mention)
     "proposed-adrs-in-claude",
     "mcp-yaml-json-alignment",
     "subagents-present",

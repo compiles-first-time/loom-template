@@ -3,7 +3,8 @@
 // tuning that stops it crying wolf (bootstrap forward-refs + immutable archive
 // excluded) and that runFlush is pure/read-only over the real repo.
 
-import { readFileSync } from "node:fs";
+import { readFileSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { findBrokenLinks, runFlush } from "./flush.mjs";
@@ -42,14 +43,22 @@ console.log("\nrunFlush — all axes, read-only");
   assert(f.deadRefs.length === 0, "zero dead references to removed paths");
 }
 
-console.log("\nfabricated broken link is caught (tuning doesn't over-suppress)");
+console.log("\nfabricated fixtures — detector active + tuning doesn't over-suppress (real test, critic flag 2)");
 {
-  // Sanity: the checker still flags a genuinely-missing, non-excluded target.
-  // We synthesize by checking a path we know is absent via the same resolution.
-  const md = findBrokenLinks(ROOT);
-  // If someone later adds `[x](./does-not-exist.md)` to a normal doc, it WOULD
-  // appear here; the baseline being 0 proves the detector isn't disabled.
-  assert(md.length === 0, "detector active (baseline clean, not silenced)");
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "flush-fixture-"));
+  try {
+    writeFileSync(path.join(tmp, "doc.md"), [
+      "[a](./missing.md)",                       // genuinely broken → MUST be caught
+      "[b](./old-self-knowledge.md)",            // typo lookalike of an allowlisted name → MUST NOT be suppressed
+      "[c](./discovery/requirements.md)",        // real bootstrap forward-ref → MUST be excluded
+    ].join("\n") + "\n");
+    const res = findBrokenLinks(tmp);
+    assert(res.some((r) => /missing\.md/.test(r)), "genuinely-missing link is caught (detector active)");
+    assert(res.some((r) => /old-self-knowledge\.md/.test(r)), "path-boundary anchoring: a lookalike is NOT suppressed (flag-1 fix holds)");
+    assert(!res.some((r) => /discovery\/requirements/.test(r)), "a real bootstrap forward-ref IS excluded");
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);
