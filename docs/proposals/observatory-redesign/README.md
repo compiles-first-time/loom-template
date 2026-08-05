@@ -4,7 +4,7 @@
 
 It is a **design reference, not production code**: the data is representative-but-real (real BR registers, the actual Kernel V6 + local rules, real ADRs), and nothing is wired to a backend — edits live only in the browser and reset on reload. The production build implements this design **proof-first**, one panel at a time.
 
-- **Design + decisions + build plan:** [`handoff/2026-07-16-observatory-ux-redesign.md`](../../../handoff/2026-07-16-observatory-ux-redesign.md)
+- **Design + decisions + build plan:** `handoff/2026-07-16-observatory-ux-redesign.md` *(handoff snapshots retired 2026-08-02, ADR-0031; recoverable from git history)*
 - **Lesson from the cycle:** [`lessons-learned/2026-07-16-mockup-first-adversarial-review.md`](../../../lessons-learned/2026-07-16-mockup-first-adversarial-review.md)
 
 ## What it demonstrates

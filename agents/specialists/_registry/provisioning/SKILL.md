@@ -93,4 +93,4 @@ When invoked, returns:
 
 ## Runtime counterpart
 
-[`../../../../.claude/agents/provisioning.md`](../../../../.claude/agents/provisioning.md) — generated from this SKILL.md by bootstrap. Restart Claude Code after the implementation PR lands so the registry picks up the new specialist (per ADR-0020; mitigated by ADR-0034 path 2b — invoke via Agent tool with this SKILL.md as prompt if restart isn't viable).
+`.claude/agents/provisioning.md` — generated from this SKILL.md by bootstrap. **Note (2026-08-04):** unlike its bundled peers `credential-setup` and `payments`, provisioning has no *committed* runtime contract yet — invoke it via ADR-0034 path 2b (the Agent tool with this SKILL.md as the prompt) until one is authored. Whether to commit a runtime file (matching its peers) is an open decision, not an oversight to silently paper over.

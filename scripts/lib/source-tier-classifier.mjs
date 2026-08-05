@@ -69,7 +69,10 @@ function hostOf(url) {
  *   tier "rejected" → hard drop; "1" → recognized primary; null → agent judges.
  */
 export function classifySourceTier(item = {}) {
-  const { url = "", date = null, author = null } = item;
+  // Degrade, never throw, on a null/non-object item (dirty input must not crash
+  // the projection — same principle as the aggregator handlers).
+  const safeItem = item && typeof item === "object" ? item : {};
+  const { url = "", date = null, author = null } = safeItem;
   const host = hostOf(url);
 
   // Blatant UGC/social hosts are Rejected regardless of metadata.

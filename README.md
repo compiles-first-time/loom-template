@@ -183,7 +183,7 @@ Completed:
 - **v0.6** — Permissions protocol meta-rule (LR-04), OAuth preference detector
 - **v1.0** — HR work-graph (requirements.md → orchestration/work-graph.json), specialist lifecycle
 - **v0.3.1** — deployment hardening from AnonForum session findings ([ADR-0032](./adr/0032-deployment-hardening.md)): wait-for-terminal-state primitive, pre-flight quota check, response-body discipline, device-code-auth recovery
-- **v0.3.2** — integration of v0.3.1 primitives into deploy.mjs, permissions-classifier wiring, Response shape declarations across 12 specialists, MCP-vs-CLI capability matrix ([ADR-0033](./adr/0033-mcp-cli-capability-matrix.md))
+- **v0.3.2** — integration of v0.3.1 primitives into deploy.mjs, permissions-classifier wiring, Response shape declarations across 12 specialists, MCP-vs-CLI capability matrix ([ADR-0033](./adr/0033-mcp-vs-cli-capability-matrix.md))
 
 Next:
 

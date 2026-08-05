@@ -90,4 +90,4 @@ No change to `observatory/server.mjs` — it already uses `LOOM_PROJECT_ROOT || 
 
 - [`scripts/hooks/_lib.mjs`](../scripts/hooks/_lib.mjs) — implementation
 - [`observatory/server.mjs`](../observatory/server.mjs) — prior art (`LOOM_PROJECT_ROOT || cwd`)
-- [`handoff/2026-06-08-credential-setup-and-resolutions.md`](../handoff/2026-06-08-credential-setup-and-resolutions.md) — R1 requirement
+- `handoff/2026-06-08-credential-setup-and-resolutions.md` — R1 requirement *(handoff snapshots retired 2026-08-02, ADR-0031; recoverable from git history)*

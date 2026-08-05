@@ -15,6 +15,8 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { scanDiscoveryAuthored, AUTHORED_DISCOVERY_FILES } from "./discovery-authored.mjs";
 import { loadLessons, validateLessonSchema } from "./lessons.mjs";
+import { checkKernelIntegrity, KERNEL_PATH, PIN_PATH } from "./kernel-integrity.mjs";
+import { findBrokenLinks } from "./flush.mjs";
 
 const ROOT = process.cwd();
 const args = new Set(process.argv.slice(2));
@@ -32,6 +34,7 @@ await main();
 
 async function main() {
   await checkPlaceholders();
+  await checkKernelIntegrityGate();
   await checkSizeCaps();
   await checkProposedAdrsInClaude();
   await checkMcpAlignment();
@@ -44,6 +47,7 @@ async function main() {
   await checkLessonSchema();
   await checkHandoffFreshness();
   await checkInternalAuditFreshness();
+  await checkBrokenLinks();
   await checkPlaybookFreshness();
   await checkSkeleton();
   await checkPs1Bom();
@@ -82,6 +86,20 @@ async function checkPlaceholders() {
     return hard("placeholders", false, `--fix cannot guess project/user names; run scripts/bootstrap.{sh,ps1} with the right args. Hits: ${JSON.stringify(hits)}`);
   }
   hard("placeholders", false, `unstamped tokens remain in ${hits.length} file(s): ${hits.map((h) => h.file).join(", ")}`);
+}
+
+// Kernel immutability (ADR-0058, Rule 19): the kernel must never be overwritten
+// by code. Hard-fail on ANY change vs. its pinned hash — a change is only
+// sanctioned via a deliberate human re-pin (kernel-integrity --repin) alongside
+// an ADR + override-authority sign-off. Detection complementing ADR-0047's
+// hook-level prevention.
+async function checkKernelIntegrityGate() {
+  const kp = path.join(ROOT, KERNEL_PATH);
+  const pp = path.join(ROOT, PIN_PATH);
+  const kernel = existsSync(kp) ? await fs.readFile(kp, "utf8") : null;
+  const pin = existsSync(pp) ? await fs.readFile(pp, "utf8") : null;
+  const r = checkKernelIntegrity(kernel, pin);
+  hard("kernel-integrity", r.ok, r.ok ? "kernel matches its pinned hash (Rule 19; ADR-0058)" : r.reason);
 }
 
 async function checkSizeCaps() {
@@ -460,6 +478,16 @@ async function checkInternalAuditFreshness() {
       `last internal audit ${lastAudit} (${days}d ago) — monthly cadence overdue (${boxes} unchecked open-work boxes in inventory)`);
   }
   soft("internal-audit-freshness", true, `last internal audit ${lastAudit} (${days}d ago); ${boxes} unchecked open-work boxes in inventory`);
+}
+
+// Broken internal markdown links (the tuned flush link-checker, run as part of
+// the standard precheck). Soft: advisory, and it already excludes bootstrap
+// forward-refs + the immutable constitution/history archive, so a hit is a real
+// dangling reference. Full read-only sweep: `node scripts/lib/flush.mjs`.
+async function checkBrokenLinks() {
+  const broken = findBrokenLinks(ROOT);
+  if (broken.length === 0) return soft("broken-internal-links", true, "no dangling internal markdown links");
+  soft("broken-internal-links", false, `${broken.length} dangling link(s): ${broken.slice(0, 5).join("; ")}${broken.length > 5 ? " …" : ""}`);
 }
 
 async function checkPlaybookFreshness() {

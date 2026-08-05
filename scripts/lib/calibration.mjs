@@ -27,7 +27,9 @@ export const BANDS = [
 ];
 
 export function claimKey(ev) {
-  return `${ev.timestamp}|${ev.agent || "unknown"}`;
+  // Degrade, never throw, on a null/non-object record (dirty log lines happen).
+  const e = ev && typeof ev === "object" ? ev : {};
+  return `${e.timestamp}|${e.agent || "unknown"}`;
 }
 
 // Batch-appended claims can share one timestamp+agent (found by the first
@@ -36,7 +38,8 @@ export function claimKey(ev) {
 // matches multiple claims is AMBIGUOUS and resolves none of them (resolving
 // one would silently mis-resolve its siblings).
 export function claimHash(ev) {
-  const s = String(ev.claim || "");
+  const e = ev && typeof ev === "object" ? ev : {};
+  const s = String(e.claim || "");
   let h = 0;
   for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
   return (h >>> 0).toString(16).padStart(8, "0");
