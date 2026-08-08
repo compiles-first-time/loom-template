@@ -1,0 +1,43 @@
+{
+  "_comment": "Operator-tunable knobs. Weights are a HYPOTHESIS, not a law of nature. Change them here, never in code.",
+
+  "scoring": {
+    "weights": {
+      "edgeFit": 0.25,
+      "asymmetry": 0.25,
+      "tractability": 0.2,
+      "timing": 0.15,
+      "downsideProtection": 0.15
+    },
+    "factorMin": 0,
+    "factorMax": 10,
+    "shortlistSize": 3,
+    "shortlistMinScore": 6.0
+  },
+
+  "constraints": {
+    "maxCapitalUsd": 500,
+    "maxHoursPerWeek": 30,
+    "preferredMonthsToRevenueMax": 6,
+    "hardMonthsToRevenueCeiling": 24,
+    "requireNamedDistribution": true,
+    "requireEthicalAssessment": true,
+    "allowQuittingJob": false
+  },
+
+  "agent": {
+    "transport": "claude-cli",
+    "model": "claude-sonnet-5",
+    "timeoutMs": 900000,
+    "maxTurns": 40,
+    "maxRetries": 2,
+    "allowedTools": ["WebSearch"],
+    "maxSpendUsd": 8.0
+  },
+
+  "evidence": {
+    "minIndependentSources": 2,
+    "minConfidenceToAssert": 3,
+    "maxSourceAgeMonths": 24
+  }
+}

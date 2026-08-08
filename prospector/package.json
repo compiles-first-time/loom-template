@@ -1,0 +1,14 @@
+{
+  "name": "prospector",
+  "version": "0.2.0",
+  "description": "Narrows a large space of possible money-making opportunities to a small, scored, evidence-backed shortlist for one specific operator.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\"",
+    "scan": "node scripts/scan.mjs"
+  },
+  "engines": {
+    "node": ">=20.6"
+  }
+}

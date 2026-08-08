@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "_note": "Worked examples of the output shape. Injected into scan prompts as a shape reference and as theses the tool should independently RE-DERIVE OR REJECT — never copy.",
+  "entries": [
+    {
+      "id": "ex-001-ai-governance-gap",
+      "date": "2026-08-07",
+      "origin": "prior session, manual pass (pre-tool)",
+      "status": "unvalidated-hypothesis",
+      "title": "Make your AI agents survive an audit",
+      "thesis": "Enterprises are deploying agentic AI far faster than they are governing it, and in regulated industries that gap is an audit exposure. An operator with four tours of regulated-industry automation can sell 'make your AI agents survive an audit' faster than the Big 4 can productize it.",
+      "supportingEvidence": [
+        {
+          "claim": "Only 21% of enterprises have mature agentic-AI governance; AI skills gap is the top barrier; 74% expect moderate AI-agent use by 2027",
+          "source": "Deloitte, State of AI in the Enterprise 2026",
+          "tier": 2,
+          "confidence": 4
+        },
+        {
+          "claim": "Vertex Pharmaceuticals hiring Principal Analyst, CGT Agentic Solutions, $142.8K-$214.2K, posted 2026-06-01 (Boston)",
+          "source": "Indeed API",
+          "tier": 2,
+          "confidence": 5
+        },
+        {
+          "claim": "Liberty Mutual hiring Intelligent Systems Solutions Engineer, $145K-$257K, posted 2026-04-09 (Boston)",
+          "source": "Indeed API",
+          "tier": 2,
+          "confidence": 5
+        },
+        {
+          "claim": "Independent AI consultants bill $150-350/hr",
+          "source": "Multiple SEO content sites",
+          "tier": "REJECTED",
+          "confidence": 2,
+          "note": "Retained deliberately as a NEGATIVE example: this is exactly the source class lib/source-tiers.mjs must strip."
+        }
+      ],
+      "blindSpots": [
+        "Job postings are not consulting demand. Hiring an FTE may mean they will NOT hire a consultant. WEAKEST LINK — test first.",
+        "Competes directly with Deloitte/Accenture/EY, who sell this today.",
+        "Operator has automation credentials, NOT AI-governance credentials. The bridge is credible but unproven.",
+        "The friend's network is zero-for-zero. Not one introduction attempted.",
+        "Harvard's own AI governance need was never checked — potentially the easiest first engagement, sitting in plain sight."
+      ]
+    }
+  ]
+}

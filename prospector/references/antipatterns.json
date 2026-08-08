@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "_note": "Observed failures and the rule each one produces. Injected into every scan prompt. Entry set #1 is from the first PROSPECTOR attempt (2026-08-07).",
+  "entries": [
+    {
+      "id": "ap-001-research-by-hand",
+      "date": "2026-08-07",
+      "title": "Did the research by hand instead of building the tool",
+      "rootCause": "Read the spec's 'run the first scan' step literally and skipped the 'stand up the agents' step before it.",
+      "rule": "Build the machine before running the machine. If you find yourself BEING the engine, stop and go build that part of the engine.",
+      "severity": "critical",
+      "appliesTo": "session"
+    },
+    {
+      "id": "ap-002-infrastructure-archaeology",
+      "date": "2026-08-07",
+      "title": "Front-loaded infrastructure archaeology and delivered a wall of findings before any conversation",
+      "rootCause": "Treated an imperative-worded setup section as a blocking checklist.",
+      "rule": "Setup is plumbing. Do it quietly; report it in one line.",
+      "severity": "moderate",
+      "appliesTo": "session"
+    },
+    {
+      "id": "ap-003-environment-noise-as-decision",
+      "date": "2026-08-07",
+      "title": "Raised an irrelevant environment conflict as a headline decision",
+      "rootCause": "Confused 'the repo my container booted into' with 'something the operator must decide'.",
+      "rule": "Don't surface your own environment noise as the operator's problem.",
+      "severity": "moderate",
+      "appliesTo": "session"
+    },
+    {
+      "id": "ap-004-unverified-edge",
+      "date": "2026-08-07",
+      "title": "Assumed a document's claimed edges were true (gaming markets)",
+      "rootCause": "Never verified the claimed edge against the operator.",
+      "rule": "Verify claimed edges before designing around them. Disconfirmed edges are encoded in lib/constraint-filter.mjs, not remembered.",
+      "severity": "critical",
+      "appliesTo": "both"
+    },
+    {
+      "id": "ap-005-unframed-questions",
+      "date": "2026-08-07",
+      "title": "Fired multiple-choice questions with no framing",
+      "rootCause": "Rushed after an interruption.",
+      "rule": "Teach the concept with a real-world analogy, THEN ask. One question at a time. Every time.",
+      "severity": "moderate",
+      "appliesTo": "session"
+    },
+    {
+      "id": "ap-006-seo-farm-rates",
+      "date": "2026-08-07",
+      "title": "Every 'consulting rate' source found was an SEO content farm",
+      "rootCause": "Rate keywords are the most commercially contested search terms on the web, so organic results are almost entirely lead-generation content.",
+      "rule": "Never cite a rate from a search result. Rates come from signed SOWs, GSA schedules, public procurement records, or nothing. Encoded as SEO_TITLE_PATTERNS / SEO_URL_PATTERNS in lib/source-tiers.mjs.",
+      "severity": "critical",
+      "appliesTo": "agent"
+    },
+    {
+      "id": "ap-007-postings-as-demand",
+      "date": "2026-08-07",
+      "title": "Treated job postings as evidence of consulting demand",
+      "rootCause": "Job-posting data was the only hard quantitative source available, so it got asked a question it cannot answer.",
+      "rule": "A job posting is evidence of budget, not of willingness to buy from outside. An org hiring an FTE may be evidence it will NOT hire a consultant. Label this inference, never fact.",
+      "severity": "critical",
+      "appliesTo": "agent"
+    }
+  ]
+}
