@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Loom Studio</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <h1>Loom Studio</h1>
+  <div id="health" class="health">checking backends…</div>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button class="tab active" data-panel="animate" role="tab">Animate</button>
+  <button class="tab" data-panel="enhance" role="tab">Enhance</button>
+  <button class="tab" data-panel="swap" role="tab">Face swap</button>
+  <button class="tab" data-panel="timeline" role="tab">Timeline</button>
+</nav>
+
+<main>
+  <!-- Image -> video ---------------------------------------------------- -->
+  <section id="animate" class="panel active">
+    <p class="hint">Upload a still, describe the motion you want, get a short clip.</p>
+    <label>Source image
+      <input type="file" id="animate-file" accept="image/*">
+    </label>
+    <div id="animate-path" class="path"></div>
+
+    <label>Prompt
+      <textarea id="animate-prompt" rows="4"
+        placeholder="Slow push-in. She turns her head toward the camera and smiles; the water ripples behind her, late afternoon light, shallow depth of field."></textarea>
+    </label>
+    <label>Negative prompt
+      <input type="text" id="animate-negative" placeholder="(leave blank to use the workflow default)">
+    </label>
+
+    <div class="row">
+      <label>Workflow<select id="animate-workflow"></select></label>
+      <label>Duration (s)<input type="number" id="animate-duration" value="5" min="1" max="30" step="0.5"></label>
+      <label>FPS<input type="number" id="animate-fps" value="24" min="8" max="60"></label>
+    </div>
+    <div class="row">
+      <label>Width<input type="number" id="animate-width" value="1280" step="16"></label>
+      <label>Height<input type="number" id="animate-height" value="704" step="16"></label>
+      <label>Steps<input type="number" id="animate-steps" value="30" min="1" max="80"></label>
+      <label>CFG<input type="number" id="animate-cfg" value="5" step="0.5"></label>
+      <label>Seed<input type="number" id="animate-seed" value="0"></label>
+    </div>
+    <button class="go" id="animate-go">Generate</button>
+  </section>
+
+  <!-- Enhance ------------------------------------------------------------ -->
+  <section id="enhance" class="panel">
+    <p class="hint">Upscale and add frames to an existing video.</p>
+    <label>Source video<input type="file" id="enhance-file" accept="video/*"></label>
+    <div id="enhance-path" class="path"></div>
+    <div class="row">
+      <label>Workflow<select id="enhance-workflow"></select></label>
+      <label>Frame multiplier<input type="number" id="enhance-mult" value="2" min="1" max="8"></label>
+      <label>Output FPS<input type="number" id="enhance-fps" value="60" min="8" max="120"></label>
+    </div>
+    <button class="go" id="enhance-go">Enhance</button>
+  </section>
+
+  <!-- Face swap ----------------------------------------------------------- -->
+  <section id="swap" class="panel">
+    <p class="hint">Runs FaceFusion headlessly over the target video.</p>
+    <label>Source face(s)<input type="file" id="swap-sources" accept="image/*" multiple></label>
+    <div id="swap-sources-path" class="path"></div>
+    <label>Target video<input type="file" id="swap-target" accept="video/*"></label>
+    <div id="swap-target-path" class="path"></div>
+    <div class="row">
+      <label>Swapper model
+        <select id="swap-model">
+          <option value="inswapper_128_fp16">inswapper_128_fp16</option>
+          <option value="inswapper_128">inswapper_128</option>
+          <option value="simswap_256">simswap_256</option>
+        </select>
+      </label>
+      <label>Enhancer
+        <select id="swap-enhancer">
+          <option value="gfpgan_1.4">gfpgan_1.4</option>
+          <option value="codeformer">codeformer</option>
+          <option value="gpen_bfr_512">gpen_bfr_512</option>
+        </select>
+      </label>
+      <label>Enhancer blend<input type="number" id="swap-blend" value="80" min="0" max="100"></label>
+    </div>
+    <button class="go" id="swap-go">Swap</button>
+  </section>
+
+  <!-- Timeline ------------------------------------------------------------ -->
+  <section id="timeline" class="panel">
+    <p class="hint">Trim and stitch finished clips. Pure ffmpeg — no GPU, fast.</p>
+    <label>Add clips<input type="file" id="timeline-files" accept="video/*" multiple></label>
+    <ol id="clip-list" class="clips"></ol>
+    <div class="row">
+      <label>Output name<input type="text" id="timeline-name" value="timeline.mp4"></label>
+      <label>CRF (lower = better)<input type="number" id="timeline-crf" value="18" min="0" max="51"></label>
+    </div>
+    <button class="go" id="timeline-go">Render timeline</button>
+  </section>
+</main>
+
+<section class="jobs">
+  <h2>Jobs</h2>
+  <div id="job-list"></div>
+</section>
+
+<script src="/app.js"></script>
+</body>
+</html>

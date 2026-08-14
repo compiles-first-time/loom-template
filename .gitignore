@@ -82,3 +82,11 @@ observability/eval-suite/efficacy/runs/
 # not from git, so untracking breaks nothing.)
 orchestration/progress-ledger.md
 tools/discovered-runtime.md
+
+# Loom Studio — generated media, job DB and local venvs. Renders are large and
+# reproducible from the prompt+seed recorded in each output's .json sidecar.
+apps/studio/data/
+apps/studio/.venv/
+apps/studio/**/__pycache__/
+apps/studio/.pytest_cache/
+*.egg-info/

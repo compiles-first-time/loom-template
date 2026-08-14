@@ -1,0 +1,129 @@
+{
+  "name": "wan22_i2v_16gb",
+  "description": "Wan 2.2 TI2V-5B image-to-video. Single-model (non-MoE) variant that fits 16 GB at fp16 without offloading. Node layout follows ComfyUI's native Wan 2.2 template — re-export from your own ComfyUI and run scripts/bindgen.py if node IDs differ.",
+  "requires": {
+    "custom_nodes": [],
+    "models": {
+      "diffusion_models/wan2.2_ti2v_5B_fp16.safetensors": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged",
+      "text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged",
+      "vae/wan2.2_vae.safetensors": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged"
+    }
+  },
+  "defaults": {
+    "prompt": "",
+    "negative_prompt": "overexposed, blurry, static, low quality, jpeg artifacts, ugly, deformed, extra fingers, watermark, subtitles",
+    "width": 1280,
+    "height": 704,
+    "frames": 81,
+    "fps": 24,
+    "steps": 30,
+    "cfg": 5.0,
+    "seed": 0,
+    "shift": 8.0
+  },
+  "bindings": {
+    "prompt": [{ "node": "6", "input": "text" }],
+    "negative_prompt": [{ "node": "7", "input": "text" }],
+    "image": [{ "node": "56", "input": "image" }],
+    "width": [{ "node": "55", "input": "width" }],
+    "height": [{ "node": "55", "input": "height" }],
+    "frames": [{ "node": "55", "input": "length" }],
+    "fps": [{ "node": "57", "input": "fps" }],
+    "steps": [{ "node": "3", "input": "steps" }],
+    "cfg": [{ "node": "3", "input": "cfg" }],
+    "seed": [{ "node": "3", "input": "seed" }],
+    "shift": [{ "node": "54", "input": "shift" }]
+  },
+  "graph": {
+    "37": {
+      "class_type": "UNETLoader",
+      "_meta": { "title": "Load diffusion model" },
+      "inputs": {
+        "unet_name": "wan2.2_ti2v_5B_fp16.safetensors",
+        "weight_dtype": "default"
+      }
+    },
+    "38": {
+      "class_type": "CLIPLoader",
+      "_meta": { "title": "Load CLIP" },
+      "inputs": {
+        "clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+        "type": "wan",
+        "device": "default"
+      }
+    },
+    "39": {
+      "class_type": "VAELoader",
+      "_meta": { "title": "Load VAE" },
+      "inputs": { "vae_name": "wan2.2_vae.safetensors" }
+    },
+    "56": {
+      "class_type": "LoadImage",
+      "_meta": { "title": "Start frame" },
+      "inputs": { "image": "example.png", "upload": "image" }
+    },
+    "6": {
+      "class_type": "CLIPTextEncode",
+      "_meta": { "title": "Positive prompt" },
+      "inputs": { "text": "", "clip": ["38", 0] }
+    },
+    "7": {
+      "class_type": "CLIPTextEncode",
+      "_meta": { "title": "Negative prompt" },
+      "inputs": { "text": "", "clip": ["38", 0] }
+    },
+    "55": {
+      "class_type": "Wan22ImageToVideoLatent",
+      "_meta": { "title": "Wan 2.2 I2V latent" },
+      "inputs": {
+        "vae": ["39", 0],
+        "width": 1280,
+        "height": 704,
+        "length": 81,
+        "batch_size": 1,
+        "start_image": ["56", 0]
+      }
+    },
+    "54": {
+      "class_type": "ModelSamplingSD3",
+      "_meta": { "title": "Sampling shift" },
+      "inputs": { "model": ["37", 0], "shift": 8.0 }
+    },
+    "3": {
+      "class_type": "KSampler",
+      "_meta": { "title": "KSampler" },
+      "inputs": {
+        "model": ["54", 0],
+        "positive": ["6", 0],
+        "negative": ["7", 0],
+        "latent_image": ["55", 0],
+        "seed": 0,
+        "steps": 30,
+        "cfg": 5.0,
+        "sampler_name": "uni_pc",
+        "scheduler": "simple",
+        "denoise": 1.0
+      }
+    },
+    "8": {
+      "class_type": "VAEDecode",
+      "_meta": { "title": "VAE Decode" },
+      "inputs": { "samples": ["3", 0], "vae": ["39", 0] }
+    },
+    "57": {
+      "class_type": "CreateVideo",
+      "_meta": { "title": "Create video" },
+      "inputs": { "images": ["8", 0], "fps": 24 }
+    },
+    "58": {
+      "class_type": "SaveVideo",
+      "_meta": { "title": "Save video" },
+      "inputs": {
+        "video": ["57", 0],
+        "filename_prefix": "studio/i2v",
+        "format": "auto",
+        "codec": "auto"
+      }
+    }
+  }
+}

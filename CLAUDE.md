@@ -1,7 +1,7 @@
 ﻿# CLAUDE.md — Project Index
 
-> **Project:** `loom-template` *(replace at bootstrap)*
-> **Description:** `<one-sentence description>` *(replace at bootstrap)*
+> **Project:** `loom-studio`
+> **Description:** Self-hosted local video pipeline — image-to-video generation, video enhancement, face swapping and timeline assembly — orchestrated over ComfyUI, FaceFusion and ffmpeg on a single 16 GB GPU.
 > **Loom version:** 1.0.0
 > **Kernel version:** v6
 > **Initialized:** `2026-06-14`
@@ -14,20 +14,19 @@ This file is the **primary entry point** for Claude (chat) and Claude Code into 
 
 ## Project identity
 
-- **What this is:** *(one paragraph — replace at bootstrap)*
-- **Why it exists:** *(the problem this solves)*
-- **Who uses it:** *(intended users — at v1, usually just the author)*
-- **What success looks like:** *(concrete, measurable outcome)*
+- **What this is:** A local, self-hosted media pipeline running entirely on one workstation (RTX 5070 Ti 16 GB, 64 GB RAM, Windows 11). It wraps three existing engines — ComfyUI for diffusion work, FaceFusion for face swapping, ffmpeg for editing — behind a single job queue, HTTP API and web UI. The orchestration layer lives in [`apps/studio`](./apps/studio/); the engines themselves are installed alongside, not vendored.
+- **Why it exists:** The individual tools are strong but disconnected. Getting a clip from "still image + prompt" through enhancement, face swap and into an edited timeline means hand-carrying files between three UIs with no shared history of what produced what.
+- **Who uses it:** The author, locally. No multi-tenancy, no auth, binds to localhost.
+- **What success looks like:** A still plus a prompt becomes a finished, enhanced, stitched clip through one interface, with every output reproducible from its recorded prompt and seed.
 
 ---
 
 ## Current goals
 
-*(replace this list with your current goals; keep it under 5 items)*
-
-1. *(Goal 1)*
-2. *(Goal 2)*
-3. *(Goal 3)*
+1. **End-to-end vertical slice** — one still → one 5 s clip → enhanced → stitched, through the studio API rather than three separate UIs. *(scaffold complete; needs validation on real hardware)*
+2. **Workflow templates that match the installed ComfyUI** — the shipped graphs are starting points; re-export and run `bindgen.py` against the actual node set.
+3. **Quality pass on image-to-video** — Wan 2.2 TI2V-5B for iteration, A14B GGUF for final renders. Establish a draft-then-render loop using recorded seeds.
+4. **Measure before optimising** — record real render times on this GPU before adding SageAttention, block-swap tuning or heavier restoration models.
 
 ---
 

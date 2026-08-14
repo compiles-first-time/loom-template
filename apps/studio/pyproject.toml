@@ -1,0 +1,33 @@
+[project]
+name = "loom-studio"
+version = "0.1.0"
+description = "Self-hosted orchestration layer over ComfyUI, FaceFusion and ffmpeg"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "httpx>=0.27",
+    "python-multipart>=0.0.9",
+    "websockets>=13.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.24"]
+
+[project.scripts]
+studio = "studio.main:run"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["studio"]
+
+[tool.setuptools.package-data]
+studio = ["static/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"

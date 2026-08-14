@@ -1,0 +1,79 @@
+{
+  "name": "enhance_upscale_interpolate",
+  "description": "Video enhancement: ESRGAN spatial upscale followed by RIFE frame interpolation. Cheap and fast — for heavy restoration of soft or compressed footage use SeedVR2 instead (see docs/studio/model-matrix.md).",
+  "requires": {
+    "custom_nodes": [
+      "ComfyUI-VideoHelperSuite (VHS_LoadVideo, VHS_VideoCombine)",
+      "ComfyUI-Frame-Interpolation (RIFE VFI)"
+    ],
+    "models": {
+      "upscale_models/4x-UltraSharp.pth": "https://huggingface.co/Kim2091/UltraSharp"
+    }
+  },
+  "defaults": {
+    "interpolation_multiplier": 2,
+    "fps": 30,
+    "frame_load_cap": 0
+  },
+  "bindings": {
+    "video": [{ "node": "1", "input": "video" }],
+    "interpolation_multiplier": [{ "node": "4", "input": "multiplier" }],
+    "fps": [{ "node": "5", "input": "frame_rate" }],
+    "frame_load_cap": [{ "node": "1", "input": "frame_load_cap" }]
+  },
+  "graph": {
+    "1": {
+      "class_type": "VHS_LoadVideo",
+      "_meta": { "title": "Load video" },
+      "inputs": {
+        "video": "input.mp4",
+        "force_rate": 0,
+        "force_size": "Disabled",
+        "custom_width": 0,
+        "custom_height": 0,
+        "frame_load_cap": 0,
+        "skip_first_frames": 0,
+        "select_every_nth": 1
+      }
+    },
+    "2": {
+      "class_type": "UpscaleModelLoader",
+      "_meta": { "title": "Load upscale model" },
+      "inputs": { "model_name": "4x-UltraSharp.pth" }
+    },
+    "3": {
+      "class_type": "ImageUpscaleWithModel",
+      "_meta": { "title": "Upscale frames" },
+      "inputs": { "upscale_model": ["2", 0], "image": ["1", 0] }
+    },
+    "4": {
+      "class_type": "RIFE VFI",
+      "_meta": { "title": "RIFE interpolation" },
+      "inputs": {
+        "frames": ["3", 0],
+        "ckpt_name": "rife47.pth",
+        "clear_cache_after_n_frames": 10,
+        "multiplier": 2,
+        "fast_mode": true,
+        "ensemble": true,
+        "scale_factor": 1.0
+      }
+    },
+    "5": {
+      "class_type": "VHS_VideoCombine",
+      "_meta": { "title": "Save video" },
+      "inputs": {
+        "images": ["4", 0],
+        "frame_rate": 30,
+        "loop_count": 0,
+        "filename_prefix": "studio/enhanced",
+        "format": "video/h264-mp4",
+        "pix_fmt": "yuv420p",
+        "crf": 17,
+        "save_metadata": true,
+        "pingpong": false,
+        "save_output": true
+      }
+    }
+  }
+}
