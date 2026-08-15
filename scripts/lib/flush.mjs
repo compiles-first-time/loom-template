@@ -27,6 +27,13 @@ const rel = (p) => path.relative(ROOT, p).replace(/\\/g, "/");
 const BOOTSTRAP_GENERATED = [
   "discovery/quick-scan.md", "discovery/requirements.md", "discovery/risk-register.md",
   "discovery/open-questions.md", "orchestration/work-graph.json", "self-knowledge.md",
+  // Written by the Stop hook and gitignored since PR #86 stopped tracking
+  // hook-generated session artifacts. It therefore exists on a machine that has
+  // run a session and NOT in a fresh clone or CI — which made this check
+  // environment-dependent: green locally, red in CI, for no code reason.
+  // Same class as the entries above (generated, not missing), so it belongs
+  // here rather than being papered over in the test.
+  "orchestration/progress-ledger.md",
 ];
 // Path-boundary-anchored so a typo like `old-self-knowledge.md` is NOT
 // mistaken for the allowlisted `self-knowledge.md` (critic flag 1, 2026-08-04).
