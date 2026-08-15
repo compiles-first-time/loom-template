@@ -1,0 +1,44 @@
+# Governance regression gate (ADR-0062).
+#
+# Loom's governance layer is the product. A silent regression in it — a pattern
+# rewritten, a classifier refactored, a scenario quietly deleted — would not
+# break a test, because until this gate existed nothing asserted the governance
+# layer still *worked*. It was measured once, by hand, and then trusted.
+#
+# This runs the frozen scenario set plus a seeded-defect (mutation) pass on every
+# push and PR. It is deterministic and costs $0 — no model calls, no network — so
+# there is no reason for it not to run on every change.
+#
+# The baseline it compares against lives in the repo
+# (observability/eval-suite/efficacy/baseline.json), not in a CI variable, so a
+# threshold cannot be relaxed silently to turn a red run green.
+
+name: governance-gate
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # No install step: the gate deliberately has no third-party dependencies,
+      # so a compromised or unavailable package cannot affect whether Loom's
+      # safety layer reports itself healthy.
+      - name: Governance regression gate + seeded defects
+        run: node observability/eval-suite/efficacy/harness.mjs --gate
+
+      - name: Unit tests
+        run: npm test
+
+      - name: loom doctor
+        run: bash scripts/doctor.sh

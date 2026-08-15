@@ -87,8 +87,20 @@ categories:
       command_patterns:
         # Local destructive
         - "\\brm\\s+-[rf]+\\b"
+        # Long-flag spelling of the same thing — `rm --recursive --force` is
+        # `rm -rf`. Found by the ADR-0062 seeded-defect run 2026-08-13: the
+        # short-flag pattern above matched neither, and this is idiomatic usage,
+        # not obfuscation.
+        - "\\brm\\s+[^|;&]*--(?:recursive|force)\\b"
+        # find-based deletion — `find /data -delete` and `find /data -exec rm`
+        # destroy exactly as much as `rm -rf` and matched nothing. Same run.
+        - "\\bfind\\b[^|;&]*\\s-delete\\b"
+        - "\\bfind\\b[^|;&]*-exec\\s+rm\\b"
         - "\\bgit\\s+reset\\s+--hard\\b"
         - "\\bgit\\s+push\\s+(?:.*\\s+)?(?:--force|-f)\\b"
+        # Force-push via the `+refspec` form — `git push origin +main` rewrites
+        # shared history identically to `--force`. Same run.
+        - "\\bgit\\s+push\\s+(?:.*\\s+)?\\+[A-Za-z0-9._/-]+"
         - "\\bgit\\s+branch\\s+-D\\b"
         - "\\bgit\\s+clean\\s+-[fd]+\\b"
         - "\\bRemove-Item\\s+.*\\s+-Recurse\\s+-Force\\b"
