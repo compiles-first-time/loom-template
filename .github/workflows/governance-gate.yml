@@ -16,10 +16,18 @@
 name: governance-gate
 
 on:
+  # `push: ["**"]` plus `pull_request` fires this twice per commit on any branch
+  # with an open PR — two identical $0 runs and two CI notifications per push.
+  # Push covers the default branch; pull_request covers everything in review.
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
   workflow_dispatch:
+
+# A superseded run tells you about a commit nobody is looking at any more.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   gate:
