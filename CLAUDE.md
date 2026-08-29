@@ -139,7 +139,7 @@ When stating a non-trivial confidence-tagged claim, **use [`/claim`](./.claude/c
 
 - [ADR-0057](./adr/0057-research-scout-update-bus-intake.md) — Research Scout: automated Update-Bus intake (proposal-only, human-gated). Awaiting Critic → Human Replica → user review; the weekly trigger stays un-armed until accepted.
 
-**Recent ADRs (Accepted):** 0003–0047 — retrieval/context, v0.2 enforcement runtime, v0.3–v1.0 governance, Observatory (0039–0041), verifier gates (0044), model routing (0045), test-case registry + destructive hooks (0046–0047) · **0048–0053** (model-agnostic spec + adapters; native-first policy; LangGraph adapter; OTel audit; durable execution; agent reputation) · **0054–0058** (proof-first; lessons service; deliberation panel; kernel pin) · **0059–0062** (measured adherence + session compliance; claim-provenance caps; Requirements Analyst installed; governance regression gate). Full index in [`adr/`](./adr/); 0031 retired 2026-08-02.
+**Recent ADRs (Accepted):** 0003–0047 — retrieval/context, v0.2 enforcement runtime, v0.3–v1.0 governance, Observatory (0039–0041), verifier gates (0044), model routing (0045), test-case registry + destructive hooks (0046–0047) · **0048–0053** (model-agnostic spec + adapters; native-first policy; LangGraph adapter; OTel audit; durable execution; agent reputation) · **0054–0058** (proof-first; lessons service; deliberation panel; kernel pin) · **0059–0064** (measured adherence + compliance; claim-provenance caps; Requirements Analyst; governance regression gate; skill standards + agent classification; /decompose pipeline). Full index in [`adr/`](./adr/); 0031 retired 2026-08-02.
 
 ---
 

@@ -14,6 +14,7 @@ provenance:
 created: 2026-08-13
 updated: 2026-08-13
 embedding_hash: null
+agent_authored: true
 ---
 # An unchecked convention drifts
 

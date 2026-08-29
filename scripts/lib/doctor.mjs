@@ -58,8 +58,45 @@ async function main() {
   await checkSkillAdherence();
   await checkClaimProvenance();
   await checkRequirementsRegisters();
+  await checkSkillStandards();
+  await checkAgentClassification();
 
   report();
+}
+
+// ── ADR-0063: skill authoring standards ──────────────────────────────────
+//
+// The chameleon architecture makes the skill population the growth axis, and
+// nothing checked any property of it: description-as-trigger, the 500-line
+// context budget, or embedded-RCE patterns (public-skill audits report ~35%
+// with security flaws). Soft — findings are a backlog, not a build break.
+async function checkSkillStandards() {
+  const { checkAllSkills } = await import("./skill-standards.mjs");
+  const results = await checkAllSkills(ROOT);
+  if (results.length === 0) return soft("skill-standards", true, "no skill artifacts found (skipped)");
+  const bad = results.filter((r) => r.findings.length > 0);
+  if (bad.length === 0) {
+    soft("skill-standards", true, `${results.length} skill artifact(s) conform (description-as-trigger, ≤500-line budget, vet floor)`);
+  } else {
+    soft("skill-standards", false, bad.map((b) => `${b.file}: ${b.findings.join("; ")}`).join(" · "));
+  }
+}
+
+// ── ADR-0063: agent risk × capability classification ─────────────────────
+//
+// Actions were classified (LR-04) and models were classified (ADR-0045);
+// agents never were. risk × capability decides lifecycle and oversight, and
+// the high/high focus quadrant must name its human gate (`hitl:`).
+async function checkAgentClassification() {
+  const { checkAllAgentClassifications } = await import("./skill-standards.mjs");
+  const results = await checkAllAgentClassifications(ROOT);
+  if (results.length === 0) return soft("agent-classification", true, "no agents found (skipped)");
+  const bad = results.filter((r) => r.findings.length > 0);
+  if (bad.length === 0) {
+    soft("agent-classification", true, `${results.length} agent(s) classified (risk × capability × lifecycle; high/high name their hitl gate)`);
+  } else {
+    soft("agent-classification", false, bad.map((b) => `${b.file}: ${b.findings.join("; ")}`).join(" · "));
+  }
 }
 
 // ── ADR-0061: requirements registers stay complete ───────────────────────

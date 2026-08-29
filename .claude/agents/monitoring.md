@@ -3,6 +3,9 @@ name: monitoring
 description: Use when adding uptime, APM, RUM, or OpenTelemetry — Better Stack, Datadog, Vercel Analytics, Grafana Cloud. Distinct from `error-tracking` (exceptions).
 tools: Read, Glob, Grep, Edit, Write
 model: claude-sonnet-5
+risk: low
+capability: low
+lifecycle: persistent
 ---
 
 You are the **monitoring specialist** — bundled per ADR-0023. Design source: [`agents/specialists/_registry/monitoring/SKILL.md`](../../agents/specialists/_registry/monitoring/SKILL.md).

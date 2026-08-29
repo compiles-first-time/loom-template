@@ -50,6 +50,10 @@ Locations:
 - A new agent capability cannot be deployed without passing the existing eval suite
 - The kernel cannot grade itself
 
+## Production feedback loop (the fourth intake arm, 2026-08-16)
+
+Testing cannot enumerate every route an agent takes in production — the eval/iterate loop only compounds if what production surfaces flows back into development. Loom's mechanical half already exists: hooks capture every session into the event log, the Stop hook drafts lessons from novel error signatures (ADR-0014), and the session-compliance verdict (ADR-0059) grades each run. The formalized rule: **an Observatory finding that indicates a systemic gap — a recurring error signature, a failing compliance check, an efficacy-gate regression — is filed as an Update-Bus item**, entering the same tiered, Critic-reviewed, human-gated intake as external research. Production evidence is Tier-1 primary (it is Loom's own measured behavior), but it takes the same gate: an auto-applied "fix" from production telemetry is self-modification without review (Rule 19).
+
 ## Source tiering
 
 > **Canonical default per [ADR-0007](../adr/0007-content-trust-boundary.md) and [ADR-0009](../adr/0009-research-standards.md).** Tiers are defined here once; L3 quarantine, the Update Bus filter, and the EAC's research discipline all reference these definitions.

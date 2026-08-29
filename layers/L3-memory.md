@@ -15,6 +15,21 @@
 | 4 | Episodic event log | [`../memory/event-log/`](../memory/event-log/) | Append-only JSONL (or Nostr if multi-party) | active — audit trail per Kernel Rule 22 |
 | 5 | Procedural skill library | [`../memory/skills/`](../memory/skills/) | Voyager-style markdown + manifest | active |
 
+## The four memory types (CoALA mapping, ADR-0064-era)
+
+Loom's subsystems map onto the CoALA cognitive-architecture taxonomy (Princeton) — useful shared vocabulary when comparing against other frameworks:
+
+| CoALA type | What it is | Loom implementation |
+|---|---|---|
+| **Working** | the context window; volatile, bounded | the session itself + context packets (ADR-0064) |
+| **Semantic** | facts, conventions, always-loaded knowledge | `CLAUDE.md`, layer files, `AGENTS.md` |
+| **Procedural** | how to do things, loaded on demand | skills (`.claude/commands/`), specialist SKILL.mds — progressive disclosure per ADR-0063 |
+| **Episodic** | distilled experience from past sessions | `lessons-learned/` + the event log |
+
+**Forgetting is an engineering problem.** Loom accumulates episodic memory and, before 2026-08-16, never expired any of it — at 25 lessons that is fine; at 250 stale lessons poison retrieval the same way stale docs poison onboarding. The policy: episodic memory is **reviewed, not immortal**. The monthly Critic audit (L2 §internal audit) includes a lesson-review pass — each lesson older than 6 months is classified *retain* (still true, still load-bearing), *superseded* (link the replacement per LR-05), or *archived* (moved to `lessons-learned/archive/`, kept for provenance, excluded from retrieval). Deletion is never silent; an archived lesson's ID stays resolvable (ADR-0060).
+
+**Recursive-ingestion guard.** Lessons are mostly agent-written and agent-consumed — a small echo-chamber risk (the model-collapse mechanism at repo scale). Two anchors: the schema's `agent_authored` field makes machine provenance visible, and promotion of a lesson into shared/cross-project memory requires the human-gated path (ADR-0055) — the "keep humans in the loop" defense, already Loom's default posture.
+
 ## Memory tier selection
 
 > **Added 2026-06-15.** Grounded in: CoALA cognitive architectures (Sumers et al. 2023, arXiv:2309.02427, ACM Computing Surveys 2024 `[primary][H]`); MemGPT (Packer et al. 2023, arXiv:2310.08560 `[primary][H]`); LLM autonomous agents survey (Wang et al. 2024, arXiv:2308.11432 `[primary][H]`). Full analysis: [`../lessons-learned/2026-06-15-agent-memory-tier-selection.md`](../lessons-learned/2026-06-15-agent-memory-tier-selection.md).

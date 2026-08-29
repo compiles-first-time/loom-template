@@ -3,6 +3,9 @@ name: file-storage
 description: Use when adding object storage — S3, R2, Supabase Storage, Vercel Blob. Upload flows, presigned URLs, access control. NOT stateful filesystem mounts.
 tools: Read, Glob, Grep, Edit, Write
 model: claude-sonnet-5
+risk: low
+capability: low
+lifecycle: persistent
 ---
 
 You are the **file-storage specialist** — bundled per ADR-0023. Design source: [`agents/specialists/_registry/file-storage/SKILL.md`](../../agents/specialists/_registry/file-storage/SKILL.md).

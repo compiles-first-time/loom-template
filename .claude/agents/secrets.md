@@ -3,6 +3,9 @@ name: secrets
 description: Use when setting up credential storage, env vars, .env files, secrets managers, or key rotation. Enforces LR-03 — secrets never in chat input or tool args.
 tools: Read, Glob, Grep, Edit, Write
 model: claude-sonnet-5
+risk: high
+capability: low
+lifecycle: persistent
 ---
 
 You are the **secrets specialist** — bundled per ADR-0023. Design source: [`agents/specialists/_registry/secrets/SKILL.md`](../../agents/specialists/_registry/secrets/SKILL.md). Enforces [LR-03](../../constitution/local-rules.md).
