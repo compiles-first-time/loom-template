@@ -14,6 +14,7 @@
 // but it is advisory — a finding is a prompt to triage, not an auto-fix trigger.
 
 import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -34,6 +35,40 @@ const isBootstrapForwardRef = (target) => {
   const t = target.replace(/\\/g, "/");
   return BOOTSTRAP_GENERATED.some((g) => t === g || t.endsWith("/" + g));
 };
+
+/**
+ * Which of these repo-relative paths does git consider ignored?
+ *
+ * A gitignored link target is a **generated** artifact, not a missing one:
+ * `orchestration/progress-ledger.md` (Stop hook) and `tools/discovered-runtime.md`
+ * (runtime discovery) exist on a machine that has run the tooling and never in a
+ * fresh clone or CI. Judging them as broken links made this check
+ * environment-dependent — green locally, red in CI, for no code reason.
+ *
+ * Asking git is the principled fix. The alternative — appending each one to
+ * BOOTSTRAP_GENERATED as CI finds it — is a hand-maintained convention that
+ * drifts, which is the exact failure class ADR-0059/0060/0061 exist to end.
+ *
+ * One batched `git check-ignore --stdin` call. Degrades to "nothing is ignored"
+ * when git is unavailable or this is not a repo (status 128), which keeps the
+ * checker honest rather than silently permissive.
+ */
+function gitIgnored(root, candidates) {
+  if (candidates.length === 0) return new Set();
+  const res = spawnSync("git", ["check-ignore", "--stdin"], {
+    cwd: root,
+    input: candidates.join("\n"),
+    encoding: "utf8",
+  });
+  // 0 = at least one ignored, 1 = none ignored, 128 = not a repo / git error.
+  if (res.error || res.status === 128) return new Set();
+  return new Set(
+    String(res.stdout || "")
+      .split("\n")
+      .map((s) => s.trim().replace(/\\/g, "/"))
+      .filter(Boolean)
+  );
+}
 
 function walk(dir, filter, out = []) {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
@@ -65,10 +100,14 @@ export function findBrokenLinks(root) {
       if (!t || t.startsWith("$") || t.includes("<") || t.includes("NNNN")) continue; // template placeholders
       const resolved = path.resolve(path.dirname(f), t);
       if (isBootstrapForwardRef(path.relative(root, resolved))) continue;              // tuned: forward-ref, not a gap
-      if (!existsSync(resolved)) broken.push(`${rel(f)} → ${m[1]}`);
+      if (!existsSync(resolved)) {
+        broken.push({ label: `${rel(f)} → ${m[1]}`, target: path.relative(root, resolved).replace(/\\/g, "/") });
+      }
     }
   }
-  return broken;
+  // Drop targets git treats as ignored — generated, not missing (see gitIgnored).
+  const ignored = gitIgnored(root, [...new Set(broken.map((b) => b.target))]);
+  return broken.filter((b) => !ignored.has(b.target)).map((b) => b.label);
 }
 
 function untestedLibs(root) {

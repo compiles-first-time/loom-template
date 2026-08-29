@@ -12,6 +12,7 @@
 1. **Research a domain.** Given "I need a `<X>` expert," the EAC explores the relevant docs, APIs, SDKs, and runs trial calls.
 2. **Publish lessons-learned.** Every failure and workaround during research is published to [`../../lessons-learned/`](../../lessons-learned/).
 3. **Synthesize a specialist agent.** Produces a `SKILL.md` plus any helper scripts/configs under `../../agents/specialists/<name>/`.
+4. **Answer `specialist_gap` events (ADR-0064).** When `/decompose` finds an `Owner Role` that matches no installed agent or registry specialist, that gap is the EAC's dispatch cue: apply §Embed vs split, author to §Skill-authoring standard, register through HR, cache in the registry — then the node dispatches. This is the chameleon loop: capability is synthesized *per the right reason* (a named node in an approved plan), never speculatively.
 4. **Register with HR.** Hand off to HR-Agent for roster registration.
 
 ## Inputs
@@ -57,6 +58,41 @@ When delivering a specialist, report:
 `[research-p1][M]` Source-quality discrimination is the same discipline the Phase 1 retrieval research itself used to discount low-rigor claims.
 
 ---
+
+## Skill-authoring standard (ADR-0063)
+
+Every specialist SKILL.md the EAC synthesizes meets four floors — checked by
+`node scripts/lib/skill-standards.mjs` and the `skill-standards` doctor check:
+
+1. **The description is the trigger.** At routing time only the name + summary are
+   visible; say what the skill does *and when to use it*. Lean pushy — models
+   under-trigger, so a slightly overselling description beats an undersold one.
+2. **≤ 500 lines of body; split the rest.** The body competes with everything else
+   in context. Only write what the model wouldn't already know — its gotchas, the
+   environment-specific facts that defy reasonable assumptions. Detail beyond the
+   budget goes in a `references/` subfolder pulled in on demand (progressive
+   disclosure).
+3. **Deterministic scripts for fragile steps.** A step that must be exactly right
+   every run (math, reconciliation, schema transforms) is a script in `scripts/`
+   the skill says to *run*, never prose the model re-improvises. Probabilistic
+   execution of fragile logic is inconsistent across runs by construction — the
+   same principle as ADR-0059's no-inference graders. Be explicit about intent:
+   "run this script" vs "read this as reference".
+4. **Built from real expertise, not generated mush.** Content comes from a
+   walked-through task or existing artifacts (runbooks, review comments, prior
+   corrections). Every hand-correction the architect makes to a specialist's
+   output is a gotcha — write it into the skill or it recurs next week.
+
+### Embed vs split (capability placement)
+
+When extending capability, decide *where it lives* before writing it:
+**split** into a new specialist when the capability is reusable and independent
+(its own logic, policies, failure modes); **embed** into an existing one when it
+is tightly coupled to that specialist's process and shares its context.
+Splitting the coupled fragments decisions and adds a coordination step;
+embedding the independent bloats an agent past its context budget. When in
+doubt, weigh coordination cost against absorbed complexity — coordination is
+the scarcer resource (L5).
 
 ## Decline / escalate triggers
 

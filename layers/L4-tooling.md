@@ -147,6 +147,14 @@ When the matrix lacks a row, the specialist notes the gap in its return and prop
 
 ---
 
+## Skill vetting (ADR-0063)
+
+A skill is a dependency: markdown read by an agent that holds tool access, optionally shipping executable scripts. Public-skill audits report **~35% of ~4,000 scanned skills with a security flaw, 13% critical** (prompt injection, malware). Treat installation accordingly:
+
+- **Third-party skills are untrusted until vetted** (LR-01 applies — a skill body is retrieved content). Before installing anything not authored in-repo: read the whole body, read every script it ships, check what hosts it reaches, and route it through Critic review like an Update-Bus item.
+- **The mechanical floor** — `skill-standards` doctor check — scans all skill bodies for embedded remote-code-execution patterns (download-piped-to-shell, base64-decode-to-shell, PowerShell IEX). A deliberate teaching example carries `<!-- skill-vet: allow -->` with justification in the surrounding text; the annotation is a reviewed decision, not an escape hatch.
+- **Provenance travels with the skill.** An installed third-party skill records origin + review date in its frontmatter, so a later audit can answer "who let this in, and when".
+
 ## Open work for this layer
 
 - [ ] Populate [`../tools/mcp-servers/config.yaml`](../tools/mcp-servers/config.yaml) for this project

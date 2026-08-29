@@ -61,6 +61,17 @@ Created on demand by the EAC; live under [`../agents/specialists/<name>/`](../ag
 >
 > The intent classifier ([`scripts/hooks/_classify.mjs`](../scripts/hooks/_classify.mjs)) reads [`_registry/manifest.yaml`](../agents/specialists/_registry/manifest.yaml) on every user prompt and surfaces specialist suggestions via the UserPromptSubmit hook. Specialist SKILL.md files follow the [xlsx failure-modes convention](../adr/0022-xlsx-docs-convention.md) — SE/BE rows with `Justifications` column.
 
+## Risk × capability classification (ADR-0063)
+
+Actions are classified by [LR-04](../constitution/local-rules.md#lr-04) and models by [ADR-0045](../adr/0045-per-agent-model-routing.md); agents themselves are classified on a 2×2 carried in their frontmatter (`risk:`, `capability:`, `lifecycle:`) and held by the `agent-classification` doctor check:
+
+| | **Low capability** (predetermined actions) | **High capability** (broad autonomous reasoning) |
+|---|---|---|
+| **Low risk** (bounded damage) | Treat traditionally: persistent, static least-privilege credentials | Reasoning is fine; damage is bounded (e.g. Critic, Requirements Analyst — read/doc-only) |
+| **High risk** (sensitive systems / propagating state) | Extra business controls — the LR-02 posture (e.g. deploy, payments, memory-keeper) | **The focus quadrant.** Must name a human gate (`hitl:` frontmatter); prefer `lifecycle: ephemeral` for task-scoped work (Rule 20 — a standing high/high agent is a standing irreversible surface). E.g. credential-setup. |
+
+**Lifecycle rule:** high-capability agents doing task-scoped work should be spun up, do the task, and go away — their reasoning paths change per task, so their access should be assessed per engagement rather than held. This is the constitutional basis for EAC-synthesized specialists being cached-and-dispatched rather than standing roster members. Persistent standing agents in the high/high quadrant (EAC, Human Replica) each carry a named `hitl:` gate instead.
+
 ## Context budget
 
 > **Canonical default per [ADR-0004](../adr/0004-context-budget.md).**

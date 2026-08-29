@@ -1,21 +1,17 @@
 # Requirements Analyst
 
-> **Status: DRAFT — the deferral gate is met; awaiting architect sign-off.**
-> [ADR-0046](../../adr/0046-requirements-exceptions-testcase-registry.md) §5
-> deferred a requirements author agent (architect, 2026-07-05): *"skill now,
-> agent later — build once the pattern is proven on 2–3 requirements."*
+> **Status: INSTALLED** (2026-08-13, architect directive) — runtime contract at
+> [`.claude/agents/requirements-analyst.md`](../../.claude/agents/requirements-analyst.md).
+> The [ADR-0046](../../adr/0046-requirements-exceptions-testcase-registry.md) §5
+> deferral gate (*"build once the pattern is proven on 2–3 requirements"*) was
+> satisfied three times over by nine registers (`BR_01`, `BR_06`–`BR_13`), and
+> **the harvest those registers were held for has now been done** — see
+> §The harvest below. [ADR-0061](../../adr/0061-requirements-register-role-and-verifier-fields.md).
 >
-> As of 2026-07-28 the `/testcase` skill exists
-> ([`.claude/commands/testcase.md`](../../.claude/commands/testcase.md)) and
-> **nine** registers have been authored through it (`BR_01`, `BR_06`–`BR_13`) —
-> three times the stated bar. The condition is satisfied. What remains is a
-> deliberate decision to install, not a blocked prerequisite.
->
-> **Before installing, harvest the nine.** The gate's purpose was to learn the
-> pattern from real use; an agent written from the format alone would discard
-> exactly what the gate was for. Read what those registers actually needed —
-> where rows were revised, which exceptions were missed on the first pass — and
-> fold it in below.
+> **verifier_type:** `schema_check + human_gate` — the register must satisfy
+> `scripts/lib/requirements-register.mjs`, and the requester must own every
+> `UNKNOWN` before the ledger is handed over. The analyst does not close its own
+> unknowns, so it cannot self-certify completion.
 >
 > **Role:** Elicitation gate. Interviews the requester until the register is
 > **mechanically complete** — every `BR` has solutions, every solution has
@@ -29,6 +25,103 @@
 > a format of its own.
 
 ---
+
+## The harvest — what nine real registers actually taught
+
+> Done 2026-08-13 by reading every register and its git history. This section is
+> the reason the agent was gated, and it found four things that could not have
+> been derived from the format. Measured, reproducibly, by
+> `node scripts/lib/requirements-register.mjs`.
+
+**1. The schema silently degraded, and nobody noticed for a year.** This document
+specifies **twelve** fields. All nine registers use the same **ten** — and they
+are not the same ten. Five specified fields appear in **zero** registers:
+`Assets / Cred / Other`, `Input Source or Condition`, `Input Data Format`,
+`Output Data Format`, and `Next Step`.
+
+The consequences are exact, not cosmetic. Without `Next Step` there is no graph,
+so **validator rule 4 (every Next Step resolves) has never been runnable**.
+Without the two format columns, **rule 5 (format handoffs type-check) has never
+been runnable** — the two rules aimed squarely at the failure class this document
+calls *"where production incidents live."* And without `Assets / Cred / Other`,
+credential and human dependencies have no home, which is why `TR` rows are nearly
+absent (4 across all nine registers, in only 3 of them).
+
+*The lesson is not "people are sloppy."* It is that **an unchecked convention
+drifts** — the identical finding ADR-0059 and ADR-0060 reached from the adherence
+and provenance sides. A format specified only in prose degrades to whatever the
+first author typed.
+
+**2. Exceptions are attached to the requirement, not the solution step.** Every
+register names exceptions `BR-01_SE-01` rather than `BR-01_Guard_SE-01`. Eight of
+nine do this; the ninth has no exceptions at all.
+
+This is precisely the error the §Two classes of exception discussion warns
+against — *"recording exceptions against a requirement rather than a solution
+produces a list that is wrong the moment the approach changes."* The warning was
+written, read, and then not followed, because nothing measured it. It also makes
+per-step coverage unanswerable: you cannot ask "is this step examined?" when no
+exception says which step it guards.
+
+**3. Exception density decayed as the pattern became routine.** The calibration
+baseline in §The twelve fields is ~1.7 exceptions per step. Early registers beat
+it (BR_07: 4.3/step). Later ones collapse:
+
+| Register | Steps | Exceptions | Per step |
+|---|---|---|---|
+| BR_07 | 3 | 13 | 4.3 |
+| BR_01 | 2 | 8 | 4.0 |
+| BR_10 | 6 | 5 | 0.8 |
+| BR_09 · BR_11 · BR_13 | 3 each | 2 each | 0.7 |
+| **BR_12** | **4** | **0** | **0.0** |
+
+BR_12 has four solution steps and not one enumerated failure mode. This document
+already says *"a step with zero exceptions is not simple; it is unexamined."* It
+happened anyway. **Thoroughness decays toward the end of a run** — which is the
+multi-turn adherence decay the evidence review §3.3 documents, showing up in
+Loom's own artefacts.
+
+**4. Every real defect was found by an adversary, never by review.** Only two
+registers were substantively revised after authoring, and both revisions came
+from something *attacking* the spec:
+
+- **BR_01** — the Critic found a contained-scope bypass: a compound command whose
+  destructive target sat outside a worktree but which mentioned `.worktrees`
+  elsewhere was wrongly `allow`ed instead of `ask`ed.
+- **BR_13** — the efficacy harness itself found the `curl | sh` RCE gap, which was
+  then closed (+8 → +11 safety catches).
+
+Neither was a missing field, and neither would have been caught by re-reading the
+register. **An exception list is not validated by reviewing it.** That is why
+ADR-0061 adds a `Verifier` column: every requirement must name the adversary that
+will try to break it.
+
+### What the harvest changed
+
+| Finding | Change |
+|---|---|
+| Schema drifted, unchecked | `scripts/lib/requirements-register.mjs` + a `requirements-registers` doctor check |
+| Exceptions attached to the BR | Attachment is now detected and reported; step-level naming is the target |
+| Density decayed to zero | A ≥1.0/step floor is measured per register |
+| Defects came from adversaries | **New `Verifier` column** (below) |
+| No row said who executes it | **New `Owner Role` column** (below) |
+
+## Two columns added by ADR-0061
+
+These bring the register in line with what the evidence says multi-agent systems
+actually fail on. Cemri et al. (`arXiv:2503.13657`, NeurIPS 2025, 1,600+ traces,
+κ=0.88) find **41.8%** of multi-agent failures are specification/design — and name
+*ambiguous role definitions* and *missing termination conditions* among the modes.
+The register already handles termination via `Status`; it had nothing for role,
+and nothing for how the row gets proven.
+
+| Column | What it pins down | Why |
+|---|---|---|
+| **Owner Role** | Which agent, specialist, or named human executes this row — not a person's name, a *role* | Cemri's ambiguous-role failure mode. A step with no owner is a step nobody is dispatched for. |
+| **Verifier** | The ADR-0044 `verifier_type` that proves this row, plus the concrete check — e.g. `test_suite: scripts/lib/foo.test.mjs`, `human_gate: requester signs off` | Harvest finding 4. Also closes the ADR-0046 ↔ ADR-0044 gap: the artefact defining the work now feeds the verifier gate that closes it. |
+
+**A `BR` row whose `Verifier` is empty is not a requirement; it is a wish.** If no
+adversary can be named, the requirement is not yet specified well enough to build.
 
 ## Why this agent exists
 
@@ -132,6 +225,22 @@ missing:
 8. Every open question is an **explicit `UNKNOWN` marker** with a date and an
    owner — never a blank, never a guess.
 
+**Added by [ADR-0061](../../adr/0061-requirements-register-role-and-verifier-fields.md),
+each one a harvest finding turned into code — run `node scripts/lib/requirements-register.mjs`:**
+
+9. Every row carries the **ten in-use columns**. Schema drift is reported by file
+   and column name. *(Finding 1 — a convention nothing checks will drift.)*
+10. Every exception ID is prefixed by **the step it guards**, not the requirement
+    (`BR-01_Guard_SE-01`, never `BR-01_SE-01`). *(Finding 2.)*
+11. **≥ 1.0 exceptions per solution step**, against a calibration baseline of
+    ~1.7. Any step at zero is named. *(Finding 3 — thoroughness decays late in a
+    run; measure it rather than trusting it.)*
+12. Every **`BR`** names an `Owner Role` and a `Verifier`. *(Finding 4.)*
+
+Checks 9–11 run against existing registers today and currently **fail** — that is
+a real backlog, reported honestly by `loom doctor` rather than hidden by
+grandfathering it in.
+
 Rule 8 is the release valve that keeps this honest. Real specifications have
 unresolved parts; the sample ledger carries *"This mapping may be incorrect. I
 will need to double check. (incomplete 5/28/25)"* right in the cell. That is
@@ -157,8 +266,17 @@ answer better when the question is narrow.
    Ask both. They are different questions and requesters answer only the first.
 5. **Trace the graph.** Walk every Next Step to a terminal state. Dangling edges
    are where production incidents live.
-6. **Validate.** Run the checks. Report what is missing by ID.
-7. **Repeat** until the validator passes or every gap is an owned `UNKNOWN`.
+6. **Name the adversary.** For every `BR`, ask: *what will try to break this, and
+   how will we know it failed?* Fill `Verifier` with an ADR-0044 type and the
+   concrete check. This is harvest finding 4 turned into a question — the only two
+   real defects across nine registers were found by a Critic and by a test
+   harness, never by re-reading the document. A requirement whose adversary
+   cannot be named is not ready to build.
+7. **Assign the owner.** For every row, fill `Owner Role` — the agent,
+   specialist, or named human role that executes it. Not a person; a role.
+8. **Validate.** Run `node scripts/lib/requirements-register.mjs`. Report what is
+   missing by ID. Do not self-assess; the checker's output is the answer.
+9. **Repeat** until the validator passes or every gap is an owned `UNKNOWN`.
 
 ### Asking well
 

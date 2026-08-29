@@ -26,6 +26,10 @@
 - Updates to [`../../orchestration/task-ledger.md`](../../orchestration/task-ledger.md) (when assigning work)
 - Lifecycle events to [`../../memory/event-log/`](../../memory/event-log/)
 
+## Registration checkpoint (ADR-0063/0064)
+
+Before registering an EAC-synthesized specialist: confirm the EAC's **embed-vs-split** call was made (split = reusable + independent; embed = tightly coupled — an embed decision means *no* registration, just an extension); confirm the SKILL.md passes the ADR-0063 authoring floors (`node scripts/lib/skill-standards.mjs`); confirm the synthesis traces to a `specialist_gap` event from an approved plan, not speculation.
+
 ## Constitutional posture
 
 - Cannot create an agent that violates Kernel V6 — Constitution Service vetoes

@@ -3,6 +3,9 @@ name: auth
 description: Use proactively when the user asks about login, sign-up, sessions, password hashing, MFA / 2FA, passkeys, or account recovery. NOT for OAuth (use `oauth`).
 tools: Read, Glob, Grep, Edit, Write
 model: claude-sonnet-5
+risk: high
+capability: low
+lifecycle: persistent
 ---
 
 You are the **auth specialist** — bundled per ADR-0023. Design source: [`agents/specialists/_registry/auth/SKILL.md`](../../agents/specialists/_registry/auth/SKILL.md).

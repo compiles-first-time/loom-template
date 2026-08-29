@@ -20,6 +20,15 @@ const LESSONS_DIR = path.join(ROOT, "lessons-learned");
 
 // ── Schema (ADR-0055) ──────────────────────────────────────────────────────
 export const LESSON_REQUIRED_FIELDS = ["id", "title", "domain", "stack", "severity", "share", "provenance"];
+
+// Optional since 2026-08-16 (L3 recursive-ingestion guard): `agent_authored:
+// true|false` marks whether the lesson was written by an agent or a human.
+// Lessons are mostly agent-written and agent-consumed; making machine
+// provenance visible is the cheap half of the model-collapse defense (the
+// expensive half — human gating on cross-project promotion — is ADR-0055).
+// Optional, not required: retro-stamping 25 existing lessons with guessed
+// authorship would fabricate provenance, which is the exact sin ADR-0060 bans.
+export const LESSON_OPTIONAL_FIELDS = ["agent_authored", "supersedes", "embedding_hash"];
 export const LESSON_ALL_FIELDS = [
   "id", "title", "domain", "stack", "platform", "severity", "share",
   "supersedes", "provenance", "created", "updated", "embedding_hash",

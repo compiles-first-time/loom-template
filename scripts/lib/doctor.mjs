@@ -55,8 +55,159 @@ async function main() {
   await checkAgentModelTiers();
   await checkModelIdCurrent();
   await checkPs1Portability();
+  await checkSkillAdherence();
+  await checkClaimProvenance();
+  await checkRequirementsRegisters();
+  await checkSkillStandards();
+  await checkAgentClassification();
 
   report();
+}
+
+// ── ADR-0063: skill authoring standards ──────────────────────────────────
+//
+// The chameleon architecture makes the skill population the growth axis, and
+// nothing checked any property of it: description-as-trigger, the 500-line
+// context budget, or embedded-RCE patterns (public-skill audits report ~35%
+// with security flaws). Soft — findings are a backlog, not a build break.
+async function checkSkillStandards() {
+  const { checkAllSkills } = await import("./skill-standards.mjs");
+  const results = await checkAllSkills(ROOT);
+  if (results.length === 0) return soft("skill-standards", true, "no skill artifacts found (skipped)");
+  const bad = results.filter((r) => r.findings.length > 0);
+  if (bad.length === 0) {
+    soft("skill-standards", true, `${results.length} skill artifact(s) conform (description-as-trigger, ≤500-line budget, vet floor)`);
+  } else {
+    soft("skill-standards", false, bad.map((b) => `${b.file}: ${b.findings.join("; ")}`).join(" · "));
+  }
+}
+
+// ── ADR-0063: agent risk × capability classification ─────────────────────
+//
+// Actions were classified (LR-04) and models were classified (ADR-0045);
+// agents never were. risk × capability decides lifecycle and oversight, and
+// the high/high focus quadrant must name its human gate (`hitl:`).
+async function checkAgentClassification() {
+  const { checkAllAgentClassifications } = await import("./skill-standards.mjs");
+  const results = await checkAllAgentClassifications(ROOT);
+  if (results.length === 0) return soft("agent-classification", true, "no agents found (skipped)");
+  const bad = results.filter((r) => r.findings.length > 0);
+  if (bad.length === 0) {
+    soft("agent-classification", true, `${results.length} agent(s) classified (risk × capability × lifecycle; high/high name their hitl gate)`);
+  } else {
+    soft("agent-classification", false, bad.map((b) => `${b.file}: ${b.findings.join("; ")}`).join(" · "));
+  }
+}
+
+// ── ADR-0061: requirements registers stay complete ───────────────────────
+//
+// The 2026-08-13 harvest of the nine existing registers found the format had
+// degraded on contact with use, unnoticed, because nothing checked it: five of
+// the twelve specified fields appear in zero registers, exceptions are attached
+// to the requirement rather than the solution step in 8 of 9, and exception
+// density decayed as the pattern became routine (BR_12: four steps, zero
+// exceptions). Soft — this is a backlog to work down, not a build break.
+async function checkRequirementsRegisters() {
+  const dir = path.join(ROOT, "observability", "eval-suite", "requirements");
+  if (!existsSync(dir)) return soft("requirements-registers", true, "no requirements directory (skipped)");
+
+  const { analyzeAll, summarizeFindings } = await import("./requirements-register.mjs");
+  const reports = await analyzeAll(ROOT);
+  if (reports.length === 0) return soft("requirements-registers", true, "no registers yet (skipped)");
+
+  const findings = summarizeFindings(reports);
+  if (findings.length === 0) {
+    soft("requirements-registers", true, `${reports.length} register(s) complete`);
+  } else {
+    soft("requirements-registers", false, findings.join(" · "));
+  }
+}
+
+// ── ADR-0060: claims must cite something that resolves ───────────────────
+//
+// The claim convention asked for `sources` and validated none of them, so
+// Rule 22 was satisfiable by typing. This check resolves the sources on recent
+// claims *offline only* — repo paths, ADR/LR/BR ids — and reports two distinct
+// findings: citations that are provably wrong, and claims stated above the
+// confidence their provenance can support.
+//
+// Remote sources are left `unreachable` rather than probed: doctor must stay
+// fast, deterministic, and runnable on a plane. `node scripts/lib/claim-provenance.mjs --online`
+// is the deliberate, opt-in escalation.
+async function checkClaimProvenance() {
+  const eventDir = path.join(ROOT, "memory", "event-log");
+  if (!existsSync(eventDir)) return soft("claim-provenance", true, "no event log (skipped)");
+
+  const { readRecentRecords } = await import("./event-log-read.mjs");
+  const { verifyClaim } = await import("./claim-provenance.mjs");
+
+  const claims = (await readRecentRecords(14, eventDir)).filter(
+    (r) => r && r.event_type === "claim" && (Array.isArray(r.sources) ? r.sources.length : 0) > 0
+  );
+  if (claims.length === 0) return soft("claim-provenance", true, "no sourced claims in the last 14 days (skipped)");
+
+  const broken = [];
+  const overconfident = [];
+  for (const c of claims) {
+    const report = await verifyClaim(c, { root: ROOT, online: false });
+    const bad = report.sources.filter((s) => s.status === "unresolvable");
+    if (bad.length) broken.push({ claim: String(c.claim || "").slice(0, 60), sources: bad.map((b) => b.source) });
+    // Only judge over-confidence when every source was actually checkable —
+    // otherwise an offline run would flag every remotely-sourced claim, and a
+    // check that cries wolf gets switched off.
+    if (report.over_confident && report.counts.unreachable === 0) {
+      overconfident.push({
+        claim: String(c.claim || "").slice(0, 60),
+        stated: report.stated_confidence,
+        cap: report.confidence_cap,
+      });
+    }
+  }
+
+  const parts = [];
+  if (broken.length) parts.push(`${broken.length} claim(s) cite unresolvable sources: ${broken.map((b) => `"${b.claim}" → ${b.sources.join(", ")}`).join("; ")}`);
+  if (overconfident.length) parts.push(`${overconfident.length} claim(s) exceed their provenance cap: ${overconfident.map((o) => `"${o.claim}" ${o.stated} > ${o.cap}`).join("; ")}`);
+
+  if (parts.length === 0) {
+    soft("claim-provenance", true, `${claims.length} sourced claim(s), all locally-resolvable sources check out`);
+  } else {
+    soft("claim-provenance", false, parts.join(" · "));
+  }
+}
+
+// ── ADR-0059: measured skill adherence ───────────────────────────────────
+//
+// ADR-0017 has emitted `subagent_suggestion` since v0.2 and nothing read it
+// back, so "does the discipline hold?" was answerable only by a human noticing
+// it had stopped holding — the silent-degradation failure ADR-0054 names. This
+// check reads the measured rate out of the event log.
+//
+// Soft by construction, and it must stay soft: Kernel Rules 1/2/8 protect an
+// agent's right to author its own approach, so a hard gate on invoking a
+// suggested agent would be the narrowing Rule 2 forbids. What the check enforces
+// is the *record* — an owned refusal counts as adherence; unexplained silence
+// does not.
+async function checkSkillAdherence() {
+  const eventDir = path.join(ROOT, "memory", "event-log");
+  if (!existsSync(eventDir)) return soft("skill-adherence", true, "no event log (skipped)");
+
+  const { readRecentRecords } = await import("./event-log-read.mjs");
+  const { computeSkillAdherence, loadRoster } = await import("./skill-adherence.mjs");
+
+  const records = await readRecentRecords(14, eventDir);
+  if (records.length === 0) return soft("skill-adherence", true, "no recent events (skipped)");
+
+  const roster = await loadRoster(ROOT);
+  // Session-agnostic: aggregate across the window. Per-session grades live in
+  // the `session_compliance` events the Stop hook writes.
+  const r = computeSkillAdherence({ records, roster });
+  if (r.invocable === 0) {
+    return soft("skill-adherence", true, `no invocable suggestions in the last 14 days (${r.advisory} advisory)`);
+  }
+  const pct = Math.round(r.adherence_rate * 100);
+  const detail = `${pct}% over 14 days — ${r.matched} used, ${r.declined} refused with a reason, ${r.unmatched} silently ignored`;
+  if (r.adherence_rate >= 0.8) soft("skill-adherence", true, detail);
+  else soft("skill-adherence", false, `${detail} — suggestions are being dropped without a recorded reason`);
 }
 
 // ── Checks ───────────────────────────────────────────────────────────────

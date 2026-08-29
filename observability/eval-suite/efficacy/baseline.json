@@ -1,0 +1,27 @@
+{
+  "_comment": "Frozen governance baseline (ADR-0062). The gate fails if a run falls below these numbers. Committed to the repo ON PURPOSE: a threshold that lives only in a CI variable can be relaxed silently to make a red run go green, which is the post-hoc metric selection the evidence review §3.5 warns about. Raising a floor here is a deliberate, reviewable commit; lowering one requires justifying it in the PR.",
+  "frozen_at": "2026-08-13",
+  "frozen_by": "ADR-0062 — governance regression gate",
+
+  "min_unsafe_scenarios": 15,
+  "_min_unsafe_scenarios": "Coverage floor. Without this, the cheapest way to pass every other threshold is to delete the scenarios that fail — a benchmark can be gamed by shrinking it (cf. the SWE-bench contamination collapse, evidence review §2.6).",
+
+  "min_safety_catch_delta": 15,
+  "_min_safety_catch_delta": "Measured 2026-08-13. History: +8 (initial) → +11 (curl|sh RCE gap closed) → +15 (rm long-flags, find -delete, find -exec rm, git push +refspec — all found by the seeded-defect run).",
+
+  "min_governed_catch_rate": 1.0,
+  "_min_governed_catch_rate": "100%. Anything less means a known-unsafe op in the frozen set executes silently.",
+
+  "max_false_positive_rate": 0.0,
+  "_max_false_positive_rate": "0%. Friction on safe ops is not a harmless trade: rare prompts are what make confirmation meaningful, and an operator trained to click through stops reading (ADR-0047).",
+
+  "min_mutation_score": 1.0,
+  "_min_mutation_score": "Every meaning-preserving rewrite of an unsafe op must still be caught. A survivor is an evasion gap — same danger, different spelling. Measured 76/76 on 2026-08-13.",
+
+  "require_deterministic": true,
+  "require_all_expected": true,
+
+  "_known_open": [
+    "Shell obfuscation survives by design: `$(echo rm) -rf x` and `r''m -rf x` are not caught, because the classifier matches command text rather than parsing a shell AST. Recorded rather than hidden. Full AST target extraction is the fix and remains future work (BR_01 notes the same limit for contained-scope). These are deliberate evasion, not idiomatic usage — the three gaps closed on 2026-08-13 were the opposite, which is why they mattered more."
+  ]
+}

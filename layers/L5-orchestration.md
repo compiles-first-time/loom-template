@@ -95,6 +95,10 @@ The runtime-specific command is **not** hard-coded into Loom. It lives in `tools
 
 These numbers are from the 2026-05-31 research arc. Use them to estimate before proposing expensive operations to the architect.
 
+## The gated pipeline (ADR-0064)
+
+`requirements → /decompose → (EAC synthesizes gaps) → dispatch → verify → learn` — the spine connecting the register (ADR-0046/0061), the chameleon trigger (`specialist_gap` → EAC), verifier gates (ADR-0044), and lessons. Three rules travel with it: **the plan is the artifact** (approval happens on the plan file in `orchestration/plans/`, never on chat scrollback); **context packets** (each dispatched node gets its register rows + attached exceptions, not the conversation — handoff misalignment is 36.9% of measured multi-agent failure); **proportionality** (≤1 solution step ⇒ skip the ceremony and execute directly). Details in [`/decompose`](../.claude/commands/decompose.md).
+
 ## Verifier contract
 
 > **Canonical default per [ADR-0044](../adr/0044-verifier-gates-for-agent-tasks.md).** Grounded in: DeepSeek-R1/RLVR (arXiv:2501.12948 `[H]`), Lightman et al. process rewards (arXiv:2305.20050 `[H]`), τ-bench reliability ceiling (arXiv:2406.12045 `[H]`).

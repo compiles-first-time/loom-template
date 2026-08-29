@@ -25,6 +25,7 @@
 | **Human Replica** | [`agents/human-replica/`](./agents/human-replica/) | [`.claude/agents/human-replica.md`](./.claude/agents/human-replica.md) |
 | **Critic / Auditor** | [`agents/critic/`](./agents/critic/) | [`.claude/agents/critic.md`](./.claude/agents/critic.md) — **read-only** |
 | **Memory-Keeper** | [`agents/memory-keeper/`](./agents/memory-keeper/) | [`.claude/agents/memory-keeper.md`](./.claude/agents/memory-keeper.md) |
+| **Requirements Analyst** | [`agents/requirements-analyst/`](./agents/requirements-analyst/) | [`.claude/agents/requirements-analyst.md`](./.claude/agents/requirements-analyst.md) — elicitation gate (ADR-0061) |
 | **Constitution Service** | [`agents/constitution-service/`](./agents/constitution-service/) | [`.claude/agents/constitution-service.md`](./.claude/agents/constitution-service.md) — **read-only** |
 
 For the **minimal-3** mode (per §E.2): HR-Agent + Critic + Memory-Keeper. Trim the others if your project doesn't need them.
