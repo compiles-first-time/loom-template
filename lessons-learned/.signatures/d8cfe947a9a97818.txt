@@ -1,0 +1,1 @@
+Auto-suggested 2026-09-04 from session 009873e2-1389-5f6d-996b-b42c7cb46a50. Draft: lessons-learned/draft-2026-09-04-bash-shell-cwd-was-reset-to-home-user-loom-templat.md
