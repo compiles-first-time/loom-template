@@ -200,6 +200,24 @@ Per [ADR-0037](../adr/0037-retrieval-pipeline-evidence-review.md).
 
 Per literature validation 2026-06-15. Reference implementation: Sovereign Forge Alpaca keyring integration (2026-06-07). See [L2 §Trust boundary protocol](../layers/L2-agents.md#trust-boundary-protocol).
 
+### LR-08 — Upstream isolation: this project never pushes to the Loom template
+
+**Status:** Active
+**Date:** 2026-09-04
+**Extends:** Kernel Rule 2 (unconsented narrowing of another agent's possibility space — the template serves every future project, and project-specific content narrows it); Kernel Rule 20 (temporal weighting — a push to a shared upstream is hard to reverse for everyone who cloned it)
+**Author:** Director directive (Nick, 2026-09-04) — recorded by the Builder session that cloned the template
+
+**Rule:** EMBER is a **clone** of `loom-template`. Work on EMBER never pushes to the template's repository or any of its branches. The template is upstream only: improvements flow **from** Loom **to** EMBER (per the README's "Upgrading an existing project"), never the other way. Anything in EMBER that would benefit every Loom project is filed as a *proposal* in `update-bus/inbox/` for a human to carry upstream by hand in a separate session.
+
+**Why:** The Director's standing instruction when the project was created: *"never push any updates to Loom when building new projects."* A template that absorbs one project's content (game systems, a game spec, a game-specific atlas) stops being a template. The one exception was the founding push itself: the clone was seeded on a Loom feature branch (`claude/game-systems-architecture-uwcjdo`) because that was the only remote the founding session could write to; its draft PR is marked **do not merge**, and its purpose is to be pushed to a new `ember` repository, after which this rule holds without exception.
+
+**How to apply:**
+- Git remotes named `origin` must point at the EMBER repository. A remote pointing at `loom-template` may exist only as `upstream`, fetch-only (`git remote set-url --push upstream no_push`).
+- Any `git push` whose target URL contains `loom-template` is classified `destructive_actions` under LR-04 and requires a `constitution-service` claim — which must refuse.
+- Loom upgrades are pulled by copying the files the README lists, then running `scripts/doctor.sh`; never by merging EMBER into Loom.
+
+**Enforcement:** the LR-04 permissions classifier (pattern added to `.claude/loom-permissions.yaml` when the EMBER repository exists — until then, social discipline plus this rule's text); Constitution Service (refusal); Critic monthly audit (grep the event log for pushes whose target names the template).
+
 <!--
 Template:
 

@@ -1,0 +1,488 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EMBER Systems Atlas</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* ── tokens: light is the base; dark redefines only tokens ───────────── */
+  :root {
+    color-scheme: light dark;
+    --bg: #eceef2;
+    --surface: #ffffff;
+    --surface-2: #e2e5eb;
+    --text: #1b1d24;
+    --muted: #5f6474;
+    --line: #c9ced8;
+    --accent: #cf4f1c;          /* ember: the game's name, used for selection + downstream */
+    --accent-soft: rgba(207, 79, 28, 0.14);
+    --up: #1a7d95;              /* upstream: cool, so the two directions never confuse */
+    --up-soft: rgba(26, 125, 149, 0.14);
+    --spec: #2f8a4b;
+    --implied: #6a7188;
+    --candidate: #b07a0c;
+    --nongoal: #a23d47;
+    --signal: #6b4fb3;
+    --shadow: 0 1px 2px rgba(20, 24, 40, 0.08), 0 8px 24px rgba(20, 24, 40, 0.06);
+    --display: "Rajdhani", "Segoe UI", system-ui, sans-serif;
+    --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14161b; --surface: #1c1f27; --surface-2: #262a35; --text: #e7e5de; --muted: #9ba0ae; --line: #343947;
+      --accent: #f0793a; --accent-soft: rgba(240, 121, 58, 0.18); --up: #4fb8cf; --up-soft: rgba(79, 184, 207, 0.18);
+      --spec: #6cc07e; --implied: #8e95a8; --candidate: #e2b24e; --nongoal: #de6d75; --signal: #ab8ff0;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14161b; --surface: #1c1f27; --surface-2: #262a35; --text: #e7e5de; --muted: #9ba0ae; --line: #343947;
+    --accent: #f0793a; --accent-soft: rgba(240, 121, 58, 0.18); --up: #4fb8cf; --up-soft: rgba(79, 184, 207, 0.18);
+    --spec: #6cc07e; --implied: #8e95a8; --candidate: #e2b24e; --nongoal: #de6d75; --signal: #ab8ff0;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 10px 30px rgba(0, 0, 0, 0.35);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 var(--body); }
+  button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  code, .mono { font-family: var(--mono); font-size: 12px; }
+
+  .app { display: grid; grid-template-columns: 280px 1fr 380px; grid-template-rows: 56px 1fr; height: 100vh; min-height: 560px; }
+  @media (max-width: 1100px) { .app { grid-template-columns: 240px 1fr; grid-template-rows: 56px 1fr 40vh; } .detail { grid-column: 1 / -1; } }
+
+  /* ── top bar ─────────────────────────────────────────────────────────── */
+  .top { grid-column: 1 / -1; display: flex; align-items: center; gap: 20px; padding: 0 18px; border-bottom: 1px solid var(--line); background: var(--surface); }
+  .brand { display: flex; align-items: baseline; gap: 10px; font-family: var(--display); font-weight: 700; font-size: 22px; letter-spacing: 0.02em; white-space: nowrap; }
+  .brand .mark { width: 12px; height: 12px; border-radius: 3px; background: var(--accent); transform: rotate(45deg); align-self: center; }
+  .brand .hash { font-family: var(--mono); font-size: 11px; color: var(--muted); font-weight: 400; letter-spacing: 0; }
+  .stats { display: flex; gap: 16px; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .stats b { color: var(--text); font-weight: 600; }
+  .legend { margin-left: auto; display: flex; gap: 10px; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
+  @media (max-width: 1280px) { .legend { display: none; } }
+  .legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; background: var(--c); }
+  .legend .arrow::before { width: 14px; height: 3px; border-radius: 2px; vertical-align: 2px; }
+
+  /* ── left rail ───────────────────────────────────────────────────────── */
+  .rail { border-right: 1px solid var(--line); background: var(--surface); overflow: auto; padding: 14px; display: flex; flex-direction: column; gap: 14px; }
+  .rail h2, .detail h2 { font-family: var(--display); font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin: 0 0 6px; font-weight: 700; }
+  .search { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text); font: inherit; }
+  .results { display: flex; flex-direction: column; gap: 2px; }
+  .results button, .domains button, .tree button { text-align: left; width: 100%; padding: 5px 8px; border-radius: 5px; display: flex; gap: 8px; align-items: baseline; }
+  .results button:hover, .domains button:hover, .tree button:hover { background: var(--surface-2); }
+  .results .path, .domains .count { color: var(--muted); font-size: 11px; margin-left: auto; font-variant-numeric: tabular-nums; }
+  .domains button.active { background: var(--accent-soft); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+  .chip.on { color: var(--text); border-color: var(--c, var(--text)); background: color-mix(in srgb, var(--c, var(--text)) 14%, transparent); }
+  .chip .dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; background: var(--c); margin-right: 6px; vertical-align: 0; }
+  .row { display: flex; align-items: center; gap: 8px; }
+  .row label { color: var(--muted); font-size: 12px; }
+  select { padding: 4px 6px; border-radius: 5px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font: inherit; }
+
+  /* ── canvas ──────────────────────────────────────────────────────────── */
+  .canvas { position: relative; overflow: hidden; background:
+    radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--line) 55%, transparent) 1px, transparent 0) 0 0 / 22px 22px; }
+  .canvas svg { width: 100%; height: 100%; display: block; cursor: grab; }
+  .canvas svg.dragging { cursor: grabbing; }
+  .crumbs { position: absolute; top: 12px; left: 14px; display: flex; gap: 6px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; box-shadow: var(--shadow); font-size: 13px; }
+  .crumbs button { color: var(--up); font-weight: 500; }
+  .crumbs .sep { color: var(--muted); }
+  .hint { position: absolute; bottom: 12px; left: 14px; color: var(--muted); font-size: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 5px 9px; }
+  .tip { position: absolute; pointer-events: none; max-width: 380px; background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; box-shadow: var(--shadow); font-size: 12px; display: none; z-index: 5; }
+  .tip .t { font-weight: 600; margin-bottom: 4px; }
+  .tip .e { margin: 3px 0; color: var(--muted); }
+  .tip .e b { color: var(--text); font-weight: 500; }
+
+  .node { cursor: pointer; }
+  .node rect { fill: var(--surface); stroke: var(--line); stroke-width: 1.2; }
+  .node.signal rect { stroke: var(--signal); }
+  .node.candidate rect { stroke-dasharray: 4 3; }
+  .node text { font-family: var(--body); font-size: 12px; fill: var(--text); pointer-events: none; }
+  .node.t1 text { font-family: var(--display); font-weight: 700; font-size: 15px; letter-spacing: 0.02em; }
+  .node .stripe { stroke: none; }
+  .node.dim { opacity: 0.32; }
+  .node.sel rect { stroke: var(--accent); stroke-width: 2.4; }
+  .node.down rect { stroke: var(--accent); stroke-width: 1.8; fill: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+  .node.up rect { stroke: var(--up); stroke-width: 1.8; fill: color-mix(in srgb, var(--up) 12%, var(--surface)); }
+  .node.both rect { stroke: var(--signal); stroke-width: 1.8; fill: color-mix(in srgb, var(--signal) 12%, var(--surface)); }
+  .node .sub { font-size: 10px; fill: var(--muted); }
+  .edge { fill: none; stroke: var(--muted); stroke-opacity: 0.45; stroke-width: 1.2; }
+  .edge.down { stroke: var(--accent); stroke-opacity: 0.9; stroke-width: 2; }
+  .edge.up { stroke: var(--up); stroke-opacity: 0.9; stroke-width: 2; }
+  .edge.dim { stroke-opacity: 0.12; }
+  .edge-hit { fill: none; stroke: transparent; stroke-width: 14; cursor: help; }
+  .elabel { font-family: var(--mono); font-size: 10px; fill: var(--muted); pointer-events: none; }
+  .elabel.down { fill: var(--accent); } .elabel.up { fill: var(--up); }
+  marker path { fill: var(--muted); }
+  marker.down path { fill: var(--accent); } marker.up path { fill: var(--up); }
+
+  /* ── detail pane ─────────────────────────────────────────────────────── */
+  .detail { border-left: 1px solid var(--line); background: var(--surface); overflow: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; }
+  .detail h1 { font-family: var(--display); font-size: 24px; margin: 0; line-height: 1.1; text-wrap: balance; }
+  .detail .id { color: var(--muted); }
+  .detail .path { color: var(--muted); font-size: 12px; }
+  .badges { display: flex; flex-wrap: wrap; gap: 6px; }
+  .badge { font-family: var(--mono); font-size: 11px; padding: 2px 7px; border-radius: 4px; border: 1px solid var(--line); color: var(--muted); }
+  .badge.status { color: var(--text); border-color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); }
+  .analogy { border-left: 3px solid var(--accent); padding: 4px 10px; color: var(--muted); font-style: italic; margin: 0; }
+  .kv { display: grid; grid-template-columns: 78px 1fr; gap: 4px 10px; font-size: 13px; }
+  .kv dt { color: var(--muted); }
+  .kv dd { margin: 0; }
+  .kv code { background: var(--surface-2); padding: 1px 5px; border-radius: 3px; margin-right: 4px; display: inline-block; margin-bottom: 3px; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn { padding: 6px 11px; border-radius: 6px; border: 1px solid var(--line); font-weight: 500; font-size: 13px; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn:hover { background: var(--surface-2); } .btn.primary:hover { background: color-mix(in srgb, var(--accent) 88%, black); }
+  .cmd { background: var(--surface-2); border-radius: 6px; padding: 8px 10px; font-family: var(--mono); font-size: 12px; overflow-x: auto; white-space: nowrap; }
+  .reach h2 { display: flex; align-items: center; gap: 8px; }
+  .reach h2 .n { font-family: var(--mono); font-size: 12px; padding: 1px 7px; border-radius: 999px; color: #fff; background: var(--c); letter-spacing: 0; }
+  .depth { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 8px 0 4px; }
+  .hit { display: grid; grid-template-columns: 1fr; gap: 1px; padding: 6px 8px; border-radius: 6px; border-left: 3px solid var(--c); background: color-mix(in srgb, var(--c) 6%, transparent); margin-bottom: 4px; }
+  .hit.soft { border-left-style: dashed; }
+  .hit .name { display: flex; gap: 8px; align-items: baseline; }
+  .hit .name button { font-weight: 600; text-align: left; }
+  .hit .name button:hover { color: var(--c); }
+  .hit .name .p { color: var(--muted); font-size: 11px; }
+  .hit .how { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .hit .why { font-size: 12px; }
+  .tree { display: flex; flex-direction: column; gap: 1px; }
+  .tree .dot { width: 8px; height: 8px; border-radius: 2px; background: var(--c); flex: none; align-self: center; }
+  .empty { color: var(--muted); font-size: 13px; }
+  @media (prefers-reduced-motion: no-preference) { .node rect, .edge { transition: stroke 120ms, fill 120ms, opacity 120ms, stroke-opacity 120ms; } }
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brand"><span class="mark"></span> EMBER Systems Atlas <span class="hash">registry __REGISTRY_HASH__</span></div>
+    <div class="stats" id="stats"></div>
+    <div class="legend">
+      <span style="--c: var(--spec)">spec</span><span style="--c: var(--implied)">implied</span><span style="--c: var(--candidate)">candidate</span><span style="--c: var(--nongoal)">non-goal</span><span style="--c: var(--signal)">signal</span>
+      <span class="arrow" style="--c: var(--accent)">affects</span><span class="arrow" style="--c: var(--up)">affected by</span>
+    </div>
+  </header>
+
+  <aside class="rail">
+    <div>
+      <h2>Find a system</h2>
+      <input class="search" id="q" type="search" placeholder="damage, loot, actor_died…" autocomplete="off">
+      <div class="results" id="results"></div>
+    </div>
+    <div>
+      <h2>Filters</h2>
+      <div class="row" style="margin-bottom:8px"><label for="phase">Built by</label>
+        <select id="phase"><option value="5">any phase</option><option value="0">Phase 0</option><option value="1">Phase 1</option><option value="2">Phase 2</option><option value="3">Phase 3</option><option value="4">Phase 4</option></select>
+        <label for="depth">Depth</label>
+        <select id="depth"><option value="99">all</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+      </div>
+      <div class="chips" id="statusChips"></div>
+      <div class="chips" id="ownerChips" style="margin-top:6px"></div>
+    </div>
+    <div>
+      <h2>Domains</h2>
+      <div class="domains" id="domains"></div>
+    </div>
+  </aside>
+
+  <main class="canvas">
+    <svg id="graph" role="img" aria-label="Influence graph of the visible systems; arrows mean a change in the source can affect the target"></svg>
+    <div class="crumbs" id="crumbs"></div>
+    <div class="hint">click: inspect · double-click: open · drag: pan · wheel: zoom · Esc: up</div>
+    <div class="tip" id="tip"></div>
+  </main>
+
+  <aside class="detail" id="detail"></aside>
+</div>
+
+<script>
+(() => {
+  const ATLAS = /*__ATLAS_JSON__*/null;
+  if (!ATLAS) { document.getElementById("detail").textContent = "No atlas data embedded. Run: node scripts/lib/systems-map.mjs render"; return; }
+
+  // ── data ─────────────────────────────────────────────────────────────
+  const N = new Map(ATLAS.nodes.map((n) => [n.id, n]));
+  const OUT = new Map(), IN = new Map();
+  for (const n of N.keys()) { OUT.set(n, []); IN.set(n, []); }
+  for (const e of ATLAS.edges) { OUT.get(e.src).push(e); IN.get(e.dst).push(e); }
+  const STATUS_C = { spec: "var(--spec)", implied: "var(--implied)", candidate: "var(--candidate)", "non-goal": "var(--nongoal)" };
+  const OWNERS = ["orchestrator", "content-smith", "world-builder", "quest-writer", "test-pilot", "director"];
+  const desc = (id) => { const out = []; const st = [...(N.get(id).children)]; while (st.length) { const c = st.pop(); out.push(c); st.push(...N.get(c).children); } return out; };
+  const subtree = (id) => [id, ...desc(id)];
+  const ancestors = (id) => { const a = []; let c = N.get(id); while (c.parent) { a.push(c.parent); c = N.get(c.parent); } return a; };
+  const phaseNum = (n) => (n.phase != null && /^\d$/.test(n.phase) ? Number(n.phase) : null);
+  const nameOf = (id) => N.get(id).name;
+
+  // ── state ────────────────────────────────────────────────────────────
+  const state = {
+    focus: N.has("combat") ? "combat" : null,
+    selected: N.has("damage_model") ? "damage_model" : ATLAS.nodes[0].id,
+    phase: 5, depth: 99,
+    statuses: new Set(Object.keys(STATUS_C)), owners: new Set(OWNERS),
+    query: "",
+  };
+  const allowed = (n) => {
+    const p = phaseNum(n);
+    if (p != null && p > state.phase) return false;
+    if (!state.statuses.has(n.status)) return false;
+    if (n.owner.length && !n.owner.some((o) => state.owners.has(o))) return false;
+    return true;
+  };
+
+  function reach(id, dir) {
+    const start = subtree(id); const internal = new Set(start); const seen = new Map();
+    let frontier = start; let d = 0;
+    while (frontier.length && d < state.depth) {
+      d++; const next = [];
+      for (const f of frontier) for (const e of (dir === "out" ? OUT : IN).get(f)) {
+        const nid = dir === "out" ? e.dst : e.src;
+        if (internal.has(nid) || seen.has(nid)) continue;
+        if (!allowed(N.get(nid))) continue;
+        seen.set(nid, { depth: d, edge: e }); next.push(nid);
+      }
+      frontier = next;
+    }
+    return seen;
+  }
+
+  // ── visible subgraph ─────────────────────────────────────────────────
+  // Outside the focus, a node is shown as the nearest thing the reader can name:
+  // a sibling of the focus (same parent) at its own tier, otherwise its domain.
+  // That keeps a focused view to "my parts + my siblings + the other domains".
+  function representative(id) {
+    const f = state.focus ? N.get(state.focus) : null;
+    const chain = [id, ...ancestors(id)];            // self first, then upward to the domain
+    if (!f) return chain[chain.length - 1];
+    const inside = f.children.length ? f.children : [f.id];
+    for (const c of chain) if (inside.includes(c)) return c;
+    if (f.parent) for (const c of chain) if (N.get(c).parent === f.parent) return c;
+    return chain[chain.length - 1];
+  }
+  function visibleSet() {
+    const f = state.focus ? N.get(state.focus) : null;
+    const inside = f ? (f.children.length ? [...f.children] : [f.id]) : ATLAS.nodes.filter((n) => n.tier === 1).map((n) => n.id);
+    const insideSub = new Set(inside.flatMap(subtree));
+    const ext = new Set();
+    if (f) for (const e of ATLAS.edges) {
+      const a = insideSub.has(e.src), b = insideSub.has(e.dst);
+      if (a === b) continue;
+      const other = a ? e.dst : e.src;
+      if (!allowed(N.get(other))) continue;
+      const r = representative(other);
+      if (!insideSub.has(r)) ext.add(r);
+    }
+    return [...inside.filter((id) => allowed(N.get(id))), ...ext];
+  }
+  function aggregate(vis) {
+    const visSet = new Set(vis);
+    const repOf = new Map();
+    const rep = (id) => {
+      if (repOf.has(id)) return repOf.get(id);
+      const r0 = representative(id);
+      const r = visSet.has(r0) ? r0 : (visSet.has(id) ? id : (ancestors(id).find((a) => visSet.has(a)) || null));
+      repOf.set(id, r); return r;
+    };
+    const agg = new Map();
+    for (const e of ATLAS.edges) {
+      const a = rep(e.src), b = rep(e.dst);
+      if (!a || !b || a === b) continue;
+      const k = a + "→" + b;
+      if (!agg.has(k)) agg.set(k, { src: a, dst: b, count: 0, samples: [] });
+      const g = agg.get(k); g.count++; if (g.samples.length < 6) g.samples.push(e);
+    }
+    return [...agg.values()];
+  }
+
+  // ── deterministic layout ─────────────────────────────────────────────
+  const layoutCache = new Map();
+  function layout(vis, edges, W, H) {
+    const key = vis.join("|") + "#" + W + "x" + H;
+    if (layoutCache.has(key)) return layoutCache.get(key);
+    const pos = new Map();
+    const cx = W / 2, cy = H / 2;
+    const domains = ATLAS.nodes.filter((n) => n.tier === 1).map((n) => n.id);
+    const angleOf = (id) => { const n = N.get(id); const i = domains.indexOf(n.domain); return (i / domains.length) * Math.PI * 2 - Math.PI / 2; };
+    const focus = state.focus ? N.get(state.focus) : null;
+    const inner = focus ? new Set(focus.children.length ? focus.children : [focus.id]) : new Set(vis);
+    const innerList = vis.filter((id) => inner.has(id)); const outerList = vis.filter((id) => !inner.has(id));
+    // Two rings on an ellipse that uses the canvas width: the focus's own parts inside,
+    // everything outside on the rim, ordered by domain so neighbours from one domain sit together.
+    const rx1 = W * (focus ? 0.20 : 0.36), ry1 = H * (focus ? 0.24 : 0.38);
+    const rx2 = W * 0.44, ry2 = H * 0.44;
+    const home = new Map();
+    innerList.forEach((id, i) => { const a = (i / Math.max(innerList.length, 1)) * Math.PI * 2 - Math.PI / 2; home.set(id, { x: cx + rx1 * Math.cos(a), y: cy + ry1 * Math.sin(a) }); });
+    const rim = [...outerList].sort((a, b) => angleOf(a) - angleOf(b) || a.localeCompare(b));
+    rim.forEach((id, i) => { const a = (i / Math.max(rim.length, 1)) * Math.PI * 2 - Math.PI / 2; home.set(id, { x: cx + rx2 * Math.cos(a), y: cy + ry2 * Math.sin(a) }); });
+    for (const id of vis) pos.set(id, { ...home.get(id) });
+    // Fruchterman–Reingold, fixed iterations, no randomness; the homes hold the rings, springs only nudge
+    const k = Math.sqrt((W * H) / Math.max(vis.length, 1)) * 0.55;
+    const adj = edges.map((e) => [e.src, e.dst]);
+    for (let it = 0; it < 220; it++) {
+      const t = (1 - it / 220) * 14 + 0.5;
+      const disp = new Map(vis.map((id) => [id, { x: 0, y: 0 }]));
+      for (let i = 0; i < vis.length; i++) for (let j = i + 1; j < vis.length; j++) {
+        const a = pos.get(vis[i]), b = pos.get(vis[j]); let dx = a.x - b.x, dy = a.y - b.y; let d = Math.hypot(dx, dy) || 0.01;
+        const f = (k * k) / d; dx /= d; dy /= d;
+        disp.get(vis[i]).x += dx * f; disp.get(vis[i]).y += dy * f; disp.get(vis[j]).x -= dx * f; disp.get(vis[j]).y -= dy * f;
+      }
+      for (const [s, d2] of adj) {
+        const a = pos.get(s), b = pos.get(d2); if (!a || !b) continue; let dx = a.x - b.x, dy = a.y - b.y; const d = Math.hypot(dx, dy) || 0.01;
+        const f = (d * d) / k * 0.25; dx /= d; dy /= d;
+        disp.get(s).x -= dx * f; disp.get(s).y -= dy * f; disp.get(d2).x += dx * f; disp.get(d2).y += dy * f;
+      }
+      for (const id of vis) {
+        const p = pos.get(id), dv = disp.get(id), h = home.get(id);
+        const pull = inner.has(id) ? 0.06 : 0.22;
+        dv.x += (h.x - p.x) * pull; dv.y += (h.y - p.y) * pull;
+        const len = Math.hypot(dv.x, dv.y) || 0.01; const m = Math.min(len, t);
+        p.x = Math.max(70, Math.min(W - 70, p.x + (dv.x / len) * m));
+        p.y = Math.max(44, Math.min(H - 44, p.y + (dv.y / len) * m));
+      }
+    }
+    layoutCache.set(key, pos); return pos;
+  }
+
+  // ── svg rendering ────────────────────────────────────────────────────
+  const svg = document.getElementById("graph");
+  const tip = document.getElementById("tip");
+  const view = { x: 0, y: 0, w: 1000, h: 700 };
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs = {}, parent) => { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); if (parent) parent.appendChild(e); return e; };
+  const labelW = (id) => { const n = N.get(id); const base = n.tier === 1 ? 9.2 : 7.1; return Math.max(64, Math.min(260, n.name.length * base + 26)); };
+  const nodeH = (id) => (N.get(id).tier === 1 ? 46 : 28);
+
+  function classify(vis) {
+    const sel = state.selected; if (!sel) return new Map();
+    const down = reach(sel, "out"), up = reach(sel, "in");
+    const selSub = new Set(subtree(sel));
+    const out = new Map();
+    for (const id of vis) {
+      const ids = subtree(id);
+      const isSelf = ids.some((x) => selSub.has(x)) || ancestors(sel).includes(id);
+      const d = ids.some((x) => down.has(x)), u = ids.some((x) => up.has(x));
+      out.set(id, isSelf ? "sel" : d && u ? "both" : d ? "down" : u ? "up" : "dim");
+    }
+    return out;
+  }
+
+  function draw() {
+    const rect = svg.getBoundingClientRect(); const W = Math.max(rect.width, 600), H = Math.max(rect.height, 420);
+    const vis = visibleSet(); const edges = aggregate(vis); const pos = layout(vis, edges, W, H);
+    const cls = classify(vis);
+    view.w = W; view.h = H; svg.setAttribute("viewBox", `${view.x} ${view.y} ${view.w} ${view.h}`);
+    svg.innerHTML = "";
+    const defs = el("defs", {}, svg);
+    for (const [id, c] of [["arr", ""], ["arr-down", "down"], ["arr-up", "up"]]) {
+      const m = el("marker", { id, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse", class: c }, defs);
+      el("path", { d: "M0,0 L10,5 L0,10 z" }, m);
+    }
+    const gE = el("g", {}, svg), gN = el("g", {}, svg);
+    const dir = (e) => { const a = cls.get(e.src), b = cls.get(e.dst); if (!state.selected) return ""; if (a === "sel" && (b === "down" || b === "both")) return "down"; if (b === "sel" && (a === "up" || a === "both")) return "up"; if ((a === "down" || a === "both") && (b === "down" || b === "both")) return "down"; if ((a === "up" || a === "both") && (b === "up" || b === "both")) return "up"; return "dim"; };
+    for (const e of edges) {
+      const a = pos.get(e.src), b = pos.get(e.dst); if (!a || !b) continue;
+      const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1;
+      const ax = a.x + (dx / d) * (labelW(e.src) / 2 + 4), ay = a.y + (dy / d) * (nodeH(e.src) / 2 + 4);
+      const bx = b.x - (dx / d) * (labelW(e.dst) / 2 + 8), by = b.y - (dy / d) * (nodeH(e.dst) / 2 + 8);
+      const mx = (ax + bx) / 2 - dy / d * 18, my = (ay + by) / 2 + dx / d * 18;
+      const c = dir(e); const path = `M${ax},${ay} Q${mx},${my} ${bx},${by}`;
+      el("path", { d: path, class: `edge ${c}`, "marker-end": `url(#arr${c === "down" || c === "up" ? "-" + c : ""})` }, gE);
+      const hit = el("path", { d: path, class: "edge-hit" }, gE);
+      hit.addEventListener("mousemove", (ev) => showTip(ev, e)); hit.addEventListener("mouseleave", hideTip);
+      if (e.count > 1) el("text", { x: (ax + 2 * mx + bx) / 4, y: (ay + 2 * my + by) / 4 - 3, class: `elabel ${c}`, "text-anchor": "middle" }, gE).textContent = e.count;
+    }
+    for (const id of vis) {
+      const n = N.get(id), p = pos.get(id), w = labelW(id), h = nodeH(id); const c = cls.get(id) || "";
+      const g = el("g", { class: `node t${n.tier} ${n.kind} ${n.status.replace("-", "")} ${c}`, transform: `translate(${p.x - w / 2},${p.y - h / 2})`, tabindex: 0, role: "button", "aria-label": n.name }, gN);
+      el("rect", { width: w, height: h, rx: n.kind === "signal" ? h / 2 : 6 }, g);
+      el("rect", { x: 5, y: h / 2 - 5, width: 10, height: 10, rx: 2, class: "stripe", fill: n.kind === "signal" ? "var(--signal)" : STATUS_C[n.status] }, g);
+      const t = el("text", { x: 21, y: n.tier === 1 ? h / 2 - 3 : h / 2 + 4 }, g); t.textContent = n.name;
+      if (n.tier === 1) el("text", { x: 21, y: h / 2 + 12, class: "sub" }, g).textContent = `${n.children.length} systems · P${n.phase ?? "—"}`;
+      g.addEventListener("click", () => select(id)); g.addEventListener("dblclick", () => focusOn(id));
+      g.addEventListener("keydown", (ev) => { if (ev.key === "Enter") select(id); if (ev.key === " ") { ev.preventDefault(); focusOn(id); } });
+    }
+    drawCrumbs();
+  }
+  function showTip(ev, e) {
+    const host = svg.parentElement.getBoundingClientRect();
+    tip.style.display = "block"; tip.style.left = Math.min(ev.clientX - host.left + 14, host.width - 400) + "px"; tip.style.top = (ev.clientY - host.top + 14) + "px";
+    tip.innerHTML = `<div class="t">${nameOf(e.src)} → ${nameOf(e.dst)}${e.count > 1 ? ` · ${e.count} edges` : ""}</div>` + e.samples.map((s) => `<div class="e"><b>${s.src}</b> → <b>${s.dst}</b> · <code>${s.how}${s.via ? " via " + s.via : ""}</code> (${s.strength}) — ${s.why}</div>`).join("") + (e.count > e.samples.length ? `<div class="e">… ${e.count - e.samples.length} more</div>` : "");
+  }
+  const hideTip = () => { tip.style.display = "none"; };
+
+  // pan + zoom
+  let drag = null;
+  svg.addEventListener("mousedown", (ev) => { if (ev.target === svg || ev.target.tagName === "path") { drag = { x: ev.clientX, y: ev.clientY, vx: view.x, vy: view.y }; svg.classList.add("dragging"); } });
+  window.addEventListener("mousemove", (ev) => { if (!drag) return; const r = svg.getBoundingClientRect(); const s = view.w / r.width; view.x = drag.vx - (ev.clientX - drag.x) * s; view.y = drag.vy - (ev.clientY - drag.y) * s; svg.setAttribute("viewBox", `${view.x} ${view.y} ${view.w} ${view.h}`); });
+  window.addEventListener("mouseup", () => { drag = null; svg.classList.remove("dragging"); });
+  svg.addEventListener("wheel", (ev) => { ev.preventDefault(); const f = ev.deltaY > 0 ? 1.1 : 0.9; const r = svg.getBoundingClientRect(); const px = view.x + (ev.clientX - r.left) / r.width * view.w, py = view.y + (ev.clientY - r.top) / r.height * view.h; view.w *= f; view.h *= f; view.x = px - (px - view.x) * f; view.y = py - (py - view.y) * f; svg.setAttribute("viewBox", `${view.x} ${view.y} ${view.w} ${view.h}`); }, { passive: false });
+
+  // ── crumbs, rail, detail ─────────────────────────────────────────────
+  function drawCrumbs() {
+    const c = document.getElementById("crumbs"); c.innerHTML = "";
+    const chain = state.focus ? [...ancestors(state.focus).reverse(), state.focus] : [];
+    const mk = (label, id) => { const b = document.createElement("button"); b.textContent = label; b.addEventListener("click", () => focusOn(id)); return b; };
+    c.appendChild(mk("All domains", null));
+    for (const id of chain) { const s = document.createElement("span"); s.className = "sep"; s.textContent = "›"; c.appendChild(s); c.appendChild(mk(nameOf(id), id)); }
+  }
+  function drawRail() {
+    const d = document.getElementById("domains"); d.innerHTML = "";
+    for (const dom of ATLAS.domains) {
+      const b = document.createElement("button"); b.className = state.focus === dom.id ? "active" : "";
+      b.innerHTML = `<span class="dot" style="--c:${STATUS_C[dom.status]}; width:8px;height:8px;border-radius:2px;background:var(--c);display:inline-block;flex:none;align-self:center"></span><span>${dom.name}</span><span class="count">${dom.systems} · ${dom.parts}</span>`;
+      b.addEventListener("click", () => { select(dom.id); focusOn(dom.id); }); d.appendChild(b);
+    }
+    const sc = document.getElementById("statusChips"); sc.innerHTML = "";
+    for (const s of Object.keys(STATUS_C)) { const b = document.createElement("button"); b.className = "chip" + (state.statuses.has(s) ? " on" : ""); b.style.setProperty("--c", STATUS_C[s]); b.innerHTML = `<span class="dot"></span>${s}`; b.addEventListener("click", () => { state.statuses.has(s) ? state.statuses.delete(s) : state.statuses.add(s); layoutCache.clear(); refresh(); }); sc.appendChild(b); }
+    const oc = document.getElementById("ownerChips"); oc.innerHTML = "";
+    for (const o of OWNERS) { const b = document.createElement("button"); b.className = "chip" + (state.owners.has(o) ? " on" : ""); b.textContent = o; b.addEventListener("click", () => { state.owners.has(o) ? state.owners.delete(o) : state.owners.add(o); layoutCache.clear(); refresh(); }); oc.appendChild(b); }
+    const st = document.getElementById("stats");
+    const counts = ATLAS.nodes.reduce((m, n) => { m[n.status] = (m[n.status] || 0) + 1; return m; }, {});
+    st.innerHTML = `<span><b>${ATLAS.nodes.length}</b> systems</span><span><b>${ATLAS.edges.length}</b> edges</span><span><b>${ATLAS.domains.length}</b> domains</span><span><b>${counts.candidate || 0}</b> awaiting a Director decision</span>`;
+  }
+  function drawResults() {
+    const r = document.getElementById("results"); r.innerHTML = "";
+    const q = state.query.trim().toLowerCase(); if (!q) return;
+    const hits = ATLAS.nodes.filter((n) => (n.id + " " + n.name + " " + n.summary + " " + n.where.join(" ")).toLowerCase().includes(q)).slice(0, 18);
+    for (const n of hits) { const b = document.createElement("button"); b.innerHTML = `<span>${n.name}</span><span class="path">${n.domain === n.id ? "domain" : nameOf(n.domain)}</span>`; b.addEventListener("click", () => { select(n.id); focusOn(n.tier === 1 ? n.id : n.parent); }); r.appendChild(b); }
+    if (!hits.length) r.innerHTML = `<div class="empty">no match</div>`;
+  }
+  function hitHtml(id, h, c) {
+    const n = N.get(id), e = h.edge;
+    return `<div class="hit ${e.strength}" style="--c:${c}"><div class="name"><button data-sel="${id}">${n.name}</button><span class="p">${n.domain === id ? "" : nameOf(n.domain)} · P${n.phase ?? "—"} · ${n.status}</span></div><div class="how">${e.src} → ${e.dst} · ${e.how}${e.via ? " via " + e.via : ""} · ${e.strength}</div><div class="why">${e.why}</div></div>`;
+  }
+  function reachHtml(title, map, c) {
+    const byDepth = new Map(); for (const [id, h] of map) { if (!byDepth.has(h.depth)) byDepth.set(h.depth, []); byDepth.get(h.depth).push([id, h]); }
+    let html = `<div class="reach"><h2 style="--c:${c}">${title} <span class="n">${map.size}</span></h2>`;
+    if (!map.size) html += `<div class="empty">nothing within the current filters</div>`;
+    for (const [d, list] of [...byDepth.entries()].sort((a, b) => a[0] - b[0])) { html += `<div class="depth">depth ${d} · ${list.length}</div>` + list.map(([id, h]) => hitHtml(id, h, c)).join(""); }
+    return html + `</div>`;
+  }
+  function drawDetail() {
+    const d = document.getElementById("detail"); const id = state.selected; if (!id) { d.innerHTML = `<div class="empty">Select a system.</div>`; return; }
+    const n = N.get(id); const path = [...ancestors(id).reverse()].map(nameOf).join(" › ");
+    const down = reach(id, "out"), up = reach(id, "in");
+    const owners = new Set([...down.keys(), ...up.keys()].flatMap((x) => N.get(x).owner));
+    d.innerHTML = `
+      <div><div class="path">${path || "domain"}</div><h1>${n.name}</h1><div class="id mono">${n.id}</div></div>
+      <div class="badges"><span class="badge">tier ${n.tier}</span><span class="badge">P${n.phase ?? "—"}</span><span class="badge status" style="--c:${n.kind === "signal" ? "var(--signal)" : STATUS_C[n.status]}">${n.kind === "signal" ? "signal · " : ""}${n.status}</span>${n.owner.map((o) => `<span class="badge">${o}</span>`).join("")}<span class="badge">blast ${n.blast}</span></div>
+      ${n.analogy ? `<p class="analogy">${n.analogy}</p>` : ""}
+      <div>${n.summary}</div>
+      <dl class="kv"><dt>Where</dt><dd>${n.where.map((w) => `<code>${w}</code>`).join("") || "—"}</dd><dt>Spec</dt><dd>${n.spec || "—"}</dd><dt>Parts</dt><dd>${n.children.length ? `<div class="tree">${n.children.map((c) => `<button data-sel="${c}"><span class="dot" style="--c:${N.get(c).kind === "signal" ? "var(--signal)" : STATUS_C[N.get(c).status]}"></span><span>${nameOf(c)}</span></button>`).join("")}</div>` : "—"}</dd><dt>Reviewers</dt><dd>${[...owners].join(", ") || "—"}</dd></dl>
+      <div class="actions">${n.children.length ? `<button class="btn primary" data-focus="${id}">Open ${n.name}</button>` : ""}${n.parent ? `<button class="btn" data-focus="${n.parent}">Up to ${nameOf(n.parent)}</button>` : ""}</div>
+      <div class="cmd">scripts/systems-map.sh impact ${id}</div>
+      ${reachHtml("Affects", down, "var(--accent)")}
+      ${reachHtml("Affected by", up, "var(--up)")}`;
+    d.querySelectorAll("[data-sel]").forEach((b) => b.addEventListener("click", () => select(b.dataset.sel)));
+    d.querySelectorAll("[data-focus]").forEach((b) => b.addEventListener("click", () => focusOn(b.dataset.focus)));
+    d.scrollTop = 0;
+  }
+
+  // ── actions ──────────────────────────────────────────────────────────
+  function select(id) { state.selected = id; draw(); drawDetail(); }
+  function focusOn(id) { state.focus = id; view.x = 0; view.y = 0; layoutCache.clear(); draw(); drawRail(); }
+  function refresh() { draw(); drawRail(); drawDetail(); }
+  document.getElementById("q").addEventListener("input", (ev) => { state.query = ev.target.value; drawResults(); });
+  document.getElementById("phase").addEventListener("change", (ev) => { state.phase = Number(ev.target.value); layoutCache.clear(); refresh(); });
+  document.getElementById("depth").addEventListener("change", (ev) => { state.depth = Number(ev.target.value); refresh(); });
+  window.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && state.focus) focusOn(N.get(state.focus).parent || null); });
+  window.addEventListener("resize", () => { layoutCache.clear(); draw(); });
+  refresh();
+})();
+</script>

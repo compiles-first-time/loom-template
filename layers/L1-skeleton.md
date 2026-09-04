@@ -28,8 +28,11 @@ Empirical motivation: Liu et al. (2024) "Lost in the Middle" — LLMs degrade in
 ├── adr/                      # Architecture Decision Records
 ├── lessons-learned/          # Failure-avoidance events
 ├── update-bus/               # L7
+├── systems/                  # Systems atlas (ADR-0065): registry/ (source), ATLAS.md + atlas/ + explorer.html (generated)
 └── scripts/                  # Bootstrap helpers
 ```
+
+**Project-specific additions (EMBER):** `GAME_INFRA_SPEC.md` at the root is the game's law and sits beside this skeleton; the Godot project (`core/`, `data/`, `scenes/`, `actors/`, `ui/`, `art/`, `audio/`, `tests/`, `tools/`, `addons/`) is laid out per spec §3. Where the Godot root sits relative to these governance folders is an open DIRECTOR question (see `CLAUDE.md`). The `systems/` directory is the architecture ledger *about* the game, never game code — per [ADR-0065](../adr/0065-systems-atlas-and-impact-map.md).
 
 ## Size discipline (mandatory)
 

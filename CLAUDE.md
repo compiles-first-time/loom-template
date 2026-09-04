@@ -1,146 +1,86 @@
-﻿# CLAUDE.md — Project Index
+# CLAUDE.md — EMBER
 
-> **Project:** `loom-template` *(replace at bootstrap)*
-> **Description:** `<one-sentence description>` *(replace at bootstrap)*
-> **Loom version:** 1.0.0
-> **Kernel version:** v6
-> **Initialized:** `2026-06-14`
+> **Project:** `ember` — co-op survival RPG (2–10 players per server), WoW-style systems, stylized, hardcore-leaning. **Godot 4.x + GDScript.**
+> **Substrate:** Loom 1.0.0 · Kernel v6 · cloned from `loom-template` on `2026-09-04`. **LR-08:** never push to the template; upstream is fetch-only.
+> **The law lives in [`GAME_INFRA_SPEC.md`](./GAME_INFRA_SPEC.md).** Read it before your first action each session. On any conflict the spec wins over this file. Cite rule ids (R1, G2…) when you act or refuse. Anything marked **DIRECTOR** is Nick's decision: stop and ask. Ambiguity: ask, don't guess.
 
-This file is the **primary entry point** for Claude (chat) and Claude Code into this project. Keep it small — hard cap ~10 KB. Detail belongs in [`layers/`](./layers/), not here.
+This file is the entry point for Claude and Claude Code. Hard cap ~10 KB — detail lives in the spec, [`systems/`](./systems/), and [`layers/`](./layers/).
 
-> **Fresh Claude instance?** State lives in session auto-memory and this file; run [`loom doctor`](./scripts/) and L8 discovery ([layers/L8-discovery.md](./layers/L8-discovery.md)) to audit it. Dated `handoff/` snapshots were retired 2026-08-02 — `/handoff` regenerates one if needed (ADR-0031).
+## Non-negotiables (digest — full text in spec §4)
 
----
+1. Systems (`core/`) vs content (`data/`): content is data; code never hardcodes content. (R1)
+2. Cross-system communication only via the `EventBus` autoload; its signal table is spec §5 and changes ship in the same PR (R2, R-EB1). The atlas checks this mechanically.
+3. Plain-text formats everywhere except `art/` and `audio/`. (R3)
+4. Deterministic sim: seeded RNG passed in, fixed-tick combat, no wall-clock in `core/`. (R4)
+5. Input → simulate → present; presentation never mutates gameplay state. (R5)
+6. Static typing + one-line docstrings. (R6) · Ids `snake_case`, category-prefixed, immutable once shipped. (R7)
+7. Nothing is done until the current phase's gates pass. (R8) · Small diffs; park debt in `docs/tech_debt.md`. (R9)
+8. New dependency, addon, service or API ⇒ spec-change PR first. (R10) · Secrets only via env. (R-SEC1)
 
-## Project identity
+## Session ritual
 
-- **What this is:** *(one paragraph — replace at bootstrap)*
-- **Why it exists:** *(the problem this solves)*
-- **Who uses it:** *(intended users — at v1, usually just the author)*
-- **What success looks like:** *(concrete, measurable outcome)*
+- **Start:** spec §13 (current phase + checklist), the tail of `docs/changelog.md`, and `scripts/systems-map.sh validate`.
+- **Before editing `core/`, `data/`, `ui/` or `scenes/`:** run [`/impact <system_id>`](./.claude/commands/impact.md) — what changes, how, where, why. Paste the hard rows into the PR ([ADR-0065](./adr/0065-systems-atlas-and-impact-map.md)).
+- **End of any task:** run the gates, paste results, one line in `docs/changelog.md`, commit via PR. Stay inside your role's write scope (spec §7.1).
 
----
+## Commands (verify flags once in Phase 0, then pin here)
 
-## Current goals
+```bash
+gdformat --check . && gdlint .                                              # G0 style
+godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests/unit -gexit   # G1 unit
+godot --headless -s tools/validate_data.gd                                  # G2 data integrity
+godot --headless res://scenes/main.tscn                                     # G3 smoke (30s, no ERROR lines)
+godot --headless -s tools/json_to_tres.gd                                   # data/_inbox JSON → .tres
+scripts/systems-map.sh impact <id>   # also: validate | render | tree | find  (ADR-0065)
+bash scripts/doctor.sh && npm test                                          # Loom governance
+```
 
-*(replace this list with your current goals; keep it under 5 items)*
+## Write scopes (spec §7.1 — enforced on every diff)
 
-1. *(Goal 1)*
-2. *(Goal 2)*
-3. *(Goal 3)*
+| Role | May write | Never |
+|---|---|---|
+| orchestrator | anywhere, via PR | secrets, force-push, engine version |
+| content-smith | `data/**`, `art/icons/**`, changelog | `core/**`, `scenes/**` |
+| world-builder | `scenes/**`, `art/**`, `data/biomes/**` | `core/**` logic |
+| quest-writer | `data/quests/**`, `data/dialogue/**`, `docs/lore/**` | `core/**`, combat data |
+| test-pilot | `tests/**`, `tools/testing/**`, workflows | game code (suggest fixes only) |
 
----
+Skills for the four game roles: `.claude/skills/<name>/SKILL.md` (materialize from spec §7.2 — a Phase 0 item). Loom's governance agents: [`AGENTS.md`](./AGENTS.md).
 
-## Layer map
+## The systems atlas ([ADR-0065](./adr/0065-systems-atlas-and-impact-map.md))
 
-The architecture is documented as **spec-as-codebase**. Each layer has its own file under [`layers/`](./layers/). Read only what you need.
+[`systems/registry/*.md`](./systems/registry/) is the ledger: **740 systems in 16 domains** (tier 1 domain → 2 system → 3 parts), **1,131 wired edges**, each with how / via / strength / why. Status tells scope: `spec` · `implied` · **`candidate` = asked for but not in the spec → DIRECTOR decision + spec PR** · `non-goal`. Read [`systems/ATLAS.md`](./systems/ATLAS.md) (index, big picture, load-bearing systems, decisions) and open [`systems/explorer.html`](./systems/explorer.html) (click a system: what it affects in ember, what affects it in blue). `loom doctor` fails on a broken or stale atlas.
+
+## Current focus
+
+**Phase 0 — studio setup.** Work spec §13 top to bottom. Bootstrap prompt: spec Appendix A. The atlas is the map of everything that comes after.
+
+## Open questions (blocking — DIRECTOR)
+
+- **Repo layout:** the Godot project root (`res://`) and Loom's governance folders share this root. Add `.gdignore` to `adr/`, `layers/`, `scripts/`, `systems/` and the rest so Godot ignores them, or move the game under `game/`?
+- **Console vs clock:** spec §13 puts `time <phase>` in the Phase 0 console but the world clock in Phase 3 — stub clock in Phase 0, or move the clock earlier?
+- **12 proposed signals** need §5 rows (R-EB1): `systems/ATLAS.md` §EventBus.
+- **242 candidate systems** (PvP, classes/talents, professions, currencies/markets, guilds, factions, procedural world, accounts, …) — none is built until the spec says so. Decide by domain in `systems/ATLAS.md` §DIRECTOR decisions.
+
+## Loom governance (inherited — read L0 before any consequential action)
 
 | Layer | File | When to read |
 |---|---|---|
-| L0 — Constitutional | [L0](./layers/L0-constitutional.md) | Before any consequential action |
-| L1 — Skeleton | [L1](./layers/L1-skeleton.md) | When adding/moving files |
-| L2 — Agent topology | [L2](./layers/L2-agents.md) | When working with agents |
-| L3 — Memory | [L3](./layers/L3-memory.md) | When reading/writing memory |
-| L4 — Tooling (MCP) | [L4](./layers/L4-tooling.md) | When integrating new tools |
-| L5 — Orchestration | [L5](./layers/L5-orchestration.md) | When designing task flows |
-| L6 — Observability | [L6](./layers/L6-observability.md) | When debugging or shipping |
-| L7 — Self-extension | [L7](./layers/L7-extension.md) | When the system changes itself |
-| L8 — Discovery | [L8](./layers/L8-discovery.md) | When onboarding or auditing state |
-| L9 — Observatory | [L9](./layers/L9-observatory.md) | When monitoring operations (12 live panels) |
+| L0 Constitutional | [L0](./layers/L0-constitutional.md) | before consequential actions |
+| L1 Skeleton | [L1](./layers/L1-skeleton.md) | adding or moving files |
+| L2 Agents · L3 Memory · L4 Tooling | [L2](./layers/L2-agents.md) · [L3](./layers/L3-memory.md) · [L4](./layers/L4-tooling.md) | agents · memory · MCP |
+| L5 Orchestration · L6 Observability | [L5](./layers/L5-orchestration.md) · [L6](./layers/L6-observability.md) | task flows · debugging |
+| L7 Extension · L8 Discovery · L9 Observatory | [L7](./layers/L7-extension.md) · [L8](./layers/L8-discovery.md) · [L9](./layers/L9-observatory.md) | self-change · onboarding · monitoring |
 
-Quick agent reference: [`AGENTS.md`](./AGENTS.md).
-Canonical spec: [`loom-spec.md`](./loom-spec.md) (executive) → [`spec/loom-spec-v0.1-full.md`](./spec/loom-spec-v0.1-full.md) (complete).
+**Constitutional baseline** ([kernel v6](./constitution/kernel-v6.md), [local rules](./constitution/local-rules.md)): Rule 1 authorship · Rule 2 no unconsented narrowing · Rule 8 anti-paternalism · Rule 19 self-modification only by transparent consent · Rule 20 destructive ops need confirmation · Rule 22 every claim has provenance, every action a trace · LR-08 upstream isolation.
 
----
+**Confidence calibration:** `<60%` stop and gather · `60–80%` human oversight · `80–95%` proceed and log · `>95%` autonomous. Always be ready to answer *what would raise confidence to 95%?* Use [`/claim`](./.claude/commands/claim.md) for non-trivial claims (provenance-capped, [ADR-0060](./adr/0060-claim-provenance-verification.md)).
 
-## Constitutional baseline (must read before consequential actions)
-
-This project inherits the **Trajectory Kernel V6** from Loom. The operationally critical rules:
-
-- **Rule 1 — Authorship:** Every agent has the right to author its own pursuits within its possibility space. Agents may decline or escalate.
-- **Rule 2 — Fundamental wrong:** Unconsented narrowing of another agent's possibility space is the fundamental wrong.
-- **Rule 8 — Anti-paternalism:** No agent — including the kernel — decides what's good for another.
-- **Rule 19 — Self-modification:** The kernel changes only via transparent, auditable, consent-based process. Rules 1–8 are effectively immutable.
-- **Rule 20 — Temporal weighting:** Reversible narrowings weigh less than irreversible ones. Destructive ops require confirmation.
-- **Rule 22 — Epistemic transparency:** Every claim has provenance. Every action emits a trace.
-- **Rule 23 — Session-bounded reconciliation:** Reconciliation happens within bounded sessions.
-
-Full text: [`constitution/kernel-v6.md`](./constitution/kernel-v6.md). Project-local extensions: [`constitution/local-rules.md`](./constitution/local-rules.md).
-
----
-
-## Confidence calibration (mandatory for every claim)
-
-| Level | Required action |
-|---|---|
-| `< 60%` | Stop; gather more data |
-| `60–80%` | Proceed only with human oversight |
-| `80–95%` | Proceed; log for audit |
-| `> 95%` | Autonomous execution allowed |
-
-Always be ready to answer: **"What would raise confidence to 95%?"**
-
----
-
-## Working agreements
-
-- **Edits over rewrites.** Prefer surgical edits to existing files.
-- **No new files unless necessary.** Especially no new docs unless asked.
-- **ADRs for consequential choices.** Format under [`adr/`](./adr/).
-- **Lessons-learned for failures.** Surface to [`lessons-learned/`](./lessons-learned/).
-- **Provenance tags `[source][confidence]`** on every non-trivial claim, per Kernel Rule 22.
-- **Verification-first.** Reliability comes from verifier gates + enforcement (ADR-0044/0011/0047), not from more prompt detail — invest there first. `[multi-source][80–95%]` ([ADR-0044 §External corroboration](./adr/0044-verifier-gates-for-agent-tasks.md#external-corroboration-2026-08-03)).
-- **An unchecked convention drifts.** A rule written only in prose is not a rule — measured, not assumed, is the standard. Adherence, provenance, and register completeness are all now checked by code (ADR-0059/0060/0061), because each had silently degraded while documented. `[multi-source][80–95%]`
-- **Token-cost awareness.** Per [LR-06](./constitution/local-rules.md#lr-06): before multi-agent operations, estimate cost and surface it to the architect. Prefer targeted agents over fan-outs; canary before fleet; cheapest sufficient model for mechanical tasks. See [L5](./layers/L5-orchestration.md#token-cost-aware-orchestration).
-- **RAG-aware guidance.** For retrieval work (search, knowledge base, document QA) consult [L3 §Retrieval pipeline](./layers/L3-memory.md#retrieval-pipeline) — pipeline, confidence gating, rerankers, GraphRAG decision tree, cost. Peer-reviewed basis in [ADR-0037](./adr/0037-retrieval-pipeline-evidence-review.md).
-- **Workflow redesign is the investment.** Capability gains materialize after workflow redesign, not tool adoption — the J-curve (Brynjolfsson et al., AEJ:Macro 2021 `[H]`). Budget for the dip; tag lessons `[workflow-redesign]`.
-
-## Pre-PR checklist (applies to loom-template itself)
-
-> Loom's governance applies to its own development. The template must meet the same standards it requires of projects built on it.
-
-Before opening a PR on loom-template:
-
-1. **`loom doctor` passes** — hard checks green; warnings noted in the PR.
-2. **`--gate` passes** — `node observability/eval-suite/efficacy/harness.mjs --gate` (ADR-0062). CI runs it too.
-3. **Specialist consultation** — for non-trivial changes, invoke relevant specialist(s) per [ADR-0034](./adr/0034-specialist-invocation-discipline.md) path 2b; name them in the PR.
-4. **Claim events** — emit `claim` records via `/claim` for non-trivial assertions.
-5. **Hook capture** — confirm today's `session_start` in `memory/event-log/`; note gaps per [ADR-0038](./adr/0038-hook-capture-gap-detection.md).
-6. **Suggestions closed** — every `subagent_suggestion` used or declined with a reason ([ADR-0059](./adr/0059-skill-adherence-and-session-compliance.md)).
-
-## Claim convention (v0.2)
-
-> Hooks in [`.claude/settings.json`](./.claude/settings.json) auto-emit the **mechanical subset** of the Rule-22 trace (timestamp, tool, args, exit code) to `memory/event-log/YYYY-MM-DD.jsonl`. The **introspective subset** (confidence, sources, decision log) requires you, the model, to emit it explicitly.
-
-When stating a non-trivial confidence-tagged claim, **use [`/claim`](./.claude/commands/claim.md)** — it resolves sources mechanically and emits the record. Don't hand-write the JSONL; that friction is why this subset kept going dark.
-
-```json
-{"timestamp":"<iso>","session_id":"<id>","event_type":"claim","agent":"<name>","claim":"<assertion>","confidence":0.87,"confidence_cap":0.95,"what_would_raise_to_95":"<answer>","sources":["ADR-0044"],"decision_log":["<reason>"],"constitutional_check":"Passed Rule N"}
-```
-
-**Confidence is capped by provenance** ([ADR-0060](./adr/0060-claim-provenance-verification.md)): `min(tier, verification V0–V4)`. The `>95%` band needs T1–T2 at V2+ (fetched + content-hashed), or two *independent* resolved sources. `unreachable` (blocked network) is not a failure; `unresolvable` is. See [L6](./layers/L6-observability.md).
-
----
-
-## Open questions (current)
-
-*(track only questions blocking current work; archive resolved ones to `lessons-learned/`)*
-
-- **Human gold set + κ for the Critic** ([ADR-0059 §Deferred](./adr/0059-skill-adherence-and-session-compliance.md)). Loom has no chance-corrected agreement measure anywhere, so the Critic's accuracy is unmeasured. Standard is Krippendorff α ≥ 0.80. **Next validation milestone.**
-- **Decentralized (orchestrator-less) L5 (Stanford DeLM).** Read the primary arXiv paper first — basis is Tier-3 reporting only `[delm][<60%]`. Removing the orchestrator removes a governance chokepoint. Cross-ref ADR-0002/0010/0044/0055. No L5 change until then.
-- **Beads git-native tickets vs progress-ledger/kanban** `[claude-protocol][60–80%]`. Overlaps ADR-0048 kanban; small mapping trial only.
-- **TRACE Step-1 contrastive capability-gap diagnosis** for lessons/reputation — see ADR-0055 `[trace preprint][60–80%]`; diagnosis only, never its training stack.
-
----
+**Working agreements:** edits over rewrites · no new files unless necessary · ADRs for consequential choices ([`adr/`](./adr/)) · lessons-learned for failures ([`lessons-learned/`](./lessons-learned/)) · verification-first (verifier gates, [ADR-0044](./adr/0044-verifier-gates-for-agent-tasks.md)) · an unchecked convention drifts — measured, not assumed · token-cost awareness ([LR-06](./constitution/local-rules.md#lr-06)) · specialists are invoked per [ADR-0034](./adr/0034-specialist-invocation-discipline.md) path 2b; credentials are acquired per [ADR-0042](./adr/0042-credential-setup-specialist.md) · a fresh session regenerates its handoff with `/handoff` ([ADR-0031](./adr/0031-handoff-maintenance-policy.md)) · the spec is model-agnostic and harness-adapted ([ADR-0048](./adr/0048-north-star-model-agnostic-spec-and-adapters.md)).
 
 ## ADRs in flight
 
-*(list ADRs in `Proposed` status; once `Accepted` they fall off this list)*
+- [ADR-0065](./adr/0065-systems-atlas-and-impact-map.md) — Systems atlas: validated registry + computed impact map. **Awaiting DIRECTOR review.**
+- [ADR-0057](./adr/0057-research-scout-update-bus-intake.md) — Research Scout (inherited from Loom, proposal-only; the weekly trigger stays un-armed).
 
-- [ADR-0057](./adr/0057-research-scout-update-bus-intake.md) — Research Scout: automated Update-Bus intake (proposal-only, human-gated). Awaiting Critic → Human Replica → user review; the weekly trigger stays un-armed until accepted.
-
-**Recent ADRs (Accepted):** 0003–0047 — retrieval/context, v0.2 enforcement runtime, v0.3–v1.0 governance, Observatory (0039–0041), verifier gates (0044), model routing (0045), test-case registry + destructive hooks (0046–0047) · **0048–0053** (model-agnostic spec + adapters; native-first policy; LangGraph adapter; OTel audit; durable execution; agent reputation) · **0054–0058** (proof-first; lessons service; deliberation panel; kernel pin) · **0059–0064** (measured adherence + compliance; claim-provenance caps; Requirements Analyst; governance regression gate; skill standards + agent classification; /decompose pipeline). Full index in [`adr/`](./adr/); 0031 retired 2026-08-02.
-
----
-
-*Edit this file as the project evolves. It is the single source of "where to look next" for any agent or human entering this project.*
+Accepted ADRs inherited from Loom: 0003–0064 — index in [`adr/`](./adr/).

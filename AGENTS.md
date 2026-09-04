@@ -1,78 +1,42 @@
-﻿# AGENTS.md — Agent Roster Quick Reference
+# AGENTS.md — EMBER agent roster (universal / OpenHands / Loom)
 
-> **Project:** `loom-template`
-> **Agent set:** `full-6` *(or `minimal-3`; see §E.2 of the spec)*
-> **Hard cap:** ~5 KB. Detail goes in each agent's `agents/<name>/SKILL.md`.
+> Project `ember` · Godot 4.x + GDScript · **The law lives in `GAME_INFRA_SPEC.md`** — read it first each session; the spec wins on conflict; cite rule ids. This file is a thin adapter: how any harness plugs in. Hard cap ~5 KB.
 
----
+## Game roles (spec §7.1) — write scopes enforced on every diff
 
-## Supervisor
+| Role | Mission | May write | Never |
+|---|---|---|---|
+| **orchestrator** | plan, delegate, review, merge | anywhere, via PR | secrets, force-push, engine version |
+| **content-smith** | items, spells, effects, enemies, loot, recipes as data | `data/**`, `art/icons/**`, changelog | `core/**`, `scenes/**` |
+| **world-builder** | scenes, terrain, biomes, placement | `scenes/**`, `art/**`, `data/biomes/**` | `core/**` logic |
+| **quest-writer** | quests, dialogue, lore | `data/quests/**`, `data/dialogue/**`, `docs/lore/**` | `core/**`, combat data |
+| **test-pilot** | tests, bot playthroughs, screenshot review, triage | `tests/**`, `tools/testing/**`, workflows | game code (suggest fixes) |
 
-**Pattern:** Magentic-One (two-ledger).
-**Role:** Routes work; never executes directly. Owns the Task Ledger and Progress Ledger.
-**Ledgers:** [`orchestration/task-ledger.md`](./orchestration/task-ledger.md), [`orchestration/progress-ledger.md`](./orchestration/progress-ledger.md).
+Skills use the portable Agent Skills format — `SKILL.md` with `name` + `description`. Claude Code reads `.claude/skills/<name>/`; OpenHands reads `.agents/skills/<name>/`. Materialize both from spec §7.2 (a Phase 0 item) and keep the two directories identical.
 
----
+## Workflow contract (any harness)
 
-## Base agents (the warp — present in every Loom project)
+- **Start:** spec §13 (phase + checklist), the tail of `docs/changelog.md`, `scripts/systems-map.sh validate`.
+- **Before touching `core/`, `data/`, `ui/`, `scenes/`:** `scripts/systems-map.sh impact <id>` — the atlas says what moves, how, where, why ([ADR-0065](./adr/0065-systems-atlas-and-impact-map.md)). Candidates in the blast radius are unapproved.
+- **End of task:** run the gates (spec §8: G0 style, G1 GUT, G2 data, G3 smoke; G4/G5 from Phase 1), paste results, one changelog line, commit via PR.
+- **DIRECTOR** items: stop and ask Nick. Ambiguity: ask, don't guess.
+- **MCP:** the godot-mcp server (`.mcp.json`; chosen in Phase 0, recorded in spec §9) runs scenes headless, captures output, runs GUT. Prefer live runs over guessing from `.tscn` text.
 
-> **Design source ⇄ runtime contract (v0.2):** Each base agent has a **design** file at `agents/<name>/SKILL.md` (full rationale, kernel posture, alternatives) and a **runtime** file at `.claude/agents/<name>.md` (Claude Code subagent — tools, prompt, decline triggers). Per [ADR-0012](./adr/0012-base-subagents.md).
+## Loom governance agents (the warp — present in every Loom project)
 
-| Agent | Design | Runtime |
-|---|---|---|
-| **HR-Agent** | [`agents/hr/`](./agents/hr/) | [`.claude/agents/hr.md`](./.claude/agents/hr.md) |
-| **Expert Agent Creator (EAC)** | [`agents/eac/`](./agents/eac/) | [`.claude/agents/eac.md`](./.claude/agents/eac.md) |
-| **Human Replica** | [`agents/human-replica/`](./agents/human-replica/) | [`.claude/agents/human-replica.md`](./.claude/agents/human-replica.md) |
-| **Critic / Auditor** | [`agents/critic/`](./agents/critic/) | [`.claude/agents/critic.md`](./.claude/agents/critic.md) — **read-only** |
-| **Memory-Keeper** | [`agents/memory-keeper/`](./agents/memory-keeper/) | [`.claude/agents/memory-keeper.md`](./.claude/agents/memory-keeper.md) |
-| **Requirements Analyst** | [`agents/requirements-analyst/`](./agents/requirements-analyst/) | [`.claude/agents/requirements-analyst.md`](./.claude/agents/requirements-analyst.md) — elicitation gate (ADR-0061) |
-| **Constitution Service** | [`agents/constitution-service/`](./agents/constitution-service/) | [`.claude/agents/constitution-service.md`](./.claude/agents/constitution-service.md) — **read-only** |
+Design at `agents/<name>/SKILL.md`, runtime at `.claude/agents/<name>.md` ([ADR-0012](./adr/0012-base-subagents.md)). Supervisor pattern: Magentic-One two-ledger ([`orchestration/`](./orchestration/)).
 
-For the **minimal-3** mode (per §E.2): HR-Agent + Critic + Memory-Keeper. Trim the others if your project doesn't need them.
-
----
-
-## Base-adjacent agents
-
-Agents adopted via ADR proposal, with runtime contracts established. Design files pending.
-
-| Agent | Runtime | Status |
-|---|---|---|
-| **Research Scout** | [`.claude/agents/research-scout.md`](./.claude/agents/research-scout.md) | ADR-0057 (Proposed) |
-
-**Role:** Scheduled (weekly) update-bus research intake; polls `update-bus/feeds.yaml`, applies source-tier filters, cross-validates, files proposals in `update-bus/inbox/`. Proposal-only, never auto-applies (human-gated per L7). Sibling to EAC for on-demand research.
-
-**Write scope:** `update-bus/inbox/`, `lessons-learned/`, event log.
-
----
-
-## Specialist agents (the weft — created on demand)
-
-Specialists live under [`agents/specialists/<name>/`](./agents/specialists/) and are spawned by the EAC for single tasks, then **terminated at end of project lifecycle**. Their lessons-learned persist in [`lessons-learned/`](./lessons-learned/).
-
-*(none yet — populated as you go)*
-
----
-
-## Communication patterns
-
-- **In-process** (v1 default) — agents share the supervisor's memory space; routing is direct.
-- **A2A / ACP** — defer to v2 (multi-process or multi-machine; see [L4 spec](./layers/L4-tooling.md)).
-- **No direct agent-to-agent across project boundaries.** Cross-project communication goes through the Human Replica.
-
----
-
-## Lifecycle
-
-| Phase | What happens |
+| Agent | Role |
 |---|---|
-| **Spawn** | HR-Agent registers; SKILL.md / role file written; Constitution Service registers the new agent |
-| **Run** | Agent executes within a bounded session; emits Rule-22 trace records on every action |
-| **Reconcile** | At end of session, agent writes its updates to markdown self-knowledge + episodic event log |
-| **Retire** | HR-Agent removes from roster; lessons-learned promoted; agent directory archived |
+| HR-Agent | the roster; registers and retires agents |
+| EAC | researches a domain, writes a specialist skill, hands to HR |
+| Human Replica | decides below Nick's escalation bar; always logs reasoning |
+| Critic / Auditor | read-only quality gate before consequential commits |
+| Memory-Keeper | every read and write to project memory |
+| Requirements Analyst | elicitation gate until a register is mechanically complete ([ADR-0061](./adr/0061-requirements-register-role-and-verifier-fields.md)) |
+| Constitution Service | read-only validator against Kernel v6 + local rules |
+| Research Scout | weekly update-bus intake, proposal-only ([ADR-0057](./adr/0057-research-scout-update-bus-intake.md), proposed) |
 
-> **Reputation-aware dispatch:** per [ADR-0053](./adr/0053-agent-reputation-and-dispatch.md), the supervisor weights specialist selection and retire / re-spawn calls by each agent's recorded reputation (verifier pass-rate, task outcomes).
+Specialists (`agents/specialists/`) are spawned by the EAC per named need in an approved plan ([ADR-0064](./adr/0064-decompose-gated-pipeline.md)), dispatched by recorded reputation ([ADR-0053](./adr/0053-agent-reputation-and-dispatch.md)), and retired at end of lifecycle; their lessons persist in [`lessons-learned/`](./lessons-learned/). No agent-to-agent traffic across project boundaries — it goes through the Human Replica. **LR-08:** this project never pushes to `loom-template`.
 
----
-
-*Detail per agent lives in `agents/<name>/SKILL.md`. This file is the index.*
+*Detail per agent lives in its SKILL.md. This file is the index.*

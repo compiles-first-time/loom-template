@@ -1,6 +1,21 @@
-# Loom — Architectural Base Spec Template
+# EMBER
 
-> A reusable framework for building software projects with AI assistance — safely, transparently, and with institutional memory built in.
+> Co-op survival RPG for 2–10 players per server. WoW-style systems, stylized look, hardcore-leaning stakes. **Godot 4.x + GDScript.** Built on the Loom substrate (below) — Loom governs *how* the game is built; [`GAME_INFRA_SPEC.md`](./GAME_INFRA_SPEC.md) governs *what* the game is.
+
+| Start here | What it is |
+|---|---|
+| [`GAME_INFRA_SPEC.md`](./GAME_INFRA_SPEC.md) | **The law.** Product definition, stack, repo layout, the R1–R10 rules, the EventBus contract, data schemas, agent roster, gates, phases. On any conflict, it wins. |
+| [`CLAUDE.md`](./CLAUDE.md) · [`AGENTS.md`](./AGENTS.md) | Thin adapters for Claude Code and any other harness: session ritual, write scopes, commands. |
+| [`systems/`](./systems/) | **The systems atlas.** 740 systems in 16 domains, 1,131 wired edges. `scripts/systems-map.sh impact <id>` answers *what is affected, how, where, why*. Index: [`systems/ATLAS.md`](./systems/ATLAS.md); interactive map: `systems/explorer.html`. ([ADR-0065](./adr/0065-systems-atlas-and-impact-map.md)) |
+| [`constitution/local-rules.md`](./constitution/local-rules.md) | Loom's local rules plus **LR-08**: this project never pushes to the `loom-template` repository. |
+
+**Current phase:** 0 — studio setup (spec §13). **This repository was seeded from a Loom feature branch; its founding PR is marked do-not-merge and exists to be pushed to a new `ember` repository.**
+
+---
+
+## Loom — Architectural Base Spec Template (the substrate)
+
+> A reusable framework for building software projects with AI assistance — safely, transparently, and with institutional memory built in. *The section below is the template's own README, kept verbatim as the reference for the governance layer EMBER inherits.*
 
 **Status:** v1.0 (complete) + v0.3.1 (deploy hardening) + v0.3.2 (integration follow-throughs) · merged to `main` on 2026-05-22
 **Kernel version:** v6

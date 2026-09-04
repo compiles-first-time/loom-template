@@ -60,8 +60,50 @@ async function main() {
   await checkRequirementsRegisters();
   await checkSkillStandards();
   await checkAgentClassification();
+  await checkSystemsAtlas();
 
   report();
+}
+
+// ── ADR-0065: systems atlas ──────────────────────────────────────────────
+//
+// Projects that keep a systems registry (systems/registry/*.md) get three
+// checks: the registry validates (hard — a ledger with dangling edges answers
+// impact questions wrongly), the generated ATLAS.md + explorer.html are
+// current (hard — a one-command fix, and a stale atlas is a lying atlas),
+// and the design warnings are surfaced (soft — phase inversions, scope leaks
+// and R2 smells are questions for the Director, not build breaks).
+// Projects without a registry skip silently.
+async function checkSystemsAtlas() {
+  const dir = path.join(ROOT, "systems", "registry");
+  if (!existsSync(dir)) return soft("systems-atlas", true, "no systems/registry (skipped)");
+  let mod;
+  try {
+    mod = await import("./systems-map.mjs");
+  } catch (err) {
+    return hard("systems-atlas", false, `scripts/lib/systems-map.mjs failed to load: ${err.message}`);
+  }
+  let all;
+  try {
+    all = await mod.loadAll({ root: ROOT });
+  } catch (err) {
+    return hard("systems-atlas", false, `registry failed to load: ${err.message}`);
+  }
+  const { graph, validation, hash } = all;
+  if (validation.errors.length) {
+    return hard("systems-atlas", false, `${validation.errors.length} registry error(s): ${validation.errors.slice(0, 3).join("; ")}${validation.errors.length > 3 ? " …" : ""}`);
+  }
+  hard("systems-atlas", true, `${graph.nodes.size} systems, ${graph.influence.length} edges, zero errors (registry ${hash})`);
+  let stale = [];
+  try {
+    stale = await mod.staleGenerated(mod.renderAll(graph, validation, { hash }), ROOT);
+  } catch (err) {
+    stale = [`render failed: ${err.message}`];
+  }
+  if (stale.length) hard("systems-atlas-rendered", false, `stale: ${stale.slice(0, 4).join(", ")}${stale.length > 4 ? " …" : ""} — run scripts/systems-map.sh render`);
+  else hard("systems-atlas-rendered", true, "ATLAS.md, atlas/*.md and explorer.html match the registry");
+  if (validation.warnings.length) soft("systems-atlas-design", false, `${validation.warnings.length} design finding(s) awaiting a decision (phase inversion / scope leak / R2 smell / unwired) — see systems/ATLAS.md §Findings`);
+  else soft("systems-atlas-design", true, "no open design findings in the registry");
 }
 
 // ── ADR-0063: skill authoring standards ──────────────────────────────────
