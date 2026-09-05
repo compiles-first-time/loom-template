@@ -53,7 +53,7 @@ Not applicable — no LLM loop. `observe` is a single pass over the project's te
 **Migration:** additive. The check is dormant until Phase 0 creates `core/`; the first real files will produce a backlog of undeclared dependencies and R6 findings that is itself the Phase 0 ledger reconciliation. When the Godot gates workflow exists, `observe --strict` joins it.
 
 **Open for the DIRECTOR:**
-1. Fill `systems/codeowners.json`: create the `ember-<role>` teams, or map every role to your username.
+1. ~~Fill `systems/codeowners.json`: create the `ember-<role>` teams, or map every role to your username.~~ **Decided 2026-09-05:** every role maps to `@compiles-first-try`; the Director's words are recorded in the mapping file's `_decision` key.
 2. Whether `observe --strict` should gate CI from the first Phase 0 commit (recommendation: yes for violations, advisory for undeclared dependencies until the ledger catches up, which is how the doctor is set today).
 3. Whether to add a single atlas MCP server (spec §9, R10) so non-Claude harnesses get the six atlas tools natively.
 

@@ -1,10 +1,25 @@
 {
   "_comment": "Role → GitHub owner(s) for the generated .github/CODEOWNERS (ADR-0067). Keys are the spec §7.1 roles used in the registry's Owner column; values are @username or @org/team-slug (teams must exist in the organization, or GitHub marks the line 'unknown owner' and assigns nobody). `_default` reviews anything no system claims. Edit this file, never .github/CODEOWNERS; then run scripts/systems-map.sh render. A solo Director maps every role to one username.",
-  "_default": ["@compiles-first-time/ember-orchestrator"],
-  "orchestrator": ["@compiles-first-time/ember-orchestrator"],
-  "content-smith": ["@compiles-first-time/ember-content"],
-  "world-builder": ["@compiles-first-time/ember-world"],
-  "quest-writer": ["@compiles-first-time/ember-narrative"],
-  "test-pilot": ["@compiles-first-time/ember-qa"],
-  "director": ["@compiles-first-time/ember-director"]
+  "_decision": "2026-09-05 Director, verbatim: \"compiles-first-try and compiles-first-time are both my accounts. Either account is fine. regardless, lets go with your recommendation.\" Recommendation applied: every role to the one reviewing user account (a solo Director; teams would need an organization with the teams created and given write access, and GitHub ignores lines whose owner it cannot resolve). @compiles-first-try is the account that opened PR #102 and holds write access; the organization account cannot be a code owner. Role identity stays in the registry Owner column and in the # ids comment above each generated line; a later move to teams is an edit of this file plus a render.",
+  "_default": [
+    "@compiles-first-try"
+  ],
+  "orchestrator": [
+    "@compiles-first-try"
+  ],
+  "content-smith": [
+    "@compiles-first-try"
+  ],
+  "world-builder": [
+    "@compiles-first-try"
+  ],
+  "quest-writer": [
+    "@compiles-first-try"
+  ],
+  "test-pilot": [
+    "@compiles-first-try"
+  ],
+  "director": [
+    "@compiles-first-try"
+  ]
 }
