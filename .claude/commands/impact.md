@@ -41,6 +41,7 @@ scripts/systems-map.sh add-edge --from <dependent> --how <how> --to <dependency>
 scripts/systems-map.sh validate          # zero errors; read the warnings — they are design questions
 scripts/systems-map.sh render            # regenerates systems/ATLAS.md, atlas/, explorer.html and systems/llm/
 scripts/systems-map.sh audit-diff        # before the PR: which systems the diff touches, which hard downstream it did not
+scripts/systems-map.sh observe --strict  # code vs ledger: undeclared dependencies, signals only in code, R2–R6 violations (ADR-0067)
 ```
 
 `loom doctor` fails when the registry has errors or the generated files are stale, so a PR cannot merge with a ledger that lies.

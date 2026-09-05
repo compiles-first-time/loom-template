@@ -1,0 +1,803 @@
+# CODEOWNERS — generated from systems/registry (Where + Owner) and systems/codeowners.json (role → GitHub owner).
+# Do not edit: scripts/systems-map.sh render rewrites it (ADR-0067). Change an owner in the registry or the mapping.
+# GitHub applies the LAST matching pattern: directories first, specific files last. The comment above each line names the system(s).
+
+# default reviewer for anything no system claims
+* @compiles-first-time/ember-orchestrator
+
+# communication, motion_reduction, presentation, sim_presentation_split
+/ui/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-world
+# content_database_git
+/.git @compiles-first-time/ember-orchestrator
+# appearance_customization, art_pipeline, biome_palette_lighting, presentation
+/art/ @compiles-first-time/ember-world @compiles-first-time/ember-orchestrator
+# architecture_rules, deterministic_sim, foundation, gdscript_static_typing, sim_presentation_split, systems_content_split
+/core/ @compiles-first-time/ember-orchestrator
+# balance_anchoring, content_database_git, converter_gate_run, hotfix_data_only, id_convention, live_content_ops, mod_support, persistence, places, plain_text_formats, systems_content_split
+/data/ @compiles-first-time/ember-content @compiles-first-time/ember-orchestrator @compiles-first-time/ember-director @compiles-first-time/ember-world
+# documentation, hosting_ops, live_content_ops, operations
+/docs/ @compiles-first-time/ember-director @compiles-first-time/ember-orchestrator @compiles-first-time/ember-qa
+# audio, presentation
+/audio/ @compiles-first-time/ember-world @compiles-first-time/ember-orchestrator
+# content_review, flaky_test_policy, operations, validation_gates
+/tests/ @compiles-first-time/ember-qa @compiles-first-time/ember-orchestrator
+# content_factory, foundation, gdscript_static_typing, operations, security_secrets, validation_gates
+/tools/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-qa
+# actor_lifecycle, ai_entities, animation, animation_state_machines, combat_animations, facial_emotes, hit_reactions_death_anims, ik_procedural, locomotion_blending, presentation, ragdoll, rigs_skeletons
+/actors/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-world
+# addon_management, engine_platform, mod_support
+/addons/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-director
+# loom_governance_layer
+/layers/ @compiles-first-time/ember-orchestrator
+# biome_hazard_zones, build_preview_ghost, navigation, places, plain_text_formats, presentation, sim_presentation_split, spawning, terrain_biomes, travel, world
+/scenes/ @compiles-first-time/ember-world @compiles-first-time/ember-orchestrator
+# alerting, community_admin, dedicated_server_build, hosting_ops, leaderboards, log_aggregation, multiplayer, server_cli_headless
+/server/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-director
+# action_bars_hotkeys, boss_frames, buff_bars, crosshair_reticle, group_frames, health_resource_bars, minimap_compass_hud, nameplates_floating_text, notifications_toasts, target_frames, ui_hud
+/ui/hud/ @compiles-first-time/ember-orchestrator
+# agent_harness, harness_adapters
+/.agents/ @compiles-first-time/ember-orchestrator
+# agent_harness, harness_adapters
+/.claude/ @compiles-first-time/ember-orchestrator
+# vfx_spell_effects
+/art/vfx/ @compiles-first-time/ember-world
+# ai_brain, ai_entities, behavior_trees_utility
+/core/ai/ @compiles-first-time/ember-orchestrator
+# gdscript_static_typing
+/gdlintrc @compiles-first-time/ember-orchestrator
+# loom_governance_layer
+/scripts/ @compiles-first-time/ember-orchestrator
+# systems_atlas
+/systems/ @compiles-first-time/ember-orchestrator
+# repo_layout
+/.gdignore @compiles-first-time/ember-orchestrator @compiles-first-time/ember-director
+# agent_harness, godot_mcp_bridge
+/.mcp.json @compiles-first-time/ember-orchestrator
+# harness_adapters
+/AGENTS.md @compiles-first-time/ember-orchestrator
+# harness_adapters
+/CLAUDE.md @compiles-first-time/ember-orchestrator
+# actor_state_sync_hooks, communication, godot_multiplayer_api, instancing, listen_server_option, multiplayer, net_architecture
+/core/net/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-director
+# llm_npc_intelligence
+/tools/ai/ @compiles-first-time/ember-director
+# build_preview_ghost
+/ui/build/ @compiles-first-time/ember-orchestrator
+# contextual_hints, onboarding_tutorial
+/ui/hints/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-narrative
+# colorblind_modes, text_scaling, ux_accessibility
+/ui/theme/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-director
+# font_pipeline
+/art/fonts/ @compiles-first-time/ember-world
+# icon_conventions
+/art/icons/ @compiles-first-time/ember-world
+# sfx_events
+/audio/sfx/ @compiles-first-time/ember-world
+# hot_reload
+/core/data/ @compiles-first-time/ember-orchestrator
+# loot
+/core/loot/ @compiles-first-time/ember-content @compiles-first-time/ember-orchestrator
+# time_and_tick
+/core/time/ @compiles-first-time/ember-orchestrator
+# lore_entries_codex
+/data/lore/ @compiles-first-time/ember-narrative
+# ai_entities, npc_defs, npcs, quest_givers, trainers
+/data/npcs/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-narrative @compiles-first-time/ember-director
+# lore, lore_additions
+/docs/lore/ @compiles-first-time/ember-narrative @compiles-first-time/ember-director
+# cloud_db_postgres, per_player_save_in_world, persistence, server_database
+/server/db/ @compiles-first-time/ember-director @compiles-first-time/ember-orchestrator
+# asset_generation, model_generation_api
+/tools/gen/ @compiles-first-time/ember-world @compiles-first-time/ember-content
+# npcs
+/actors/npc/ @compiles-first-time/ember-narrative @compiles-first-time/ember-orchestrator
+# asset_generation, asset_intake_pipeline, content_factory
+/art/_inbox/ @compiles-first-time/ember-world @compiles-first-time/ember-content @compiles-first-time/ember-orchestrator
+# model_naming, rigs_skeletons
+/art/models/ @compiles-first-time/ember-world
+# monitoring_telemetry
+/core/debug/ @compiles-first-time/ember-orchestrator
+# ai_entities, spawning
+/core/spawn/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-world
+# character_creation, state_model
+/core/state/ @compiles-first-time/ember-orchestrator
+# attributes_stats, character, primary_attributes
+/core/stats/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-director
+# environment, travel, world
+/core/world/ @compiles-first-time/ember-world @compiles-first-time/ember-orchestrator
+# consumables, economy, equipment_items, gather_tools_tiers, gear_tiers, item_categories_tags, item_levels, item_stats_block, items, materials_ingredients, quest_items, rarity_tiers, set_bonuses, weapon_types
+/data/items/ @compiles-first-time/ember-content @compiles-first-time/ember-orchestrator @compiles-first-time/ember-director
+# biome_palette_lighting, environment, fog_atmosphere, lighting_day_night
+/scenes/env/ @compiles-first-time/ember-world @compiles-first-time/ember-orchestrator
+# buff_debuff_visuals, element_default_vfx, impact_effects, motion_reduction, projectile_visuals, screen_effects, telegraph_visuals, vfx_pooling_budget, vfx_spell_effects
+/scenes/vfx/ @compiles-first-time/ember-world @compiles-first-time/ember-orchestrator
+# perf_budget_tests
+/tests/perf/ @compiles-first-time/ember-qa
+# g1_unit_tests_gut
+/tests/unit/ @compiles-first-time/ember-qa
+# ui_screens
+/ui/screens/ @compiles-first-time/ember-orchestrator
+# env_secrets, security_secrets
+/.env.example @compiles-first-time/ember-orchestrator
+# actor_prefabs_scenes
+/actors/npcs/ @compiles-first-time/ember-world
+# low_end_fallbacks
+/art/shaders/ @compiles-first-time/ember-orchestrator
+# music_system
+/audio/music/ @compiles-first-time/ember-director
+# voice_acting
+/audio/voice/ @compiles-first-time/ember-director
+# combat, roles
+/core/combat/ @compiles-first-time/ember-orchestrator
+# narrative, quests, repeatable_daily_quests
+/core/quests/ @compiles-first-time/ember-narrative @compiles-first-time/ember-orchestrator @compiles-first-time/ember-director
+# backup_rotation, character_identity, character_migration_between_worlds, multiple_characters_per_world, persistence, save_system, save_tamper_resistance
+/core/saving/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-director
+# block_mute, friends_list, player_alignment, social
+/core/social/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-director
+# agent_content_loop, content_factory, content_pipeline, converter_gate_run, inbox_json, request_to_json
+/data/_inbox/ @compiles-first-time/ember-content @compiles-first-time/ember-orchestrator
+# biome_defs, biome_hazard_zones, terrain_biomes, world
+/data/biomes/ @compiles-first-time/ember-world @compiles-first-time/ember-orchestrator
+# emotes
+/data/emotes/ @compiles-first-time/ember-director
+# holiday_defs, live_events, seasonal_rewards
+/data/events/ @compiles-first-time/ember-director @compiles-first-time/ember-content
+# localization, string_tables
+/data/locale/ @compiles-first-time/ember-orchestrator
+# narrative, onboarding_tutorial, quest_chains, quest_defs, quest_givers, quest_journal_text, quests, tutorial_quests
+/data/quests/ @compiles-first-time/ember-narrative @compiles-first-time/ember-orchestrator
+# abilities_skills, combat, dps_kit, enemy_abilities, healing_kit, pvp_balance_split, roles, skill_ranks, spell_defs_content, spell_effect_content, support_enhance_kit, tanking_kit
+/data/spells/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-content @compiles-first-time/ember-director
+# titles
+/data/titles/ @compiles-first-time/ember-director
+# server_admin_commands
+/server/admin @compiles-first-time/ember-orchestrator
+# account_identity, accounts_auth, authentication_provider, cross_server_characters
+/server/auth/ @compiles-first-time/ember-director
+# crash_reporting
+/tools/crash/ @compiles-first-time/ember-orchestrator
+# character_creation
+/ui/creation/ @compiles-first-time/ember-orchestrator
+# tooltips_item_cards
+/ui/tooltips/ @compiles-first-time/ember-orchestrator
+# loom_governance_layer
+/constitution/ @compiles-first-time/ember-orchestrator
+# currencies, economy, trade_vendors
+/core/economy/ @compiles-first-time/ember-director @compiles-first-time/ember-content @compiles-first-time/ember-orchestrator
+# data_schemas, schema_versioning
+/core/schemas/ @compiles-first-time/ember-orchestrator
+# class_defs, class_starting_kit, classes_specs, role_specs
+/data/classes/ @compiles-first-time/ember-director @compiles-first-time/ember-content
+# combat, effect_defs_content, spell_effect_content
+/data/effects/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-content
+# ai_entities, elite_rare_variants, enemies, enemy_abilities, enemy_defs, enemy_factions_hostility, enemy_families, enemy_stats_scaling
+/data/enemies/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-content @compiles-first-time/ember-director
+# markers_waypoints
+/data/markers/ @compiles-first-time/ember-world
+# crafting, economy, recipe_defs
+/data/recipes/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-content
+# talent_trees, talents
+/data/talents/ @compiles-first-time/ember-director
+# npc_vendors_stores, trade_vendors
+/data/vendors/ @compiles-first-time/ember-director
+# collision_layers, engine_platform, fixed_tick_sim, foundation, gamepad_support, hardware_scalability, input, input_map_actions, physics_collision, project_settings, repo_layout
+/project.godot @compiles-first-time/ember-orchestrator @compiles-first-time/ember-director
+# camera_cues, cinematics_in_engine, scripted_sequences
+/scenes/story/ @compiles-first-time/ember-world
+# zone_triggers
+/scenes/zones/ @compiles-first-time/ember-world
+# server_rules_config
+/server/config @compiles-first-time/ember-orchestrator
+# appearance_customization, character, character_identity, climbing, dodge_roll, player_controller, swimming
+/actors/player/ @compiles-first-time/ember-world @compiles-first-time/ember-orchestrator
+# building, guild_halls, homes_strongholds, npc_settlers, player_cities, stronghold_walls_gates, structures
+/core/building/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-director @compiles-first-time/ember-content
+# command_intents
+/core/commands/ @compiles-first-time/ember-orchestrator
+# crafting, economy, professions
+/core/crafting/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-content @compiles-first-time/ember-director
+# dialogue, llm_npc_intelligence, narrative
+/core/dialogue/ @compiles-first-time/ember-narrative @compiles-first-time/ember-orchestrator @compiles-first-time/ember-director
+# building_sync, combat_sync, inventory_sync, quest_sync, survival_sync, sync_domains, world_time_sync
+/core/net/sync/ @compiles-first-time/ember-orchestrator
+# config_settings, locale_switch
+/core/settings/ @compiles-first-time/ember-orchestrator
+# animal_husbandry, camp_rest, disease_sanity, fishing, rested_bonus, survival
+/core/survival/ @compiles-first-time/ember-director @compiles-first-time/ember-orchestrator
+# bed_respawn_structure, building, camp_rest, crafting_station_structures, decorations, defensive_structures_walls, farm_plots, piece_defs, storage_structures, structures
+/data/building/ @compiles-first-time/ember-content @compiles-first-time/ember-orchestrator @compiles-first-time/ember-director
+# barks_ambient_lines, dialogue, dialogue_nodes_choices, narrative
+/data/dialogue/ @compiles-first-time/ember-narrative @compiles-first-time/ember-orchestrator
+# difficulty_tiers, dungeons
+/data/dungeons/ @compiles-first-time/ember-director @compiles-first-time/ember-world
+# faction_defs, faction_unlocks_vendors, reputation_factions
+/data/factions/ @compiles-first-time/ember-director
+# station_defs
+/data/stations/ @compiles-first-time/ember-content
+# arenas, boss_arena_rules
+/scenes/arenas/ @compiles-first-time/ember-director @compiles-first-time/ember-world
+# cities
+/scenes/cities/ @compiles-first-time/ember-director
+# spawn_points_zones
+/scenes/spawns/ @compiles-first-time/ember-world
+# monitoring_telemetry, server_health_metrics
+/server/metrics @compiles-first-time/ember-orchestrator
+# balance_tuning
+/tools/balance/ @compiles-first-time/ember-content @compiles-first-time/ember-director
+# content_review
+/tools/testing/ @compiles-first-time/ember-qa
+# skills_materialized
+/.agents/skills/ @compiles-first-time/ember-orchestrator
+# subagent_mirrors
+/.claude/agents/ @compiles-first-time/ember-orchestrator
+# skills_materialized
+/.claude/skills/ @compiles-first-time/ember-orchestrator
+# actor_prefabs_scenes
+/actors/enemies/ @compiles-first-time/ember-world
+# animation, combat_animations, facial_emotes, hit_reactions_death_anims, ik_procedural, locomotion_blending
+/art/animations/ @compiles-first-time/ember-world @compiles-first-time/ember-orchestrator
+# ambience_zones
+/audio/ambience/ @compiles-first-time/ember-world
+# pathfinding_navmesh
+/core/ai/path.gd @compiles-first-time/ember-orchestrator
+# bank_storage, carts_transport, character, inventory, transmog
+/core/inventory/ @compiles-first-time/ember-director @compiles-first-time/ember-orchestrator
+# procedural_dungeons, world_generation
+/core/world/gen/ @compiles-first-time/ember-director
+# markers_waypoints, spawn_hubs
+/scenes/markers/ @compiles-first-time/ember-world
+# building, destructibles, dungeon_entrances, landmarks_poi, storage_logistics
+/scenes/prefabs/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-director @compiles-first-time/ember-world
+# caves, roads, terrain_meshes_heightmap, vegetation_placement, water_bodies
+/scenes/terrain/ @compiles-first-time/ember-world
+# map_screen
+/ui/screens/map/ @compiles-first-time/ember-orchestrator
+# item_icons_models
+/art/icons/items/ @compiles-first-time/ember-world
+# leashing_evade
+/core/ai/leash.gd @compiles-first-time/ember-orchestrator
+# steering_locomotion
+/core/ai/steer.gd @compiles-first-time/ember-orchestrator
+# dueling, faction_warfare, pvp, pvp_flagging
+/core/combat/pvp/ @compiles-first-time/ember-director
+# condition_grammar
+/core/conditions/ @compiles-first-time/ember-orchestrator
+# boss_encounters, encounters, raid_bosses, world_bosses
+/core/encounters/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-content @compiles-first-time/ember-director
+# text_chat
+/core/net/chat.gd @compiles-first-time/ember-orchestrator
+# tick_rate_sync
+/core/net/tick.gd @compiles-first-time/ember-orchestrator
+# deterministic_sim
+/core/util/rng.gd @compiles-first-time/ember-orchestrator
+# currencies, currency_defs, faction_currencies
+/data/currencies/ @compiles-first-time/ember-director
+# boss_encounters, encounter_defs, encounters
+/data/encounters/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-content
+# dungeon_layouts, dungeons, encounters
+/scenes/dungeons/ @compiles-first-time/ember-world @compiles-first-time/ember-orchestrator
+# gray_box_island
+/scenes/main.tscn @compiles-first-time/ember-world
+# villages_settlements
+/scenes/villages/ @compiles-first-time/ember-world
+# chat_window
+/ui/screens/chat/ @compiles-first-time/ember-orchestrator
+# server_browser_join
+/ui/screens/join/ @compiles-first-time/ember-orchestrator
+# main_menu_world_select
+/ui/screens/menu/ @compiles-first-time/ember-orchestrator
+# item_icons_models
+/art/models/items/ @compiles-first-time/ember-world
+# target_selection
+/core/ai/target.gd @compiles-first-time/ember-orchestrator
+# pity_bad_luck_protection
+/core/loot/pity.gd @compiles-first-time/ember-director
+# guaranteed_drops, weighted_rolls
+/core/loot/roll.gd @compiles-first-time/ember-orchestrator
+# pings_markers
+/core/net/pings.gd @compiles-first-time/ember-orchestrator
+# client_server_roles
+/core/net/roles.gd @compiles-first-time/ember-orchestrator
+# direct_ip_join, player_slots_cap, sessions_players
+/core/net/session/ @compiles-first-time/ember-orchestrator
+# voice_chat
+/core/net/voice.gd @compiles-first-time/ember-director
+# character, multiclass_rules, prestige, progression, weapon_skills
+/core/progression/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-director
+# fixed_tick_sim
+/core/time/tick.gd @compiles-first-time/ember-orchestrator
+# fog_of_war_discovery, map_minimap
+/core/world/map.gd @compiles-first-time/ember-orchestrator
+# economy, harvest_yield_tables, loot, loot_table_defs
+/data/loot_tables/ @compiles-first-time/ember-content @compiles-first-time/ember-orchestrator
+# profession_defs, profession_specializations, professions
+/data/professions/ @compiles-first-time/ember-director
+# art_bible_palette, lod_texture_budgets
+/docs/art_bible.md @compiles-first-time/ember-director @compiles-first-time/ember-world
+# changelog, release_distribution
+/docs/changelog.md @compiles-first-time/ember-orchestrator
+# tech_debt_log
+/docs/tech_debt.md @compiles-first-time/ember-orchestrator
+# crash_reports_store, gameplay_analytics, telemetry_store
+/server/analytics/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-director
+# death_screen
+/ui/screens/death/ @compiles-first-time/ember-orchestrator
+# ci_cd, nightly_soak_builds, operations
+/.github/workflows/ @compiles-first-time/ember-qa @compiles-first-time/ember-orchestrator
+# steam_platform
+/addons/godotsteam/ @compiles-first-time/ember-director
+# behavior_verbs
+/core/ai/behaviors/ @compiles-first-time/ember-orchestrator
+# group_tactics
+/core/ai/tactics.gd @compiles-first-time/ember-orchestrator
+# blocking_parry, combos, melee_weapons, ranged_weapons, weapon_types
+/core/combat/melee/ @compiles-first-time/ember-director @compiles-first-time/ember-orchestrator
+# world_events
+/core/events_world/ @compiles-first-time/ember-director
+# group_loot_rules
+/core/loot/group.gd @compiles-first-time/ember-orchestrator
+# command_ingest_server
+/core/net/ingest.gd @compiles-first-time/ember-orchestrator
+# net_validation_security, rate_limits
+/core/net/validate/ @compiles-first-time/ember-orchestrator
+# pack_spawning
+/core/spawn/pack.gd @compiles-first-time/ember-orchestrator
+# pause_rules
+/core/time/pause.gd @compiles-first-time/ember-orchestrator
+# achievements
+/data/achievements/ @compiles-first-time/ember-director
+# lore, lore_bible, lore_voice_check, naming_conventions_lore, narrative
+/docs/lore_bible.md @compiles-first-time/ember-narrative @compiles-first-time/ember-director @compiles-first-time/ember-orchestrator
+# id_immutability_migrations, migrations_doc, save_migrations, schema_versioning
+/docs/migrations.md @compiles-first-time/ember-orchestrator
+# dedicated_server_build, export_presets, release_distribution
+/export_presets.cfg @compiles-first-time/ember-orchestrator
+# architecture_rules, dependency_policy_r10, game_infra_spec
+/GAME_INFRA_SPEC.md @compiles-first-time/ember-orchestrator @compiles-first-time/ember-director
+# sqlite_world_store, transactional_writes_crash_safety
+/server/db/store.gd @compiles-first-time/ember-orchestrator
+# determinism_replay_tests
+/tests/integration/ @compiles-first-time/ember-qa
+# ai_director
+/core/ai/director.gd @compiles-first-time/ember-orchestrator
+# npc_schedules_routines
+/core/ai/schedule.gd @compiles-first-time/ember-director
+# healing_model
+/core/combat/heal.gd @compiles-first-time/ember-orchestrator
+# taunt, threat_aggro, threat_modifiers
+/core/combat/threat/ @compiles-first-time/ember-orchestrator
+# load_restore_flow
+/core/saving/load.gd @compiles-first-time/ember-orchestrator
+# spawn_rules_biome_phase
+/core/spawn/rules.gd @compiles-first-time/ember-orchestrator
+# world_state_flags
+/core/state/flags.gd @compiles-first-time/ember-orchestrator
+# timers_cooldowns
+/core/time/timers.gd @compiles-first-time/ember-orchestrator
+# scene_transitions_loading
+/scenes/loading.tscn @compiles-first-time/ember-orchestrator
+# nav_regions_links, navmesh_baking
+/scenes/terrain/nav/ @compiles-first-time/ember-world
+# db_backup_snapshots
+/server/db/backup.gd @compiles-first-time/ember-orchestrator
+# quest_journal_screen
+/ui/screens/journal/ @compiles-first-time/ember-orchestrator
+# config_settings
+/user://settings.cfg @compiles-first-time/ember-orchestrator
+# companions_pets
+/core/ai/companion.gd @compiles-first-time/ember-director
+# abilities_skills, casting, channeling, global_cooldown, interrupts, spell_queueing
+/core/combat/casting/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-director
+# death_resolution
+/core/combat/death.gd @compiles-first-time/ember-orchestrator
+# auras_area_effects, crowd_control_dr, dispel_cleanse, immunities, status_effects
+/core/combat/effects/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-director
+# replay_recorder
+/core/debug/replay.gd @compiles-first-time/ember-orchestrator
+# in_game_bug_report
+/core/debug/report.gd @compiles-first-time/ember-orchestrator
+# mail_system
+/core/economy/mail.gd @compiles-first-time/ember-director
+# save_slots
+/core/saving/slots.gd @compiles-first-time/ember-orchestrator
+# world_save_json
+/core/saving/world.gd @compiles-first-time/ember-orchestrator
+# guild_bank, guild_defs_membership, guild_ranks_permissions, guilds
+/core/social/guild.gd @compiles-first-time/ember-director
+# groups_parties, party_membership, party_roles, ready_checks
+/core/social/party.gd @compiles-first-time/ember-orchestrator
+# actor_lifecycle, actor_registry
+/core/state/actors.gd @compiles-first-time/ember-orchestrator
+# corpse_handling
+/core/state/corpse.gd @compiles-first-time/ember-orchestrator
+# resistances
+/core/stats/resist.gd @compiles-first-time/ember-orchestrator
+# bed_spawn_point
+/core/survival/bed.gd @compiles-first-time/ember-orchestrator
+# fast_travel_portals, mounts_travel
+/core/world/travel.gd @compiles-first-time/ember-director
+# db_schema_design, placed_structures_tables, player_inventory_tables
+/server/db/schema.sql @compiles-first-time/ember-orchestrator
+# art_pipeline, asset_intake_pipeline, import_hook, physics_collision
+/tools/import_post.gd @compiles-first-time/ember-world @compiles-first-time/ember-orchestrator
+# g4_bot_playtest
+/tools/testing/bot.gd @compiles-first-time/ember-qa
+# crafting_screen
+/ui/screens/crafting/ @compiles-first-time/ember-orchestrator
+# dialogue_screen
+/ui/screens/dialogue/ @compiles-first-time/ember-orchestrator
+# rebinding, settings_screens
+/ui/screens/settings/ @compiles-first-time/ember-orchestrator
+# camera, photo_mode, target_lock_camera, third_person_rig
+/actors/player/camera/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-director
+# perception
+/core/ai/perception.gd @compiles-first-time/ember-orchestrator
+# player_home
+/core/building/home.gd @compiles-first-time/ember-director
+# snap_grid_rules
+/core/building/snap.gd @compiles-first-time/ember-orchestrator
+# armor_mitigation, crit_hit_tables, damage_formula, damage_model, damage_types_elements, friendly_fire_rules, resistances_application
+/core/combat/damage.gd @compiles-first-time/ember-orchestrator @compiles-first-time/ember-director
+# revive_downed_state
+/core/combat/downed.gd @compiles-first-time/ember-director
+# data_registry_loader
+/core/data/registry.gd @compiles-first-time/ember-orchestrator
+# debug_tools, gm_console
+/core/debug/console.gd @compiles-first-time/ember-orchestrator
+# player_trade
+/core/economy/trade.gd @compiles-first-time/ember-orchestrator
+# event_calendar, live_events
+/core/events_calendar/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-director
+# boss_loot_lockouts
+/core/loot/lockouts.gd @compiles-first-time/ember-director
+# loot_rolls_on_death
+/core/loot/on_death.gd @compiles-first-time/ember-orchestrator
+# bandwidth_budget, interest_management, interpolation_prediction, replication
+/core/net/replication/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-director
+# shared_group_quests
+/core/quests/shared.gd @compiles-first-time/ember-orchestrator
+# despawn_cleanup
+/core/spawn/cleanup.gd @compiles-first-time/ember-orchestrator
+# spawn_density_caps
+/core/spawn/density.gd @compiles-first-time/ember-orchestrator
+# respawn_timers
+/core/spawn/respawn.gd @compiles-first-time/ember-orchestrator
+# respawn_rules
+/core/state/respawn.gd @compiles-first-time/ember-orchestrator
+# derived_stats
+/core/stats/derived.gd @compiles-first-time/ember-orchestrator
+# level_scaling
+/core/stats/scaling.gd @compiles-first-time/ember-orchestrator
+# farming
+/core/survival/farm.gd @compiles-first-time/ember-director
+# poi_placement
+/core/world/gen/poi.gd @compiles-first-time/ember-orchestrator
+# weather
+/core/world/weather.gd @compiles-first-time/ember-director
+# gathering, resource_nodes
+/scenes/prefabs/nodes/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-world
+# db_migrations
+/server/db/migrations/ @compiles-first-time/ember-orchestrator
+# navmesh_baking
+/tools/bake_navmesh.gd @compiles-first-time/ember-world
+# content_pipeline, json_to_tres_converter
+/tools/json_to_tres.gd @compiles-first-time/ember-orchestrator
+# subtitles
+/ui/hud/subtitles.tscn @compiles-first-time/ember-orchestrator
+# equipment_character_sheet
+/ui/screens/character/ @compiles-first-time/ember-orchestrator
+# combat_log_window
+/ui/screens/combatlog/ @compiles-first-time/ember-orchestrator
+# inventory_screen
+/ui/screens/inventory/ @compiles-first-time/ember-orchestrator
+# decay_inactive
+/core/building/decay.gd @compiles-first-time/ember-director
+# base_defense_sieges
+/core/building/siege.gd @compiles-first-time/ember-director
+# input, input_buffering, input_to_command_translation
+/core/commands/input.gd @compiles-first-time/ember-orchestrator
+# craft_time_queue
+/core/crafting/queue.gd @compiles-first-time/ember-orchestrator
+# debug_overlays
+/core/debug/overlays.gd @compiles-first-time/ember-orchestrator
+# market_board_auction
+/core/economy/market.gd @compiles-first-time/ember-director
+# npc_vendors_stores, vendor_inventories_restock
+/core/economy/vendor.gd @compiles-first-time/ember-director @compiles-first-time/ember-orchestrator
+# wallet
+/core/economy/wallet.gd @compiles-first-time/ember-orchestrator
+# bag_slots
+/core/inventory/bags.gd @compiles-first-time/ember-orchestrator
+# xp_award
+/core/progression/xp.gd @compiles-first-time/ember-orchestrator
+# prereq_dag
+/core/quests/prereqs.gd @compiles-first-time/ember-orchestrator
+# quest_rewards
+/core/quests/rewards.gd @compiles-first-time/ember-orchestrator
+# objective_tracking
+/core/quests/tracker.gd @compiles-first-time/ember-orchestrator
+# save_migrations
+/core/saving/migrate.gd @compiles-first-time/ember-orchestrator
+# audio_settings
+/core/settings/audio.gd @compiles-first-time/ember-orchestrator
+# keybinding_config
+/core/settings/input.gd @compiles-first-time/ember-orchestrator
+# user_settings_store
+/core/settings/store.gd @compiles-first-time/ember-orchestrator
+# stat_formulas
+/core/stats/formulas.gd @compiles-first-time/ember-orchestrator
+# hunger, needs, rest_sleep, stamina_drain_regen, thirst
+/core/survival/needs.gd @compiles-first-time/ember-orchestrator @compiles-first-time/ember-director
+# seasons_calendar
+/core/world/calendar.gd @compiles-first-time/ember-director
+# world_seed
+/core/world/gen/seed.gd @compiles-first-time/ember-orchestrator
+# boats_ships
+/core/world/vehicles.gd @compiles-first-time/ember-director
+# balance_ranges, balance_tuning, difficulty_curve, element_matrix, enemy_stats_scaling, frame_time_budget, gear_tiers, level_scaling, loot_economy_tuning, role_balance_targets, sinks_faucets
+/docs/balance_ranges.md @compiles-first-time/ember-director @compiles-first-time/ember-content @compiles-first-time/ember-orchestrator
+# content_pipeline, data_validator_g2, g2_data_integrity
+/tools/validate_data.gd @compiles-first-time/ember-orchestrator @compiles-first-time/ember-qa
+# land_claims
+/core/building/claims.gd @compiles-first-time/ember-director
+# structure_damage_repair
+/core/building/damage.gd @compiles-first-time/ember-director
+# intent_schema
+/core/commands/intent.gd @compiles-first-time/ember-orchestrator
+# condition_evaluator
+/core/conditions/eval.gd @compiles-first-time/ember-orchestrator
+# repair
+/core/crafting/repair.gd @compiles-first-time/ember-director
+# dialogue_runner
+/core/dialogue/runner.gd @compiles-first-time/ember-orchestrator
+# random_affixes
+/core/economy/affixes.gd @compiles-first-time/ember-director
+# commodity_pricing
+/core/economy/pricing.gd @compiles-first-time/ember-director
+# raid_lockouts, raid_roles_check, raid_size_scaling, raids
+/core/encounters/raid.gd @compiles-first-time/ember-director @compiles-first-time/ember-orchestrator
+# autosave_scheduler
+/core/saving/autosave.gd @compiles-first-time/ember-orchestrator
+# schema_npc_def
+/core/schemas/npc_def.gd @compiles-first-time/ember-orchestrator
+# state_serialization
+/core/state/serialize.gd @compiles-first-time/ember-orchestrator
+# stat_modifiers_stack
+/core/stats/modifiers.gd @compiles-first-time/ember-orchestrator
+# additional_class_resources, class_resources, health_pool, mana_pool, resource_regen, stamina_pool
+/core/stats/resources.gd @compiles-first-time/ember-director @compiles-first-time/ember-orchestrator
+# gathering, node_respawn
+/core/survival/gather.gd @compiles-first-time/ember-orchestrator @compiles-first-time/ember-world
+# engine_platform, godot_version_pin
+/docs/ENGINE_VERSION.txt @compiles-first-time/ember-orchestrator @compiles-first-time/ember-director
+# patching_updates
+/docs/release_process.md @compiles-first-time/ember-director
+# terrain_modification
+/core/building/terrain.gd @compiles-first-time/ember-director
+# hit_detection
+/core/combat/melee/hit.gd @compiles-first-time/ember-director
+# crafting_quality_rolls
+/core/crafting/quality.gd @compiles-first-time/ember-director
+# salvage_disassembly
+/core/crafting/salvage.gd @compiles-first-time/ember-director
+# recipe_unlocks
+/core/crafting/unlocks.gd @compiles-first-time/ember-orchestrator
+# item_upgrades_enchanting
+/core/crafting/upgrade.gd @compiles-first-time/ember-director
+# boss_gates_progression, keys_gates
+/core/encounters/gates.gd @compiles-first-time/ember-orchestrator
+# event_bus
+/core/events/event_bus.gd @compiles-first-time/ember-orchestrator
+# item_pickup_drop
+/core/inventory/pickup.gd @compiles-first-time/ember-orchestrator
+# stacking_rules
+/core/inventory/stacks.gd @compiles-first-time/ember-orchestrator
+# weight_encumbrance
+/core/inventory/weight.gd @compiles-first-time/ember-orchestrator
+# join_leave_flow
+/core/net/session/join.gd @compiles-first-time/ember-orchestrator
+# character_persistence, character_save_state
+/core/saving/character.gd @compiles-first-time/ember-orchestrator
+# schema_conventions
+/core/schemas/def_base.gd @compiles-first-time/ember-orchestrator
+# schema_item_def
+/core/schemas/item_def.gd @compiles-first-time/ember-orchestrator
+# consumables_apply
+/core/survival/consume.gd @compiles-first-time/ember-orchestrator
+# drowning, fall_damage, fire_burning_env, hazards
+/core/survival/hazards.gd @compiles-first-time/ember-orchestrator
+# chunk_streaming
+/core/world/gen/chunks.gd @compiles-first-time/ember-orchestrator
+# min_recommended_specs
+/docs/hardware_targets.md @compiles-first-time/ember-director
+# g5_vision_review, screenshot_review_sets
+/tools/testing/screens.gd @compiles-first-time/ember-qa
+# interaction_system
+/actors/player/interact.gd @compiles-first-time/ember-orchestrator
+# character_capsule
+/actors/player/player.tscn @compiles-first-time/ember-orchestrator
+# placement_validation
+/core/building/validate.gd @compiles-first-time/ember-orchestrator
+# intent_dispatch
+/core/commands/dispatch.gd @compiles-first-time/ember-orchestrator
+# intent_validation
+/core/commands/validate.gd @compiles-first-time/ember-orchestrator
+# condition_parser
+/core/conditions/parser.gd @compiles-first-time/ember-orchestrator
+# crafting_stations
+/core/crafting/stations.gd @compiles-first-time/ember-orchestrator
+# boss_phases
+/core/encounters/phases.gd @compiles-first-time/ember-orchestrator
+# objective_types
+/core/quests/objectives.gd @compiles-first-time/ember-orchestrator
+# placed_structure_state, structure_persistence
+/core/saving/structures.gd @compiles-first-time/ember-orchestrator
+# schema_biome_def
+/core/schemas/biome_def.gd @compiles-first-time/ember-orchestrator
+# schema_class_def
+/core/schemas/class_def.gd @compiles-first-time/ember-director
+# schema_enemy_def
+/core/schemas/enemy_def.gd @compiles-first-time/ember-orchestrator
+# schema_quest_def
+/core/schemas/quest_def.gd @compiles-first-time/ember-orchestrator
+# schema_spell_def
+/core/schemas/spell_def.gd @compiles-first-time/ember-orchestrator
+# graphics_quality_presets, hardware_scalability, lod_shadow_scaling, resolution_scaling
+/core/settings/graphics.gd @compiles-first-time/ember-orchestrator
+# reputation_factions, reputation_sources, reputation_tiers
+/core/social/reputation.gd @compiles-first-time/ember-director @compiles-first-time/ember-orchestrator
+# temperature_exposure
+/core/survival/exposure.gd @compiles-first-time/ember-director
+# procedural_terrain
+/core/world/gen/terrain.gd @compiles-first-time/ember-director
+# loom_secrets_doctor
+/scripts/secrets-doctor.sh @compiles-first-time/ember-orchestrator
+# icon_placeholder_fallback, placeholder_assets
+/art/icons/_placeholder.png @compiles-first-time/ember-content @compiles-first-time/ember-world
+# structural_integrity
+/core/building/integrity.gd @compiles-first-time/ember-director
+# placement
+/core/building/placement.gd @compiles-first-time/ember-orchestrator
+# ground_aoe_delivery
+/core/combat/casting/aoe.gd @compiles-first-time/ember-orchestrator
+# auto_attack_swing, weapon_attack_speed
+/core/combat/melee/swing.gd @compiles-first-time/ember-orchestrator
+# local_authority_mode
+/core/commands/authority.gd @compiles-first-time/ember-orchestrator
+# dungeon_scripting
+/core/encounters/dungeon.gd @compiles-first-time/ember-orchestrator
+# boss_mechanics_library, enrage_timers
+/core/encounters/mechanics/ @compiles-first-time/ember-orchestrator @compiles-first-time/ember-director
+# loot_bags_on_death
+/core/inventory/deathbag.gd @compiles-first-time/ember-director
+# item_transfer_rules
+/core/inventory/transfer.gd @compiles-first-time/ember-orchestrator
+# level_curve
+/core/progression/levels.gd @compiles-first-time/ember-orchestrator
+# schema_marker_def
+/core/schemas/marker_def.gd @compiles-first-time/ember-orchestrator
+# schema_recipe_def
+/core/schemas/recipe_def.gd @compiles-first-time/ember-orchestrator
+# schema_talent_def
+/core/schemas/talent_def.gd @compiles-first-time/ember-director
+# day_night_cycle, night_danger_scaling, phase_transitions, time_skip_sleep, world_clock_ticks
+/core/survival/day_night.gd @compiles-first-time/ember-orchestrator @compiles-first-time/ember-director
+# scene_transitions_loading
+/core/world/scene_loader.gd @compiles-first-time/ember-orchestrator
+# export_build_pipeline
+/.github/workflows/build.yml @compiles-first-time/ember-qa
+# flaky_test_policy, g0_style_parse, g3_smoke_boot, pr_gates_workflow, validation_gates, write_scope_enforcement
+/.github/workflows/gates.yml @compiles-first-time/ember-qa @compiles-first-time/ember-orchestrator
+# locomotion
+/actors/player/locomotion.gd @compiles-first-time/ember-orchestrator
+# icon_generation_prompts
+/art/_inbox/icon_requests.md @compiles-first-time/ember-content
+# beam_delivery
+/core/combat/casting/beam.gd @compiles-first-time/ember-orchestrator
+# cast_timing
+/core/combat/casting/cast.gd @compiles-first-time/ember-orchestrator
+# resource_cost_check
+/core/combat/casting/cost.gd @compiles-first-time/ember-orchestrator
+# effect_ticking
+/core/combat/effects/tick.gd @compiles-first-time/ember-orchestrator
+# leash_reset
+/core/combat/threat/leash.gd @compiles-first-time/ember-orchestrator
+# threat_table
+/core/combat/threat/table.gd @compiles-first-time/ember-orchestrator
+# dialogue_conditions
+/core/dialogue/conditions.gd @compiles-first-time/ember-orchestrator
+# durability_repair, equip_slots, equipment, gear_stats_application
+/core/inventory/equipment.gd @compiles-first-time/ember-director @compiles-first-time/ember-orchestrator
+# content_version_handshake
+/core/net/session/version.gd @compiles-first-time/ember-orchestrator
+# level_up_rewards
+/core/progression/rewards.gd @compiles-first-time/ember-orchestrator
+# respec, talent_modifiers, talent_points
+/core/progression/talents.gd @compiles-first-time/ember-director @compiles-first-time/ember-orchestrator
+# ability_unlocks
+/core/progression/unlocks.gd @compiles-first-time/ember-orchestrator
+# schema_faction_def
+/core/schemas/faction_def.gd @compiles-first-time/ember-director
+# schema_station_def
+/core/schemas/station_def.gd @compiles-first-time/ember-orchestrator
+# need_thresholds_effects
+/core/survival/thresholds.gd @compiles-first-time/ember-orchestrator
+# resource_distribution
+/core/world/gen/resources.gd @compiles-first-time/ember-orchestrator
+# movement_terrain_rules
+/core/world/terrain_rules.gd @compiles-first-time/ember-orchestrator
+# master_toon_shader
+/art/shaders/toon_master.tres @compiles-first-time/ember-world
+# build_permissions, ownership_permissions
+/core/building/permissions.gd @compiles-first-time/ember-orchestrator
+# range_los_check
+/core/combat/casting/range.gd @compiles-first-time/ember-orchestrator
+# effect_kinds_verbs
+/core/combat/effects/apply.gd @compiles-first-time/ember-orchestrator
+# gathering_professions, profession_recipe_gating, profession_skill_levels
+/core/crafting/professions.gd @compiles-first-time/ember-director @compiles-first-time/ember-orchestrator
+# chests_containers, container_storage, shared_storage, storage_logistics
+/core/inventory/containers.gd @compiles-first-time/ember-orchestrator
+# player_identity_local
+/core/net/session/identity.gd @compiles-first-time/ember-orchestrator
+# schema_dialogue_def
+/core/schemas/dialogue_def.gd @compiles-first-time/ember-orchestrator
+# write_scope_enforcement
+/scripts/write-scope-check.sh @compiles-first-time/ember-orchestrator
+# benchmark_scene
+/tools/testing/benchmark.tscn @compiles-first-time/ember-qa
+# audio, spatial_audio_mix_buses
+/audio/default_bus_layout.tres @compiles-first-time/ember-world
+# self_target_delivery
+/core/combat/casting/direct.gd @compiles-first-time/ember-orchestrator
+# effect_duration_expiry
+/core/combat/effects/expiry.gd @compiles-first-time/ember-orchestrator
+# invasion_events
+/core/events_world/invasion.gd @compiles-first-time/ember-director
+# event_scheduler
+/core/events_world/schedule.gd @compiles-first-time/ember-orchestrator
+# spawn_replication
+/core/net/replication/spawn.gd @compiles-first-time/ember-orchestrator
+# state_snapshots_sync
+/core/net/replication/state.gd @compiles-first-time/ember-orchestrator
+# reconnection
+/core/net/session/reconnect.gd @compiles-first-time/ember-orchestrator
+# command_validation
+/core/net/validate/commands.gd @compiles-first-time/ember-orchestrator
+# spellbook
+/core/progression/spellbook.gd @compiles-first-time/ember-orchestrator
+# schema_encounter_def
+/core/schemas/encounter_def.gd @compiles-first-time/ember-orchestrator
+# event_replication
+/core/net/replication/events.gd @compiles-first-time/ember-orchestrator
+# schema_loot_table_def
+/core/schemas/loot_table_def.gd @compiles-first-time/ember-orchestrator
+# effect_stacking
+/core/combat/effects/stacking.gd @compiles-first-time/ember-orchestrator
+# schema_achievement_def
+/core/schemas/achievement_def.gd @compiles-first-time/ember-director
+# id_listing_in_pr, pr_review_flow
+/.github/pull_request_template.md @compiles-first-time/ember-orchestrator
+# sim_driven_timing
+/actors/player/anim_controller.gd @compiles-first-time/ember-orchestrator
+# cooldown_manager
+/core/combat/casting/cooldowns.gd @compiles-first-time/ember-orchestrator
+# targeting_modes
+/core/combat/casting/targeting.gd @compiles-first-time/ember-orchestrator
+# animation_state_machines
+/actors/player/animation_tree.tres @compiles-first-time/ember-orchestrator
+# projectile_delivery
+/core/combat/casting/projectile.gd @compiles-first-time/ember-orchestrator
+# schema_status_effect_def
+/core/schemas/status_effect_def.gd @compiles-first-time/ember-orchestrator
+# loot_economy_sim
+/tools/testing/balance/loot_sim.gd @compiles-first-time/ember-qa
+# schema_building_piece_def
+/core/schemas/building_piece_def.gd @compiles-first-time/ember-orchestrator
+# combat_sim_harness
+/tools/testing/balance/combat_sim.gd @compiles-first-time/ember-qa
+# loom_doctor_gate
+/.github/workflows/governance-gate.yml @compiles-first-time/ember-orchestrator
+# telegraph_decals
+/core/encounters/mechanics/telegraph.gd @compiles-first-time/ember-orchestrator

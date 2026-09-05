@@ -32,7 +32,8 @@ godot --headless -s tools/validate_data.gd                                  # G2
 godot --headless res://scenes/main.tscn                                     # G3 smoke (30s, no ERROR lines)
 godot --headless -s tools/json_to_tres.gd                                   # data/_inbox JSON → .tres
 scripts/systems-map.sh checklist <id>   # also: which <path> | impact | runbook <rb_id> | audit-diff | validate | render  (ADR-0065/0066)
-scripts/systems-map.sh add-node … | add-edge …   # registry edits that validate and revert; generated systems/ files are never hand-edited
+scripts/systems-map.sh observe --strict   # code vs ledger: undeclared dependencies + R2–R6 fitness checks; codeowners  (ADR-0067)
+scripts/systems-map.sh add-node … | add-edge …   # registry edits that validate and revert
 bash scripts/doctor.sh && npm test                                          # Loom governance
 ```
 
@@ -50,7 +51,7 @@ Skills for the four game roles: `.claude/skills/<name>/SKILL.md` (materialize fr
 
 ## The systems atlas ([ADR-0065](./adr/0065-systems-atlas-and-impact-map.md), [ADR-0066](./adr/0066-agent-ready-change-discipline.md))
 
-[`systems/registry/*.md`](./systems/registry/) is the ledger: **715 systems in 16 domains** (tier 1 domain → 2 system → 3 parts), **1,171 wired edges**, each with how / via / strength / why. Status tells scope: `spec` · `implied` · **`candidate` = asked for but not in the spec → DIRECTOR decision + spec PR** · `non-goal`. [`systems/runbooks/`](./systems/runbooks/) holds **17 change runbooks**, each validated against the ledger: every system id exists and every hard downstream of the runbook's primary system is a step or an explained "not touched". For a model: [`systems/llm/`](./systems/llm/) (JSONL + a README written for LLMs — grep it, never load it whole). For a person: [`systems/ATLAS.md`](./systems/ATLAS.md) and [`systems/explorer.html`](./systems/explorer.html). Generated files are never hand-edited (the hook denies it); `loom doctor` fails on a broken or stale atlas.
+[`systems/registry/*.md`](./systems/registry/) is the ledger: **715 systems in 16 domains** (tier 1 domain → 2 system → 3 parts), **1,171 wired edges**, each with how / via / strength / why. Status tells scope: `spec` · `implied` · **`candidate` = asked for but not in the spec → DIRECTOR decision + spec PR** · `non-goal`. [`systems/runbooks/`](./systems/runbooks/) holds **17 change runbooks**, each validated against the ledger: every system id exists and every hard downstream of the runbook's primary system is a step or an explained "not touched". Models: [`systems/llm/`](./systems/llm/) (grep, never load whole). People: [`systems/ATLAS.md`](./systems/ATLAS.md), [`systems/explorer.html`](./systems/explorer.html). Generated files are never hand-edited; `loom doctor` fails on a stale atlas.
 
 ## Current focus
 
@@ -59,10 +60,10 @@ Skills for the four game roles: `.claude/skills/<name>/SKILL.md` (materialize fr
 ## Open questions (blocking — DIRECTOR)
 
 - **Repo layout:** the Godot project root (`res://`) and Loom's governance folders share this root. Add `.gdignore` to `adr/`, `layers/`, `scripts/`, `systems/` and the rest so Godot ignores them, or move the game under `game/`? Also §3 lists no `data/building`, `data/npcs`, `data/encounters`, `data/markers`, `data/dungeons`, `data/stations` or `server/`, which the atlas needs — amend §3.
-- **Phase 0 console:** `give`, `spawn`, `tp`, `time` need inventory (P2), spawning (P1), the actor registry (P1) and the clock (P3) — the four open findings in `validate`. Stub them in Phase 0, or move the console to Phase 2 (where §13's phase map already puts it)?
+- **Phase 0 console:** `give`, `spawn`, `tp`, `time` need inventory (P2), spawning (P1), the actor registry (P1) and the clock (P3) — the 4 findings in `validate`. Stub them in P0, or move the console to Phase 2 (where §13's phase map puts it)?
 - **12 proposed signals** need §5 rows (R-EB1): 7 are required (spec/implied systems emit them), 5 are candidates — names in `systems/ATLAS.md` §EventBus and in `scripts/systems-map.sh validate`.
 - **LR-08 (escalated by the Critic):** the seed branch received pushes after the founding one; the exception allowing that is a *proposal* in `constitution/local-rules.md`, deviations logged, until you ratify or reject it with a dated line.
-- **Spec seams the atlas found:** §7.1 grants nobody `actors/**`, `audio/**`, `data/npcs/**`, `data/dungeons/**`, `data/markers/**`; §7.2 has content-smith write `art/_inbox/icon_requests.md`, which §7.1 does not grant; §8 runs G4's gather/craft from Phase 1 while §13 lands them in Phase 3. Amend the spec, or reassign owners in the registry.
+- **Spec seams the atlas found:** §7.1 grants nobody `actors/**`, `audio/**`, `data/npcs/**`, `data/dungeons/**`, `data/markers/**`; §7.2 has content-smith write `art/_inbox/icon_requests.md`; §8 runs G4's gather/craft from Phase 1 while §13 lands them in Phase 3. Amend the spec, or reassign owners. Fill `systems/codeowners.json` (teams or your username).
 - **230 candidate systems** — asked for, not in the spec; none is built until it is. Decide by domain in `systems/ATLAS.md` §DIRECTOR decisions.
 
 ## Loom governance (inherited — read L0 before any consequential action)
@@ -84,7 +85,8 @@ Skills for the four game roles: `.claude/skills/<name>/SKILL.md` (materialize fr
 ## ADRs in flight
 
 - [ADR-0065](./adr/0065-systems-atlas-and-impact-map.md) — Systems atlas: validated registry + computed impact map. **Awaiting DIRECTOR review.**
-- [ADR-0066](./adr/0066-agent-ready-change-discipline.md) — Agent-ready change discipline: runbooks, path→system resolver, checklist, registry mutation API, LLM pack, PreToolUse edit guard. **Awaiting DIRECTOR review.**
+- [ADR-0066](./adr/0066-agent-ready-change-discipline.md) — Agent-ready change discipline: runbooks, checklist, mutation API, LLM pack, edit hook. **Awaiting DIRECTOR review.**
+- [ADR-0067](./adr/0067-declared-versus-observed.md) — Declared vs observed: code-derived dependencies, R2–R6 fitness checks, CODEOWNERS, one repository. **Awaiting DIRECTOR review.**
 - [ADR-0057](./adr/0057-research-scout-update-bus-intake.md) — Research Scout (inherited from Loom, proposal-only; the weekly trigger stays un-armed).
 
 Accepted ADRs inherited from Loom: 0003–0064 — index in [`adr/`](./adr/).

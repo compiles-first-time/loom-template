@@ -869,13 +869,14 @@ export function renderDomainPage(graph, domainId, { hash = "" } = {}) {
 }
 
 /** Every generated file, keyed by repo-relative path. The CLI and the doctor share this. */
-export function renderAll(graph, validation, { hash = "", template, runbooks = [] } = {}) {
+export function renderAll(graph, validation, { hash = "", template, runbooks = [], codeowners = null } = {}) {
   const st = stats(graph);
   const out = new Map();
   out.set(ATLAS_FILE, renderAtlas(graph, validation, { hash }));
   st.domains.forEach((d, i) => out.set(`${ATLAS_DIR}/${domainFile(i, d.id)}`, renderDomainPage(graph, d.id, { hash })));
   out.set(EXPLORER_FILE, renderExplorer(graph, validation, { hash, template }));
   for (const [rel, content] of renderLlmPack(graph, validation, { hash, runbooks })) out.set(rel, content);
+  if (codeowners) out.set(CODEOWNERS_FILE, renderCodeowners(graph, codeowners));
   return out;
 }
 
@@ -957,6 +958,51 @@ export function whichSystems(graph, p, { root = null } = {}) {
   const pick = tiers.has(2) ? 2 : Math.max(...tiers);
   const primary = top.filter((m) => m.tier === pick).sort((a, b) => a.id.localeCompare(b.id));
   return { path: rel, primary, all };
+}
+
+// ── CODEOWNERS (ownership routing, ADR-0067) ────────────────────────────────
+
+export const CODEOWNERS_FILE = ".github/CODEOWNERS";
+export const CODEOWNERS_MAP = "systems/codeowners.json";
+
+/**
+ * GitHub CODEOWNERS from the registry's Where + Owner columns and a role → handle
+ * mapping (systems/codeowners.json). GitHub applies the LAST matching pattern, so
+ * broad directories come first and specific files last. Signals and non-goals
+ * carry no paths of their own and are skipped; glob Wheres are skipped too.
+ */
+export function renderCodeowners(graph, mapping) {
+  const handles = (roles) => [...new Set(roles.flatMap((r) => { const h = mapping[r]; return Array.isArray(h) ? h : h ? [h] : []; }))];
+  const rows = [];
+  for (const n of graph.nodes.values()) {
+    if (n.kind === "signal" || n.status === "non-goal") continue;
+    const owners = handles(n.owner);
+    if (!owners.length) continue;
+    for (const w0 of n.where) {
+      const w = w0.replace(/^res:\/\//, "").replace(/^\.\//, "");
+      if (!w || w.includes("*")) continue;
+      rows.push({ pattern: `/${w}`, spec: w.length, owners, id: n.id });
+    }
+  }
+  rows.sort((a, b) => a.spec - b.spec || a.pattern.localeCompare(b.pattern) || a.id.localeCompare(b.id));
+  const merged = new Map();
+  for (const r of rows) {
+    const m = merged.get(r.pattern);
+    if (m) { m.owners = [...new Set([...m.owners, ...r.owners])]; if (!m.ids.includes(r.id)) m.ids.push(r.id); }
+    else merged.set(r.pattern, { pattern: r.pattern, owners: [...r.owners], ids: [r.id] });
+  }
+  const L = [];
+  L.push(`# CODEOWNERS — generated from systems/registry (Where + Owner) and systems/codeowners.json (role → GitHub owner).`);
+  L.push(`# Do not edit: scripts/systems-map.sh render rewrites it (ADR-0067). Change an owner in the registry or the mapping.`);
+  L.push(`# GitHub applies the LAST matching pattern: directories first, specific files last. The comment above each line names the system(s).`);
+  L.push(``);
+  const dflt = handles(["_default"]);
+  if (dflt.length) { L.push(`# default reviewer for anything no system claims`); L.push(`* ${dflt.join(" ")}`); L.push(``); }
+  for (const m of merged.values()) {
+    L.push(`# ${m.ids.join(", ")}`);
+    L.push(`${m.pattern} ${m.owners.join(" ")}`);
+  }
+  return L.join("\n") + "\n";
 }
 
 // ── LLM pack (systems/llm) ──────────────────────────────────────────────────
@@ -1128,6 +1174,9 @@ const USAGE = `systems-map — the EMBER systems atlas (ADR-0065, ADR-0066)
     stats                        counts, load-bearing systems, DIRECTOR decisions, signals
     runbooks | runbook <rb_id>   list the change runbooks / print one with coverage
     audit-diff [--base <ref>]    map the working tree's changed files to systems; list hard downstream not touched
+    observe [--strict]           declared vs observed: dependencies found in code and content vs the ledger,
+                                 plus R2/R3/R4/R5/R6 fitness checks (ADR-0067); --strict exits 1 on findings
+    codeowners                   print the CODEOWNERS derived from Where + Owner and systems/codeowners.json
 
   write (each validates afterwards and reverts if the ledger would become invalid; --dry-run, --force)
     add-node --id x --name "..." --parent <id> --status <s> --owner <role> --summary "..." [--phase N --where p --spec § --analogy a --tier N --file f]
@@ -1136,7 +1185,7 @@ const USAGE = `systems-map — the EMBER systems atlas (ADR-0065, ADR-0066)
     remove-node <id>                   (refused while parts or edges still reference it)
     remove-edge <from> <how> <to> [--via v]
 
-  render [--check]             write ATLAS.md, atlas/*.md, explorer.html and systems/llm/* (--check: fail if stale)
+  render [--check]             write ATLAS.md, atlas/*.md, explorer.html, systems/llm/* and .github/CODEOWNERS (--check: fail if stale)
 
   flags: --depth N  --phase N (hide systems that land after phase N)  --no-expand (do not include contained parts)
          --no-candidates  --json  --registry <dir>  --spec <file> (query commands only; for add-node --spec is the column)`;
@@ -1157,7 +1206,14 @@ export async function loadAll({ registryDir = DEFAULT_REGISTRY_DIR, specFile = D
   validation.warnings.push(...rv.warnings);
   validation.info.push(...rv.info);
   validation.ok = validation.errors.length === 0;
-  return { registry, graph, validation, hash: contentHash(registry), specText, runbooks: rbs.runbooks };
+  // Role → GitHub owner mapping for the generated CODEOWNERS (ADR-0067); absent means "not generated".
+  let codeowners = null;
+  const mapPath = path.resolve(root, CODEOWNERS_MAP);
+  if (existsSync(mapPath)) {
+    try { codeowners = JSON.parse(await fs.readFile(mapPath, "utf8")); }
+    catch (err) { validation.errors.push(`${CODEOWNERS_MAP}: not valid JSON (${err.message})`); validation.ok = false; }
+  }
+  return { registry, graph, validation, hash: contentHash(registry), specText, runbooks: rbs.runbooks, codeowners };
 }
 const loadRunbooks_ = (mod, dir) => mod.loadRunbooks(dir);
 
@@ -1166,7 +1222,7 @@ async function main() {
   if (!cmd || flags.help) { console.log(USAGE); process.exit(cmd ? 0 : 1); }
   const root = process.cwd();
   const mutation = MUTATION_CMDS.has(cmd);
-  const { graph, validation, hash, runbooks } = await loadAll({ registryDir: flags.registry, specFile: mutation ? undefined : flags.spec, root });
+  const { graph, validation, hash, runbooks, specText, codeowners } = await loadAll({ registryDir: flags.registry, specFile: mutation ? undefined : flags.spec, root });
   const opts = {
     depth: flags.depth ? Number(flags.depth) : Infinity,
     expand: !flags["no-expand"],
@@ -1284,6 +1340,19 @@ async function main() {
       if (flags.strict && (a.gaps || a.candidates.length || a.generatedTouched)) process.exit(1);
       break;
     }
+    case "observe": {
+      const obs = await import("./systems-observe.mjs");
+      const o = await obs.observeProject(root, graph, { specSignals: parseSpecSignals(specText) });
+      await trace("systems_observe", { files: o.counts.files, observed: o.counts.observed, undeclared: o.counts.undeclared, violations: o.counts.violations, strict: !!flags.strict });
+      console.log(flags.json ? JSON.stringify(o, null, 2) : obs.renderObserve(o));
+      if (flags.strict && o.strictFail) process.exit(1);
+      break;
+    }
+    case "codeowners": {
+      if (!codeowners) { console.error(`no ${CODEOWNERS_MAP} — create it (role → GitHub owner) and run render; see systems/README.md`); process.exit(1); }
+      console.log(renderCodeowners(graph, codeowners));
+      break;
+    }
     case "add-node":
     case "add-edge":
     case "set-node":
@@ -1305,13 +1374,13 @@ async function main() {
       console.log(`\n✓ ${res.file}:${res.line} · registry ${res.hash} · ${res.errors.length} error(s), ${res.warnings.length} warning(s)`);
       if (flags.render) {
         const all = await loadAll({ root });
-        for (const [rel, content] of renderAll(all.graph, all.validation, { hash: all.hash, runbooks: all.runbooks })) { const p = path.resolve(root, rel); await fs.mkdir(path.dirname(p), { recursive: true }); await fs.writeFile(p, content, "utf8"); }
-        console.log(`rendered ATLAS.md, atlas/, explorer.html, llm/`);
+        for (const [rel, content] of renderAll(all.graph, all.validation, { hash: all.hash, runbooks: all.runbooks, codeowners: all.codeowners })) { const p = path.resolve(root, rel); await fs.mkdir(path.dirname(p), { recursive: true }); await fs.writeFile(p, content, "utf8"); }
+        console.log(`rendered ATLAS.md, atlas/, explorer.html, llm/${all.codeowners ? ", CODEOWNERS" : ""}`);
       } else console.log(`next: scripts/systems-map.sh render   (or pass --render)`);
       break;
     }
     case "render": {
-      const files = renderAll(graph, validation, { hash, runbooks });
+      const files = renderAll(graph, validation, { hash, runbooks, codeowners });
       if (flags.check) {
         const stale = await staleGenerated(files, root);
         if (stale.length) { console.error(`stale generated file(s): ${stale.join(", ")} — run: node scripts/lib/systems-map.mjs render`); process.exit(1); }

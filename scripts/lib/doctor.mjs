@@ -61,8 +61,44 @@ async function main() {
   await checkSkillStandards();
   await checkAgentClassification();
   await checkSystemsAtlas();
+  await checkSystemsObserved();
 
   report();
+}
+
+// ── ADR-0067: declared versus observed ───────────────────────────────────
+//
+// Once game code exists, what the code and content actually depend on is
+// compared with what the registry declares, and the spec's architecture rules
+// (R2 bus-only, R3 plain text, R4 determinism, R5 presentation never emits,
+// R6 typing + docstrings) run as fitness checks. Violations are hard — they are
+// the constitution of the codebase, and a `# atlas: allow Rn — reason` line is
+// the reviewable exception. Undeclared dependencies are soft — a ledger to catch
+// up, not a build break. Without game code the check skips.
+async function checkSystemsObserved() {
+  if (!existsSync(path.join(ROOT, "systems", "registry"))) return;
+  let obs;
+  let mod;
+  try {
+    obs = await import("./systems-observe.mjs");
+    mod = await import("./systems-map.mjs");
+  } catch (err) {
+    return hard("systems-observed", false, `scripts/lib/systems-observe.mjs failed to load: ${err.message}`);
+  }
+  if (!obs.hasGameCode(ROOT)) return soft("systems-observed", true, "no game code yet (core/, data/, scenes/ …) — declared-vs-observed skipped until Phase 0 lands it");
+  let o;
+  try {
+    const all = await mod.loadAll({ root: ROOT });
+    o = await obs.observeProject(ROOT, all.graph, { specSignals: mod.parseSpecSignals(all.specText) });
+  } catch (err) {
+    return hard("systems-observed", false, `observe failed: ${err.message}`);
+  }
+  const byRule = Object.entries(o.counts.byRule).filter(([, n]) => n).map(([r, n]) => `${r} ${n}`).join(", ");
+  if (o.counts.violations) hard("systems-observed", false, `${o.counts.violations} architecture rule violation(s) in game code (${byRule}) — scripts/systems-map.sh observe`);
+  else hard("systems-observed", true, `${o.counts.files} game file(s), no R2/R3/R4/R5/R6 violations${o.counts.allowed ? ` (${o.counts.allowed} allowed exception(s), each with a reason)` : ""}`);
+  const gaps = o.counts.undeclared + o.signals.onlyInCode.length;
+  if (gaps) soft("systems-declared-vs-observed", false, `${o.counts.undeclared} observed dependenc(ies) the ledger does not declare, ${o.signals.onlyInCode.length} signal(s) only in code — scripts/systems-map.sh observe prints the add-edge commands`);
+  else soft("systems-declared-vs-observed", true, `every observed dependency is declared (${o.counts.observed}); ${o.counts.unobserved} declared wiring not yet in code; ${o.counts.unowned} unowned file(s)`);
 }
 
 // ── ADR-0065: systems atlas ──────────────────────────────────────────────
@@ -89,19 +125,19 @@ async function checkSystemsAtlas() {
   } catch (err) {
     return hard("systems-atlas", false, `registry failed to load: ${err.message}`);
   }
-  const { graph, validation, hash, runbooks = [] } = all;
+  const { graph, validation, hash, runbooks = [], codeowners = null } = all;
   if (validation.errors.length) {
     return hard("systems-atlas", false, `${validation.errors.length} registry/runbook error(s): ${validation.errors.slice(0, 3).join("; ")}${validation.errors.length > 3 ? " …" : ""}`);
   }
   hard("systems-atlas", true, `${graph.nodes.size} systems, ${graph.influence.length} edges, ${runbooks.length} runbooks, zero errors (registry ${hash})`);
   let stale = [];
   try {
-    stale = await mod.staleGenerated(mod.renderAll(graph, validation, { hash, runbooks }), ROOT);
+    stale = await mod.staleGenerated(mod.renderAll(graph, validation, { hash, runbooks, codeowners }), ROOT);
   } catch (err) {
     stale = [`render failed: ${err.message}`];
   }
   if (stale.length) hard("systems-atlas-rendered", false, `stale: ${stale.slice(0, 4).join(", ")}${stale.length > 4 ? " …" : ""} — run scripts/systems-map.sh render`);
-  else hard("systems-atlas-rendered", true, "ATLAS.md, atlas/*.md, explorer.html and llm/* match the registry");
+  else hard("systems-atlas-rendered", true, `ATLAS.md, atlas/*.md, explorer.html, llm/*${codeowners ? " and .github/CODEOWNERS" : ""} match the registry`);
   if (validation.warnings.length) soft("systems-atlas-design", false, `${validation.warnings.length} design finding(s) awaiting a decision (phase inversion / scope leak / R2 smell / unwired / runbook coverage) — see systems/ATLAS.md §Findings`);
   else soft("systems-atlas-design", true, "no open design findings in the registry or runbooks");
   // ADR-0066: the change runbooks are what make the atlas actionable for an agent; a project with a

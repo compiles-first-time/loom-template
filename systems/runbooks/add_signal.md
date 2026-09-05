@@ -27,4 +27,5 @@
 | 10 | run | g0_style_parse | . | gdformat, gdlint, headless import pass | — |
 | 11 | run | g1_unit_tests_gut | tests/unit/ | passes | — |
 | 12 | run | g3_smoke_boot | scenes/main.tscn | boots, zero ERROR lines | — |
-| 13 | update | changelog | docs/changelog.md | one line naming the signal | — |
+| 13 | run | systems_atlas | systems/ | `scripts/systems-map.sh observe --strict`: the signal is declared in code, the registry and §5, and its emitter and listeners are observed | Declared versus observed (ADR-0067). |
+| 14 | update | changelog | docs/changelog.md | one line naming the signal | — |

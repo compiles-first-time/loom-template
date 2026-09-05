@@ -23,7 +23,7 @@
 import path from "node:path";
 import os from "node:os";
 import { promises as fs, existsSync } from "node:fs";
-import { loadRegistry, buildGraph, whichSystems, affects, DEFAULT_REGISTRY_DIR, ATLAS_FILE, ATLAS_DIR, EXPLORER_FILE, LLM_DIR } from "./systems-map.mjs";
+import { loadRegistry, buildGraph, whichSystems, affects, DEFAULT_REGISTRY_DIR, ATLAS_FILE, ATLAS_DIR, EXPLORER_FILE, LLM_DIR, CODEOWNERS_FILE, CODEOWNERS_MAP } from "./systems-map.mjs";
 import { loadRunbooks, runbooksFor, coverageTargets, RUNBOOK_DIR } from "./systems-runbooks.mjs";
 import { WRITE_SCOPES } from "./systems-ops.mjs";
 
@@ -92,6 +92,12 @@ export async function editContextFor({ tool, input, root = process.cwd(), sessio
     return {
       path: rel, systems: [], decision: "deny",
       reason: `${rel} is generated from systems/registry by \`scripts/systems-map.sh render\`. Edit the registry (or use add-node / add-edge / set-node), then run render. Hand edits are overwritten and fail the doctor.`,
+    };
+  }
+  if (rel === CODEOWNERS_FILE && existsSync(path.join(root, CODEOWNERS_MAP))) {
+    return {
+      path: rel, systems: [], decision: "deny",
+      reason: `${rel} is generated from the registry's Where + Owner columns and ${CODEOWNERS_MAP} (ADR-0067). Change the owner on the system row (set-node <id> owner=<role>) or the role's handle in ${CODEOWNERS_MAP}, then run \`scripts/systems-map.sh render\`.`,
     };
   }
   if (rel.startsWith(`${DEFAULT_REGISTRY_DIR}/`)) {

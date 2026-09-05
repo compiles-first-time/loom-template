@@ -11,6 +11,9 @@
 | [`ATLAS.md`](./ATLAS.md), [`atlas/*.md`](./atlas/) | Generated for people: index, big picture, load-bearing systems, DIRECTOR decisions, signal table, findings; one page per domain with its wiring | **No** — `scripts/systems-map.sh render` (the hook denies hand edits) |
 | [`explorer.html`](./explorer.html) | Generated interactive map: click a system, see what it affects (ember) and what affects it (blue), with how/where/why | No — same command |
 | [`llm/`](./llm/) | Generated for models: `nodes.jsonl`, `edges.jsonl`, `runbooks.jsonl`, `summary.json` and a `README.md` written for an LLM — grep it, never load it whole | No — same command |
+| [`codeowners.json`](./codeowners.json) | **Source.** Role → GitHub owner (team or username) for the generated CODEOWNERS | Yes — the Director's mapping |
+| [`../.github/CODEOWNERS`](../.github/CODEOWNERS) | Generated review routing from every system's Where + Owner ([ADR-0067](../adr/0067-declared-versus-observed.md)) | No — same command |
+| [`audits/`](./audits/) | Records: audit reports and the scripts that applied them | Append-only |
 
 ## The four questions the atlas answers
 
@@ -112,4 +115,28 @@ Hand edits are fine too (one node = one line, one edge = one line) — run `vali
 
 `scripts/systems-map.sh validate` rejects dangling ids, tier mismatches, unknown vocabularies, edges without a *why*, runbook steps that name unknown systems, and any disagreement between the registry's `sig_*` rows and the spec's §5 table (R-EB1). It **warns** about design questions rather than typos: a spec system hard-depending on a candidate (scope leak), a Phase 1 system hard-depending on a Phase 3 one (phase inversion), a direct call across `core/` subtrees (R2 smell), a system with no wiring at all (island), a runbook that skips a hard downstream (coverage). Warnings are resolved in the registry, the runbook or the spec — never by deleting the row, and never by softening an edge that is truly hard.
 
-`loom doctor` runs the validator and fails when the generated files (`ATLAS.md`, `atlas/`, `explorer.html`, `llm/`) are stale, so a PR cannot merge with a ledger that lies.
+`loom doctor` runs the validator and fails when the generated files (`ATLAS.md`, `atlas/`, `explorer.html`, `llm/`, `.github/CODEOWNERS`) are stale, so a PR cannot merge with a ledger that lies.
+
+## Declared versus observed ([ADR-0067](../adr/0067-declared-versus-observed.md))
+
+The registry says how systems depend on each other. Once game code exists, the code says so too. `scripts/systems-map.sh observe` reads every `.gd`, `.tres` and `.tscn` under the Godot root (the repo, or `game/` when `game/project.godot` exists), maps each file to its system with `which`, and reports:
+
+- **observed but undeclared** dependencies — emits, connects, preloads, class use, `ext_resource` and id references the ledger does not have — each with the `add-edge` command that would declare it (or the code is wrong; decide, then act);
+- **declared signal wiring not yet in code**, for systems that have code;
+- **signals three ways**: declared in `event_bus.gd`, in the registry, in spec §5 — anything only in code is an R-EB1 gap;
+- **files no system owns** — add a node or fix a `Where`;
+- **architecture fitness checks** from spec §4, as violations: **R2** a `core/` subsystem reaching into another by preload, class use or `/root/` node path (allowed: `core/util/`, `core/events/`, `core/schemas/`, or a reviewed `calls` edge); **R3** a binary outside `art/` and `audio/`; **R4** global RNG or wall-clock time in `core/` (methods on a seeded `RandomNumberGenerator` are fine); **R5** presentation code emitting a gameplay signal; **R6** a function without typed parameters, a return type and a `##` docstring.
+
+A deliberate exception is written where it happens and must say why:
+
+```gdscript
+var started: int = Time.get_ticks_msec()  # atlas: allow R4 — debug timing only, never feeds the sim
+```
+
+`observe --strict` exits non-zero on violations, undeclared dependencies or signals only in code. The doctor runs it in CI: violations are hard (the codebase's constitution), undeclared dependencies soft (a ledger to catch up). Without game code the check skips and says so.
+
+## Ownership routing — CODEOWNERS
+
+`render` derives `.github/CODEOWNERS` from every system's `Where` and `Owner` and from `systems/codeowners.json` (role → `@username` or `@org/team`). Directories come first and specific files last because GitHub applies the last matching line; each line is preceded by the system ids it comes from. To change who reviews a path, change the system's owner (`set-node <id> owner=<role>`) or the role's handle in the mapping, then `render`. The hook denies hand edits. Teams named in the mapping must exist in the organization, or GitHub marks the line "unknown owner" and assigns nobody — a solo Director maps every role to one username.
+
+**Why one repository and one atlas, not one per system:** a Godot game is one `res://` tree and its resources reference each other by absolute path; the atlas's edges are mostly cross-domain, so a typical change is one atomic PR across several systems. Isolation comes from enforced boundaries — CODEOWNERS routes the review, §7.1 write scopes bound the roles, `observe` fails on undeclared crossings, `audit-diff` names what a change skipped — not from separate repositories. Details and the MCP question are in ADR-0067.

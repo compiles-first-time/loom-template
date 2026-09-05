@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/schemas/item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "item_iron_sword"
+display_name = "Iron Sword"
+schema_version = 1
+icon = "res://art/icons/items/item_iron_sword.png"
+on_use_effect = "effect_burning"

@@ -38,4 +38,5 @@
 | 21 | run | g1_unit_tests_gut | tests/unit/ | passes | — |
 | 22 | run | g2_data_integrity | tools/validate_data.gd | passes with the sample def | — |
 | 23 | run | g3_smoke_boot | scenes/main.tscn | boots, zero ERROR lines | — |
-| 24 | update | changelog | docs/changelog.md | one line: the verb and its enum | — |
+| 24 | run | architecture_rules | core/ | `scripts/systems-map.sh observe --strict`: no R2/R4 violations in the new verb, its dependencies declared | Fitness checks (ADR-0067). |
+| 25 | update | changelog | docs/changelog.md | one line: the verb and its enum | — |
