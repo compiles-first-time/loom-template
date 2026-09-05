@@ -29,8 +29,6 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | join_leave_flow | Join and leave | 3 | sessions_players | 4 | implied | orchestrator | core/net/session/join.gd | — | Handshake, spawn and departure; emits player joined and left | — |
 | player_slots_cap | Player slots | 3 | sessions_players | 4 | spec | orchestrator | core/net/session/ | §1 | 2 to 10 players | — |
 | reconnection | Reconnection | 3 | sessions_players | 4 | implied | orchestrator | core/net/session/reconnect.gd | — | Rejoin to the same character | — |
-| server_config_password | Server config & password | 3 | sessions_players | 4 | implied | orchestrator | server/config | — | Name, password and settings | — |
-| kick_ban_admin | Kick, ban, admin | 3 | sessions_players | 4 | implied | orchestrator | server/admin | — | Host moderation | — |
 | player_identity_local | Local player identity | 3 | sessions_players | 4 | implied | orchestrator | core/net/session/identity.gd | §10 | A local id per player; no accounts | — |
 | direct_ip_join | Direct join | 3 | sessions_players | 4 | spec | orchestrator | core/net/session/ | §1 no matchmaking | Join by address; no matchmaking service | — |
 | sync_domains | Per-system sync | 2 | multiplayer | 4 | implied | orchestrator | core/net/sync/ | — | Combat, inventory, building, time, quests and survival mirrored from the server | Each department's paperwork mailed to the central office |
@@ -46,9 +44,8 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | save_tamper_resistance | Save tamper resistance | 3 | net_validation_security | — | candidate | director | core/saving/ | — | Signed or server-owned saves | — |
 | hosting_ops | Hosting & server ops | 2 | multiplayer | 4 | implied | orchestrator | server/; docs/ | §10 | Headless CLI, persistence, admin commands, metrics | Renting the hall and keeping the lights on |
 | server_cli_headless | Headless server CLI | 3 | hosting_ops | 4 | implied | orchestrator | server/ | — | Start, stop and configure from the command line | — |
-| world_persistence_sqlite | World persistence (SQLite) | 3 | hosting_ops | 4 | spec | orchestrator | server/db/ | §10 | The server's SQLite world store | — |
-| server_admin_commands | Server admin commands | 3 | hosting_ops | 4 | implied | orchestrator | server/admin | — | Console commands for the host | — |
-| server_metrics_hooks | Server metrics hooks | 3 | hosting_ops | 4 | implied | orchestrator | server/metrics | — | Tick time, players and memory exposed for monitoring | — |
+| server_admin_commands | Server admin commands | 3 | hosting_ops | 4 | implied | orchestrator | server/admin | — | Console commands for the host: kick, ban, whitelist and the GM console with admin rights | — |
+| content_version_handshake | Content version handshake | 3 | sessions_players | 4 | implied | orchestrator | core/net/session/version.gd | §10, §12 | Client and server compare build and data/ versions on join; a mismatch is refused with a clear message | — |
 
 ## Edges
 
@@ -74,14 +71,10 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | interest_management | reads | chunk_streaming | relevance by area | soft | Relevance can follow streaming chunks |
 | interest_management | reads | actor_registry | distance | hard | Relevance is computed per actor |
 | join_leave_flow | reads | player_identity_local | who joined | hard | Joins carry a player identity |
-| join_leave_flow | reads | server_config_password | password check | hard | Joins are gated by the password |
 | join_leave_flow | reads | spawn_hubs | where to spawn | hard | New players spawn at a hub |
 | join_leave_flow | reads | character_save_state | restore character | hard | A returning player gets their character back |
-| player_slots_cap | reads | server_config_password | configured cap | hard | The cap is a server setting within 2 to 10 |
 | reconnection | reads | per_player_save_in_world | saved character | hard | Reconnecting restores the saved character |
 | reconnection | reads | player_identity_local | identity match | hard | The same identity reconnects |
-| server_config_password | reads | user_settings_store | host settings | soft | The host edits these as settings |
-| kick_ban_admin | reads | server_admin_commands | commands | hard | Moderation is a set of admin commands |
 | player_identity_local | reads | user_settings_store | stored id | hard | The local id is stored with settings |
 | direct_ip_join | reads | godot_multiplayer_api | connect | hard | Joining is a transport connect |
 | sync_domains | reads | event_replication | events | hard | Every sync domain rides on event replication |
@@ -98,7 +91,16 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | rate_limits | reads | command_validation | rate per client | hard | Limits sit in front of validation |
 | save_tamper_resistance | reads | world_save_json | signed saves | hard | Tamper resistance wraps the save format |
 | server_cli_headless | reads | export_presets | headless preset | hard | The CLI runs the headless build |
-| world_persistence_sqlite | reads | sqlite_world_store | store | hard | The server uses the SQLite store |
 | server_admin_commands | extends | gm_console | server variant | hard | Admin commands are the GM console with authority |
-| server_metrics_hooks | reads | tick_rate_sync | tick time | hard | Tick time is the first metric |
-| server_metrics_hooks | reads | sessions_players | player count | hard | Player count is a metric |
+| join_leave_flow | reads | server_rules_config | — | hard | Password and rules are checked on join |
+| player_slots_cap | reads | server_rules_config | — | hard | The slot cap is a server rule |
+| sync_domains | transports | loot | — | hard | Loot rolls are server-owned; clients never roll; no dedicated sync part yet |
+| sync_domains | transports | crafting | — | hard | Craft timers and outputs are server-owned; no dedicated sync part yet |
+| sync_domains | transports | progression | — | hard | XP and levels are server-owned; no dedicated sync part yet |
+| sync_domains | transports | equipment | — | hard | Equipped state replicates from the server; no dedicated sync part yet |
+| sync_domains | transports | gathering | — | hard | Node depletion and yields are server-owned; no dedicated sync part yet |
+| sync_domains | transports | world_state_flags | — | hard | Flags and counters replicate as a snapshot; no dedicated sync part yet |
+| server_admin_commands | reads | player_identity_local | — | hard | Kicks and bans need an identity to name |
+| client_server_roles | extends | local_authority_mode | — | hard | Phase 4 replaces the local authority with server roles |
+| content_version_handshake | reads | join_leave_flow | — | hard | The check runs during join |
+| content_version_handshake | reads | content_database_git | — | hard | The data/ version is what is compared |

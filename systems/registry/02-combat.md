@@ -68,7 +68,7 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | spell_effect_content | Spells & effects content | 2 | combat | 0 | spec | content-smith | data/spells/; data/effects/ | §6.3, §6.4, §6.9 | The SpellDef and StatusEffectDef files the casting and effect systems execute | The recipe cards for every spell and every sticky note |
 | spell_defs_content | Spell definitions | 3 | spell_effect_content | 0 | spec | content-smith | data/spells/ | §6.3 | One .tres per spell; Fireball is the worked example | — |
 | effect_defs_content | Effect definitions | 3 | spell_effect_content | 0 | spec | content-smith | data/effects/ | §6.4 | One .tres per status effect | — |
-| element_matrix | Element matrix | 3 | spell_effect_content | — | candidate | content-smith | docs/balance_ranges.md | — | Which element beats which, as data | — |
+| element_matrix | Element matrix | 3 | spell_effect_content | — | candidate | director/content-smith | docs/balance_ranges.md | — | Which element beats which, as data | — |
 
 ## Edges
 
@@ -100,11 +100,6 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | resource_cost_check | reads | mana_pool | current mana | hard | Mana costs read the mana pool |
 | resource_cost_check | reads | stamina_pool | current stamina | hard | Stamina costs read the stamina pool |
 | resource_cost_check | reads | health_pool | current health | hard | Health costs read the health pool |
-| resource_cost_check | reads | energy_pool | current energy | soft | Only if energy is approved and the enum extended |
-| resource_cost_check | reads | rage_pool | current rage | soft | Only if rage is approved |
-| resource_cost_check | reads | focus_pool | current focus | soft | Only if focus is approved |
-| resource_cost_check | reads | divinity_pool | current divinity | soft | Only if divinity is approved |
-| resource_cost_check | reads | corruption_pool | current corruption | soft | Only if corruption is approved |
 | range_los_check | reads | spell_defs_content | SpellDef.range_m | hard | Range is a spell field |
 | range_los_check | reads | collision_layers | LoS raycast | hard | Line of sight is a physics query against the right layers |
 | targeting_modes | reads | spell_defs_content | SpellDef.delivery | hard | Delivery selects the targeting mode |
@@ -171,3 +166,12 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | spell_defs_content | reads | balance_ranges | number ranges | soft | Spell numbers are anchored to balance ranges |
 | effect_defs_content | reads | schema_status_effect_def | StatusEffectDef | hard | Every effect file must match the schema |
 | element_matrix | reads | damage_types_elements | element list | hard | The matrix is indexed by the element enum |
+| resource_cost_check | reads | additional_class_resources | — | soft | The cost check would read the new pools |
+| cast_timing | reads | spellbook | known spell ids | hard | Only known spells cast |
+| effect_defs_content | references | icon_conventions | icon | hard | StatusEffectDef.icon is required (§6.4) and named by id |
+| healing_kit | references | spell_defs_content | spell ids | hard | A role kit is a set of spell ids |
+| dps_kit | references | spell_defs_content | spell ids | hard | A role kit is a set of spell ids |
+| tanking_kit | references | spell_defs_content | spell ids | hard | A role kit is a set of spell ids |
+| effect_kinds_verbs | reads | schema_status_effect_def | kind enum | hard | Every kind enum value is a verb here (R1) |
+| effect_kinds_verbs | reads | effect_stacking | — | hard | Apply consults the stacking rule before adding an instance |
+| damage_formula | reads | resistances_application | mitigation step | soft | Mitigation joins the formula when resistances land in Phase 2; the Phase 1 formula runs unmitigated |

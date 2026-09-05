@@ -14,13 +14,13 @@ Format: [`systems/README.md`](../README.md). Tool: `scripts/systems-map.sh`. Dec
 | engine_platform | Engine & Build | 2 | foundation | 0 | spec | orchestrator | project.godot; addons/; docs/ENGINE_VERSION.txt | §2 | Godot 4.x pinned, project settings, export presets, addon policy | The foundation slab and the power company |
 | godot_version_pin | Godot version pin | 3 | engine_platform | 0 | spec | director | docs/ENGINE_VERSION.txt | §2, §13 | Exact engine version recorded at Phase 0; upgrades are a DIRECTOR decision | — |
 | project_settings | Project settings | 3 | engine_platform | 0 | implied | orchestrator | project.godot | §2, §4 | Autoloads, physics tick rate, collision layers, input map, rendering method | — |
-| export_presets | Export presets | 3 | engine_platform | 1 | spec | orchestrator | export_presets.cfg | §1, §2 | Windows and Linux desktop builds, plus the headless server preset in Phase 4 | — |
+| export_presets | Export presets | 3 | engine_platform | 1 | implied | orchestrator | export_presets.cfg | §1, §2 | Windows and Linux desktop builds, plus the headless server preset in Phase 4 | — |
 | addon_management | Addon management | 3 | engine_platform | 0 | spec | orchestrator | addons/ | §2, §4 R10 | Third-party plugins (GUT, godot-mcp); adding one requires a spec-change PR | — |
 | gdscript_static_typing | GDScript static typing + lint | 3 | engine_platform | 0 | spec | orchestrator | core/; tools/; gdlintrc | §2, §4 R6 | Static typing, one-line docstrings, gdformat and gdlint as the style law | — |
 | architecture_rules | Architecture rules (R1–R10) | 2 | foundation | 0 | spec | orchestrator | GAME_INFRA_SPEC.md; core/ | §4 | The constitution of the codebase, enforced by gates and by refusal | The building code |
 | systems_content_split | Systems / content split (R1) | 3 | architecture_rules | 0 | spec | orchestrator | core/; data/ | §4 R1 | Code never hardcodes content; data never contains logic | Kitchen staff and recipe cards |
 | plain_text_formats | Plain text everything (R3) | 3 | architecture_rules | 0 | spec | orchestrator | scenes/; data/ | §4 R3 | Scenes, resources, config and data are text and committed to Git | — |
-| deterministic_sim | Deterministic simulation (R4) | 3 | architecture_rules | 1 | spec | orchestrator | core/ | §4 R4 | Seeded RNG passed in, fixed physics tick, no wall-clock inside core/ | Same dice, same seed, same game every time |
+| deterministic_sim | Deterministic simulation (R4) | 3 | architecture_rules | 1 | spec | orchestrator | core/util/rng.gd; core/ | §4 R4 | Seeded RNG passed in, fixed physics tick, no wall-clock inside core/ | Same dice, same seed, same game every time |
 | sim_presentation_split | Simulation / presentation split (R5) | 3 | architecture_rules | 1 | spec | orchestrator | core/; ui/; scenes/ | §4 R5, §12 | Input → simulate → present; presentation reads state and never mutates it | The scoreboard shows the game; it never plays it |
 | id_convention | ID convention (R7) | 3 | architecture_rules | 0 | spec | orchestrator | data/ | §4 R7, §11 | snake_case ids with category prefix, immutable once shipped in a save | Social security numbers for content |
 | event_bus | EventBus | 2 | foundation | 0 | spec | orchestrator | core/events/event_bus.gd | §5 | The autoload every system emits on and listens to; its signal table is the API between systems | The group chat every department reads; nobody phones anyone directly |
@@ -40,21 +40,21 @@ Format: [`systems/README.md`](../README.md). Tool: `scripts/systems-map.sh`. Dec
 | sig_day_phase_changed | day_phase_changed | 3 | event_bus | 0 | spec | orchestrator | core/events/event_bus.gd | §5 | phase: dawn, day, dusk, night | — |
 | sig_world_saved | world_saved | 3 | event_bus | 0 | spec | orchestrator | core/events/event_bus.gd | §5 | slot | — |
 | sig_world_loaded | world_loaded | 3 | event_bus | 0 | spec | orchestrator | core/events/event_bus.gd | §5 | slot | — |
-| sig_structure_placed | structure_placed (proposed) | 3 | event_bus | 3 | candidate | orchestrator | core/events/event_bus.gd | — | actor_id, structure_id, position; building has no signal in §5 yet | — |
-| sig_structure_destroyed | structure_destroyed (proposed) | 3 | event_bus | 3 | candidate | orchestrator | core/events/event_bus.gd | — | structure_id, cause | — |
-| sig_player_joined | player_joined (proposed) | 3 | event_bus | 4 | candidate | orchestrator | core/events/event_bus.gd | — | player_id, character_id | — |
-| sig_player_left | player_left (proposed) | 3 | event_bus | 4 | candidate | orchestrator | core/events/event_bus.gd | — | player_id, reason | — |
-| sig_level_up | level_up (proposed) | 3 | event_bus | 2 | candidate | orchestrator | core/events/event_bus.gd | — | actor_id, level | — |
+| sig_structure_placed | structure_placed (proposed) | 3 | event_bus | 3 | implied | orchestrator | core/events/event_bus.gd | — | actor_id, structure_id, position; building has no signal in §5 yet | — |
+| sig_structure_destroyed | structure_destroyed (proposed) | 3 | event_bus | — | candidate | orchestrator | core/events/event_bus.gd | — | structure_id, cause | — |
+| sig_player_joined | player_joined (proposed) | 3 | event_bus | 4 | implied | orchestrator | core/events/event_bus.gd | — | player_id, character_id | — |
+| sig_player_left | player_left (proposed) | 3 | event_bus | 4 | implied | orchestrator | core/events/event_bus.gd | — | player_id, reason | — |
+| sig_level_up | level_up (proposed) | 3 | event_bus | 2 | implied | orchestrator | core/events/event_bus.gd | — | actor_id, level | — |
 | sig_currency_changed | currency_changed (proposed) | 3 | event_bus | — | candidate | orchestrator | core/events/event_bus.gd | — | actor_id, currency_id, delta | — |
 | sig_reputation_changed | reputation_changed (proposed) | 3 | event_bus | — | candidate | orchestrator | core/events/event_bus.gd | — | actor_id, faction_id, delta, tier | — |
-| sig_boss_phase_changed | boss_phase_changed (proposed) | 3 | event_bus | 2 | candidate | orchestrator | core/events/event_bus.gd | — | encounter_id, phase_index | — |
+| sig_boss_phase_changed | boss_phase_changed (proposed) | 3 | event_bus | 2 | implied | orchestrator | core/events/event_bus.gd | — | encounter_id, phase_index | — |
 | sig_weather_changed | weather_changed (proposed) | 3 | event_bus | — | candidate | orchestrator | core/events/event_bus.gd | — | weather_id, intensity | — |
-| sig_zone_entered | zone_entered (proposed) | 3 | event_bus | 3 | candidate | orchestrator | core/events/event_bus.gd | — | actor_id, zone_id | — |
-| sig_need_threshold_crossed | need_threshold_crossed (proposed) | 3 | event_bus | 3 | candidate | orchestrator | core/events/event_bus.gd | — | actor_id, need_id, threshold; how survival asks effects for a starving debuff without calling it | — |
+| sig_zone_entered | zone_entered (proposed) | 3 | event_bus | 3 | implied | orchestrator | core/events/event_bus.gd | — | actor_id, zone_id | — |
+| sig_need_threshold_crossed | need_threshold_crossed (proposed) | 3 | event_bus | 3 | implied | orchestrator | core/events/event_bus.gd | — | actor_id, need_id, threshold; how survival asks effects for a starving debuff without calling it | — |
 | sig_trade_completed | trade_completed (proposed) | 3 | event_bus | — | candidate | orchestrator | core/events/event_bus.gd | — | buyer_id, seller_id, items, currency | — |
 | data_schemas | Data schemas (the nouns) | 2 | foundation | 0 | spec | orchestrator | core/schemas/ | §6 | Resource class definitions every content file must match | The blank recipe-card templates |
-| schema_conventions | Schema conventions | 3 | data_schemas | 0 | spec | orchestrator | core/schemas/ | §6 | Every def carries id, display_name, schema_version; canonical storage is .tres | — |
-| schema_versioning | Schema versioning + migrations | 3 | data_schemas | 2 | spec | orchestrator | core/schemas/; docs/migrations.md | §6, §10 | schema_version bumps with a migration note so old saves and old data still load | Edition numbers on a textbook |
+| schema_conventions | Schema conventions | 3 | data_schemas | 0 | spec | orchestrator | core/schemas/def_base.gd | §6 | Every def carries id, display_name, schema_version; canonical storage is .tres | — |
+| schema_versioning | Schema versioning + migrations | 3 | data_schemas | 0 | spec | orchestrator | core/schemas/; docs/migrations.md | §6, §10 | schema_version on every def from Phase 0; bumps carry a migration note so old saves and old data still load | Edition numbers on a textbook |
 | schema_item_def | ItemDef | 3 | data_schemas | 0 | spec | orchestrator | core/schemas/item_def.gd | §6.1 | id, description, icon, model, stack_size, weight, rarity, slot, tags, stats, on_use_effect | — |
 | schema_recipe_def | RecipeDef | 3 | data_schemas | 0 | spec | orchestrator | core/schemas/recipe_def.gd | §6.2 | output_item, output_count, station, inputs, craft_time_s, unlocked_by | — |
 | schema_spell_def | SpellDef | 3 | data_schemas | 0 | spec | orchestrator | core/schemas/spell_def.gd | §6.3 | cast_time_s, cooldown_s, cost, range_m, delivery, effects, element, vfx, sfx | — |
@@ -63,10 +63,10 @@ Format: [`systems/README.md`](../README.md). Tool: `scripts/systems-map.sh`. Dec
 | schema_loot_table_def | LootTableDef | 3 | data_schemas | 0 | spec | orchestrator | core/schemas/loot_table_def.gd | §6.6 | entries with weight and min/max, guaranteed drops | — |
 | schema_quest_def | QuestDef | 3 | data_schemas | 0 | spec | orchestrator | core/schemas/quest_def.gd | §6.7 | giver_npc, prereqs, objectives, rewards, dialogue, journal_text | — |
 | schema_dialogue_def | DialogueDef | 3 | data_schemas | 0 | spec | orchestrator | core/schemas/dialogue_def.gd | §6.8 | nodes with speaker, text, choices, goto, condition | — |
-| schema_biome_def | BiomeDef (implied) | 3 | data_schemas | 1 | implied | orchestrator | core/schemas/biome_def.gd | §3 data/biomes | data/biomes exists in the layout but has no schema section yet | — |
+| schema_biome_def | BiomeDef (implied) | 3 | data_schemas | 0 | implied | orchestrator | core/schemas/biome_def.gd | §3 data/biomes | data/biomes exists in the layout with no §6 section yet; the Phase 0 sample enemy needs one biome id to reference | — |
 | schema_npc_def | NpcDef (implied) | 3 | data_schemas | 3 | implied | orchestrator | core/schemas/npc_def.gd | §6.7 giver_npc | Quests name an npc id and objectives can talk to one; nothing defines an NPC | — |
 | schema_marker_def | MarkerDef (implied) | 3 | data_schemas | 1 | implied | orchestrator | core/schemas/marker_def.gd | §6.7 reach | reach objectives target a marker id; markers need a definition | — |
-| schema_station_def | StationDef (implied) | 3 | data_schemas | 3 | implied | orchestrator | core/schemas/station_def.gd | §6.2 station | RecipeDef.station names a station id (hands, workbench, forge) | — |
+| schema_station_def | StationDef (implied) | 3 | data_schemas | 0 | implied | orchestrator | core/schemas/station_def.gd | §6.2 station | RecipeDef.station names a station id; `hands` exists from Phase 0, station structures from Phase 3 | — |
 | schema_building_piece_def | BuildingPieceDef (implied) | 3 | data_schemas | 3 | implied | orchestrator | core/schemas/building_piece_def.gd | §13 Phase 3 build | Placeable pieces need cost, snapping, footprint and health | — |
 | schema_encounter_def | EncounterDef (implied) | 3 | data_schemas | 2 | implied | orchestrator | core/schemas/encounter_def.gd | §1 boss gates | A boss fight is data: phases, mechanics, arena, gate unlocked | — |
 | schema_class_def | ClassDef (candidate) | 3 | data_schemas | — | candidate | director | core/schemas/class_def.gd | — | Classes are not in the spec; needs a DIRECTOR decision | — |
@@ -76,17 +76,17 @@ Format: [`systems/README.md`](../README.md). Tool: `scripts/systems-map.sh`. Dec
 | content_pipeline | Content pipeline | 2 | foundation | 0 | spec | orchestrator | tools/json_to_tres.gd; tools/validate_data.gd; data/_inbox/ | §6, §6.9, §8 G2 | inbox JSON → converter → validator → data/ .tres, with hot-reload at runtime | The mailroom and the quality inspector between generators and the shelf |
 | inbox_json | data/_inbox JSON drop | 3 | content_pipeline | 0 | spec | content-smith | data/_inbox/ | §6 | Raw JSON from agents and generators lands here, one file per def | The in-tray |
 | json_to_tres_converter | JSON → .tres converter | 3 | content_pipeline | 0 | spec | orchestrator | tools/json_to_tres.gd | §6 | Validates against the schema, converts, files the .tres in data/ | — |
-| data_validator_g2 | Data validator (G2) | 3 | content_pipeline | 0 | spec | test-pilot | tools/validate_data.gd | §8 G2 | Unique ids, references resolve, icon and model paths exist, enums legal, numbers in range | The inspector who checks every card against the catalog |
+| data_validator_g2 | Data validator (G2) | 3 | content_pipeline | 0 | spec | orchestrator/test-pilot | tools/validate_data.gd | §8 G2 | Unique ids, references resolve, icon and model paths exist, enums legal, numbers in range | The inspector who checks every card against the catalog |
 | data_registry_loader | Runtime data registry | 3 | content_pipeline | 0 | implied | orchestrator | core/data/registry.gd | §6.9, §10 | id → def lookup for every schema, the only way code finds content | The library card catalog |
 | hot_reload | Hot reload | 3 | content_pipeline | 2 | spec | orchestrator | core/data/ | §6.9 | Newly converted defs become usable without a restart | — |
-| time_and_tick | Time & scheduling | 2 | foundation | 1 | spec | orchestrator | core/ | §4 R4 | Fixed simulation tick, timers and cooldowns, pause rules | The factory clock every machine runs on |
-| fixed_tick_sim | Fixed-tick simulation loop | 3 | time_and_tick | 1 | spec | orchestrator | core/ | §4 R4, §12 | Gameplay advances on the physics tick; all durations count ticks, not seconds | — |
-| timers_cooldowns | Timers & cooldowns | 3 | time_and_tick | 1 | implied | orchestrator | core/ | §6.2, §6.3 | Tick-based timers shared by cooldowns, craft time, respawns, effect durations | — |
-| pause_rules | Pause & game speed | 3 | time_and_tick | 1 | implied | orchestrator | core/ | §12 | Single-player pause; no pause once a server owns time in Phase 4 | — |
+| time_and_tick | Time & scheduling | 2 | foundation | 1 | spec | orchestrator | core/time/ | §4 R4 | Fixed simulation tick, timers and cooldowns, pause rules | The factory clock every machine runs on |
+| fixed_tick_sim | Fixed-tick simulation loop | 3 | time_and_tick | 1 | spec | orchestrator | core/time/tick.gd; project.godot | §4 R4, §12 | Gameplay advances on the fixed physics tick (rate in project.godot); no frame-time math in core/ | — |
+| timers_cooldowns | Timers & cooldowns | 3 | time_and_tick | 1 | implied | orchestrator | core/time/timers.gd | §6.2, §6.3 | Tick-based timers shared by cooldowns, craft time, respawns, effect durations | — |
+| pause_rules | Pause & game speed | 3 | time_and_tick | 1 | implied | orchestrator | core/time/pause.gd | §12 | Single-player pause; no pause once a server owns time in Phase 4 | — |
 | command_intents | Command / intent events | 2 | foundation | 1 | spec | orchestrator | core/commands/ | §12 | Player actions enter the sim as intents, the shape a server will receive later | Order tickets: the waiter writes the order, the kitchen decides what happens |
-| intent_schema | Intent schema | 3 | command_intents | 1 | spec | orchestrator | core/commands/ | §12 | Typed intents: move, interact, cast spell_id at target, use item, build piece | — |
-| intent_dispatch | Intent dispatch | 3 | command_intents | 1 | spec | orchestrator | core/commands/ | §12 | Intents are queued and applied on the tick by the owning system | — |
-| intent_validation | Intent validation | 3 | command_intents | 1 | implied | orchestrator | core/commands/ | §12 | Illegal intents are rejected before they touch state; the server does this in Phase 4 | — |
+| intent_schema | Intent schema | 3 | command_intents | 1 | spec | orchestrator | core/commands/intent.gd | §12 | Typed intents: move, interact, cast spell_id at target, use item, build piece | — |
+| intent_dispatch | Intent dispatch | 3 | command_intents | 1 | spec | orchestrator | core/commands/dispatch.gd | §12 | Intents are queued and applied on the tick by the owning system | — |
+| intent_validation | Intent validation | 3 | command_intents | 1 | implied | orchestrator | core/commands/validate.gd | §12 | Illegal intents are rejected before they touch state; the server does this in Phase 4 | — |
 | state_model | Serializable game state | 2 | foundation | 1 | spec | orchestrator | core/state/ | §12, §10 | All gameplay state lives in serializable data keyed by id, never only in nodes | The ledger: what the game is lives in the books, not in the furniture |
 | actor_registry | Actor registry | 3 | state_model | 1 | spec | orchestrator | core/state/actors.gd | §12 | Logic references actors by id, never by node path | — |
 | world_state_flags | World state flags | 3 | state_model | 2 | implied | orchestrator | core/state/flags.gd | §6.7, §6.8 | Boolean and counter flags quests, dialogue and gates read and set | — |
@@ -96,18 +96,19 @@ Format: [`systems/README.md`](../README.md). Tool: `scripts/systems-map.sh`. Dec
 | condition_evaluator | Condition evaluator | 3 | condition_grammar | 3 | spec | orchestrator | core/conditions/eval.gd | §6.8 | Evaluates against quest, item and flag state; pure and deterministic | — |
 | debug_tools | Debug & GM tools | 2 | foundation | 0 | spec | orchestrator | core/debug/console.gd | §3, §13 | The console and overlays that make the content loop fast | The backstage door and the control booth |
 | gm_console | GM console | 3 | debug_tools | 0 | spec | orchestrator | core/debug/console.gd | §13 | give, spawn, tp, time; disabled on public servers | — |
-| debug_overlays | Debug overlays | 3 | debug_tools | 1 | implied | orchestrator | core/debug/overlays.gd | §13 | Frame time, actor ids, threat, navmesh and hitbox drawing | — |
+| debug_overlays | Debug overlays | 3 | debug_tools | 1 | implied | orchestrator | core/debug/overlays.gd | §13 | Toggle overlays: actor ids, threat, navmesh, hitboxes, frame time and the client performance readout | — |
 | in_game_bug_report | In-game bug report | 3 | debug_tools | — | candidate | orchestrator | core/debug/report.gd | — | One key captures screenshot, log tail, position and save into a report bundle | The incident form with a photo attached |
-| replay_recorder | Input replay recorder | 3 | debug_tools | — | candidate | test-pilot | core/debug/replay.gd | §4 R4 | Determinism makes intent logs replayable: record once, reproduce any bug | The black box flight recorder |
+| replay_recorder | Input replay recorder | 3 | debug_tools | — | candidate | orchestrator | core/debug/replay.gd | §4 R4 | Determinism makes intent logs replayable: record once, reproduce any bug | The black box flight recorder |
 | config_settings | Settings & configuration | 2 | foundation | 1 | implied | orchestrator | core/settings/; user://settings.cfg | §1 | User settings store and the presets other systems read | The thermostat panel |
 | user_settings_store | User settings store | 3 | config_settings | 1 | implied | orchestrator | core/settings/store.gd | — | Persisted key-value settings with defaults and validation | — |
-| graphics_presets | Graphics presets | 3 | config_settings | 1 | implied | orchestrator | core/settings/graphics.gd | §1 mid-range PCs | Low, medium, high bundles that map to renderer switches | — |
 | keybinding_config | Keybinding config | 3 | config_settings | 1 | implied | orchestrator | core/settings/input.gd | — | Rebindable actions persisted per user | — |
 | audio_settings | Audio settings | 3 | config_settings | 1 | implied | orchestrator | core/settings/audio.gd | — | Bus volumes and mute per user | — |
 | localization | Localization & text | 2 | foundation | — | candidate | orchestrator | data/locale/ | — | String tables, fonts and locale switching; every display string routed through a key | Subtitles in another language for the same film |
 | string_tables | String tables | 3 | localization | — | candidate | orchestrator | data/locale/ | — | display_name and description keys resolved per locale | — |
 | font_pipeline | Font pipeline | 3 | localization | — | candidate | world-builder | art/fonts/ | — | Fonts covering the locales shipped, with fallback | — |
 | locale_switch | Locale switch | 3 | localization | — | candidate | orchestrator | core/settings/ | — | Runtime locale change without restart | — |
+| repo_layout | Repository layout (§3) | 3 | engine_platform | 0 | spec | orchestrator/director | project.godot; .gdignore | §3, §13 item 2 | The §3 directory layout: res:// root with core/ data/ scenes/ actors/ ui/ art/ audio/ tests/ tools/ addons/; where the Godot root sits beside Loom's governance folders (.gdignore them, or move the game under game/) is an open DIRECTOR question | — |
+| local_authority_mode | Local authority mode | 3 | command_intents | 1 | implied | orchestrator | core/commands/authority.gd | §12 | Phases 1–3: the local game is its own authority and applies intents directly; the seam a Phase 4 server replaces | — |
 
 ## Edges
 
@@ -146,14 +147,12 @@ Format: [`systems/README.md`](../README.md). Tool: `scripts/systems-map.sh`. Dec
 | condition_evaluator | reads | quests | quest state | hard | Conditions test quest started or completed |
 | gm_console | reads | data_registry_loader | id lookups for give and spawn | hard | give and spawn resolve ids through the registry |
 | gm_console | reads | intent_schema | console commands become intents | soft | From Phase 1 console commands enter the sim as intents like player actions; the Phase 0 console may call the registry directly (dev-only) |
-| gm_console | reads | day_night_cycle | time command | soft | The time command sets the clock phase; the spec lists the console with time in Phase 0 but the clock in Phase 3, so Phase 0 needs a stub clock or the clock moves earlier (DIRECTOR) |
 | debug_overlays | renders | actor_registry | ids and positions | soft | Overlays draw what the registry knows |
 | debug_overlays | renders | threat_aggro | threat table | soft | The threat overlay reads the threat table for the selected enemy |
 | in_game_bug_report | reads | save_system | current save snapshot | hard | A report bundles the world save so the bug can be reloaded |
 | in_game_bug_report | reads | replay_recorder | recent intents | soft | A report attaches the last minutes of intents when the recorder is on |
 | replay_recorder | reads | intent_dispatch | intent log | hard | The recorder logs intents as dispatched |
 | replay_recorder | reads | deterministic_sim | R4 | hard | Replay only works because the sim is deterministic |
-| graphics_presets | reads | user_settings_store | selected preset | hard | The selected preset is a stored setting |
 | keybinding_config | reads | user_settings_store | bindings | hard | Bindings persist in the settings store |
 | audio_settings | reads | user_settings_store | volumes | hard | Volumes persist in the settings store |
 | string_tables | reads | id_convention | string keys derived from ids | soft | Localized display names key off the content id |
@@ -259,3 +258,29 @@ Format: [`systems/README.md`](../README.md). Tool: `scripts/systems-map.sh`. Dec
 | player_trade | emits | sig_trade_completed | — | hard | A completed trade is announced (proposed signal) |
 | inventory_screen | listens | sig_trade_completed | — | soft | Inventory refreshes after a trade |
 | objective_tracking | listens | sig_trade_completed | — | soft | A trade objective type could count trades |
+| gm_console | reads | day_night_cycle | time <phase> | hard | `time <phase>` sets the clock; §13 puts the command in Phase 0 and the clock in Phase 3 — DIRECTOR: stub the clock in P0 or move the command |
+| gm_console | reads | item_pickup_drop | give | hard | `give <item_id> [n]` puts items in the bag through the pickup path; §13 puts the command in P0 and inventory in P2 — DIRECTOR: stub or move |
+| gm_console | reads | spawning | spawn | hard | `spawn <enemy_id> [n]` goes through the spawn system |
+| gm_console | reads | actor_registry | tp | hard | `tp <x> <y> <z>` moves the player actor by id |
+| gm_console | reads | hot_reload | — | soft | §6.9: a converted def is castable through the console without a restart |
+| effect_kinds_verbs | listens | sig_item_consumed | — | hard | The effects system applies ItemDef.on_use_effect on the existing §5 signal instead of survival calling combat (R2) |
+| threat_table | listens | sig_actor_healed | — | soft | Healing adds threat against the healer |
+| sfx_events | listens | sig_actor_damaged | — | hard | Hit sounds play on damage events |
+| sfx_events | listens | sig_actor_died | — | hard | Death sounds play on the event |
+| string_tables | reads | dialogue_nodes_choices | — | soft | Dialogue text would be string keys |
+| string_tables | reads | quest_journal_text | — | soft | Journal text would be string keys |
+| data_validator_g2 | reads | model_naming | model paths | hard | G2 checks that every model path exists and is named by id |
+| data_validator_g2 | reads | actor_prefabs_scenes | scene path | hard | G2 checks that EnemyDef.scene exists |
+| data_validator_g2 | reads | schema_versioning | — | soft | G2 rejects a schema_version the current class does not know |
+| json_to_tres_converter | reads | schema_conventions | conventions | hard | id, display_name and schema_version are required on every def |
+| temperature_exposure | listens | sig_day_phase_changed | — | soft | Nights are colder |
+| debug_overlays | renders | navmesh_baking | — | soft | The navmesh overlay draws the baked mesh |
+| debug_overlays | renders | hit_detection | — | soft | The hitbox overlay draws the sim's shapes |
+| data_validator_g2 | reads | icon_placeholder_fallback | — | soft | G2 accepts the placeholder path as existing |
+| respawn_timers | listens | sig_actor_died | — | hard | A kill starts the respawn timer |
+| fog_atmosphere | listens | sig_weather_changed | — | soft | Fog density follows the weather |
+| death_screen | listens | sig_actor_died | — | hard | Opens on the local player's death (R5: reacts, never mutates) |
+| spawn_replication | listens | sig_actor_spawned | — | hard | The §5 Phase 4 note: server-emitted spawns replicate to clients |
+| repo_layout | reads | game_infra_spec | §3 | hard | §3 defines the layout |
+| systems_content_split | reads | repo_layout | — | hard | core/ versus data/ is the R1 boundary |
+| local_authority_mode | reads | intent_dispatch | — | hard | Intents dispatch locally until a server owns them |

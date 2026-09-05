@@ -21,7 +21,7 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | stat_modifiers_stack | Stat modifier stack | 3 | attributes_stats | 2 | implied | orchestrator | core/stats/modifiers.gd | §6.4 stat_mod | Ordered additive and multiplicative modifiers with sources, so removal is exact | Sticky notes on a number, each signed by who added it |
 | resistances | Resistances | 3 | attributes_stats | 2 | implied | orchestrator | core/stats/resist.gd | §6.3 element | Per-element resistance values that the damage model applies | — |
 | stat_formulas | Stat formulas | 3 | attributes_stats | 1 | implied | orchestrator | core/stats/formulas.gd | — | The pure functions that turn inputs into stats; property-tested | — |
-| level_scaling | Level scaling | 3 | attributes_stats | 2 | implied | orchestrator | core/stats/scaling.gd | §6.5 xp | How base stats grow with level for players and enemies | — |
+| level_scaling | Level scaling | 3 | attributes_stats | 2 | implied | orchestrator | core/stats/scaling.gd; docs/balance_ranges.md | §6.5 xp | Stat growth per level for players and enemies; the curves live in docs/balance_ranges.md | — |
 | primary_attributes | Primary attributes | 3 | attributes_stats | — | candidate | director | core/stats/ | — | Strength, agility, intellect, stamina, spirit as the roots of derived stats; not in the spec | — |
 | progression | Progression | 2 | character | 2 | implied | orchestrator | core/progression/ | §6.5 xp, §6.7 rewards.xp | XP, levels, and the rewards for reaching them | The belt system in martial arts |
 | xp_award | XP award | 3 | progression | 2 | implied | orchestrator | core/progression/xp.gd | §6.5, §6.7 | XP from kills and quests credited to the right actor | — |
@@ -50,11 +50,6 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | mana_pool | Mana pool | 3 | class_resources | 2 | spec | orchestrator | core/stats/resources.gd | §6.3 cost.resource | Current and max mana for casters | — |
 | stamina_pool | Stamina pool | 3 | class_resources | 1 | spec | orchestrator | core/stats/resources.gd | §6.3, §3 survival | Shared by sprinting, dodging, melee and survival drain | — |
 | resource_regen | Resource regeneration | 3 | class_resources | 2 | implied | orchestrator | core/stats/resources.gd | — | Per-tick regen rules with in-combat and resting modifiers | — |
-| energy_pool | Energy pool | 3 | class_resources | — | candidate | director | core/stats/resources.gd | — | Fast-regen rogue-style pool; needs the cost.resource enum extended | — |
-| rage_pool | Rage pool | 3 | class_resources | — | candidate | director | core/stats/resources.gd | — | Builds from damage dealt and taken, decays out of combat | — |
-| focus_pool | Focus pool | 3 | class_resources | — | candidate | director | core/stats/resources.gd | — | Hunter-style steady pool | — |
-| divinity_pool | Divinity pool | 3 | class_resources | — | candidate | director | core/stats/resources.gd | — | Builds from healing and holy actions | — |
-| corruption_pool | Corruption pool | 3 | class_resources | — | candidate | director | core/stats/resources.gd | — | A pool that empowers as it fills and punishes when it overflows | — |
 | inventory | Inventory | 2 | character | 2 | spec | orchestrator | core/inventory/ | §5 item_*, §6.1 | Bags, stacks, weight, pickup and drop; the source of item events | The backpack and its pockets |
 | bag_slots | Bag slots | 3 | inventory | 2 | implied | orchestrator | core/inventory/bags.gd | §6.1 | Slot grid with capacity; expandable by items | — |
 | stacking_rules | Stacking rules | 3 | inventory | 2 | spec | orchestrator | core/inventory/stacks.gd | §6.1 stack_size | Merge and split by stack_size | — |
@@ -66,9 +61,8 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | equipment | Equipment & gear | 2 | character | 1 | spec | orchestrator | core/inventory/equipment.gd | §6.1 slot, §1 gear tiers | Equip slots, gear stat application, tiers and comparison | The wardrobe with labeled hooks |
 | equip_slots | Equip slots | 3 | equipment | 1 | spec | orchestrator | core/inventory/equipment.gd | §6.1 slot | head, chest, legs, hands, feet, main_hand, off_hand, trinket | — |
 | gear_stats_application | Gear stat application | 3 | equipment | 1 | implied | orchestrator | core/inventory/equipment.gd | §6.1 stats | Equipped item stats feed the modifier stack | — |
-| gear_tiers | Gear tiers | 3 | equipment | 2 | spec | content-smith | data/items/ | §1 gear tiers | Progression bands of gear power tied to rarity and biome | — |
+| gear_tiers | Gear tiers | 3 | equipment | 2 | spec | content-smith | docs/balance_ranges.md; data/items/ | §1 gear tiers | Progression bands of gear power tied to rarity and biome | — |
 | weapon_types | Weapon types | 3 | equipment | 1 | implied | orchestrator | data/items/; core/combat/melee/ | §13 Phase 1 one weapon | Sword, axe, bow and so on as tags that select attack behavior | — |
-| item_comparison | Item comparison | 3 | equipment | 2 | implied | orchestrator | ui/tooltips/ | — | Stat deltas versus equipped shown in tooltips | — |
 | durability_repair | Durability | 3 | equipment | — | candidate | director | core/inventory/equipment.gd | — | Gear wears with use and needs repair; a survival-genre staple absent from the spec | — |
 | transmog | Transmog | 3 | equipment | — | candidate | director | core/inventory/ | — | Cosmetic appearance override per slot | — |
 | set_bonuses | Set bonuses | 3 | equipment | — | candidate | content-smith | data/items/ | — | Bonuses for wearing several pieces of a set | — |
@@ -78,6 +72,8 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | character_save_state | Character save state | 3 | character_identity | 3 | spec | orchestrator | core/saving/character.gd | §10 | The per-character record: ids plus state for inventory, equipment, progression, position | — |
 | appearance_customization | Appearance customization | 3 | character_identity | — | candidate | world-builder | actors/player/; art/ | — | Body, face, hair and color choices on the player rig | — |
 | multiple_characters_per_world | Multiple characters per world | 3 | character_identity | — | candidate | director | core/saving/ | — | More than one character record per player per world | — |
+| additional_class_resources | Further class resources | 3 | class_resources | — | candidate | director | core/stats/resources.gd | — | Energy, rage, focus, divinity and corruption as further pools; each is a §6.3 cost enum value and one DIRECTOR decision | — |
+| revive_downed_state | Downed & revive | 3 | character_identity | — | candidate | director | core/combat/downed.gd | — | A downed state that allies can revive before death; the hardcore-stakes question alongside loot_bags_on_death | — |
 
 ## Edges
 
@@ -142,16 +138,6 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | resource_regen | reads | health_pool | regen target | hard | Health regenerates |
 | resource_regen | reads | mana_pool | regen target | hard | Mana regenerates |
 | resource_regen | reads | stamina_pool | regen target | hard | Stamina regenerates |
-| energy_pool | extends | mana_pool | pool pattern | soft | A second pool reuses the pool pattern with different regen |
-| energy_pool | reads | schema_spell_def | cost.resource enum | hard | The enum must grow before a spell can cost energy |
-| rage_pool | extends | mana_pool | pool pattern | soft | Same pattern, builds instead of regenerating |
-| rage_pool | reads | schema_spell_def | cost.resource enum | hard | The enum must grow before a spell can cost rage |
-| focus_pool | extends | mana_pool | pool pattern | soft | Same pattern |
-| focus_pool | reads | schema_spell_def | cost.resource enum | hard | The enum must grow before a spell can cost focus |
-| divinity_pool | extends | mana_pool | pool pattern | soft | Same pattern, builds from healing |
-| divinity_pool | reads | schema_spell_def | cost.resource enum | hard | The enum must grow before a spell can cost divinity |
-| corruption_pool | extends | mana_pool | pool pattern | soft | Same pattern, with an overflow penalty |
-| corruption_pool | reads | schema_spell_def | cost.resource enum | hard | The enum must grow before a spell can cost corruption |
 | bag_slots | reads | items | ItemDef | hard | Slots hold item ids and counts |
 | stacking_rules | reads | items | ItemDef.stack_size | hard | Stack limits come from the item definition |
 | weight_encumbrance | reads | items | ItemDef.weight | hard | Weight totals come from item definitions |
@@ -167,7 +153,6 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | gear_tiers | reads | rarity_tiers | rarity | soft | Tiers usually track rarity |
 | gear_tiers | reads | item_levels | item level | soft | If item levels are approved, tiers are bands of them |
 | weapon_types | reads | item_categories_tags | tags | hard | Weapon type is a tag on the item |
-| item_comparison | reads | gear_stats_application | equipped stats | hard | Comparison diffs candidate stats against equipped |
 | durability_repair | reads | damage_model | wear on hit | soft | Durability drops on hits taken and dealt |
 | durability_repair | reads | repair | repair action | hard | Worn gear is restored by the repair action |
 | transmog | reads | equip_slots | appearance override | hard | Overrides are per slot |
@@ -184,3 +169,17 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | character_save_state | persists | progression | xp, level, unlocks | hard | Progression is part of the character record |
 | character_save_state | persists | class_resources | current pools | hard | Current health, mana and stamina are saved |
 | multiple_characters_per_world | reads | character_save_state | record per character | hard | Multiple records per player per world |
+| additional_class_resources | extends | mana_pool | — | soft | Each further pool follows the mana pattern: a max, a current and a regen rule |
+| additional_class_resources | reads | schema_spell_def | — | hard | The cost.resource enum must grow before a spell can cost a new resource |
+| item_pickup_drop | reads | loot_rolls_on_death | dropped stacks | hard | Rolled drops become pickups at the corpse |
+| equip_slots | reads | equipment_items | slot != none | hard | Only items with a slot other than none equip |
+| item_pickup_drop | reads | interaction_system | interact target id | hard | Pickup is an interact on a dropped item |
+| character_save_state | persists | quests | quest state | hard | Started, completed and objective progress per character |
+| character_save_state | persists | needs | — | hard | Hunger and the other needs are saved per character |
+| character_save_state | persists | abilities_skills | spellbook | hard | Known spells are saved per character |
+| character_save_state | persists | recipe_unlocks | — | hard | Known recipes are saved per character |
+| xp_award | reads | party_membership | — | soft | Kill XP is shared with the party |
+| item_pickup_drop | reads | stacking_rules | — | hard | Pickups merge into existing stacks |
+| revive_downed_state | reads | death_resolution | — | hard | Downed sits between zero health and death |
+| revive_downed_state | extends | respawn_rules | — | soft | Revive is an alternative to respawning |
+| equip_slots | reads | bag_slots | source and destination slot | soft | Equipping moves an item between a bag slot and an equipment slot; in Phase 1 the one weapon is pre-equipped, bags arrive in Phase 2 |

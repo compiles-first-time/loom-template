@@ -17,7 +17,7 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | structural_integrity | Structural integrity | 3 | placement | — | candidate | director | core/building/integrity.gd | — | Support propagation that makes unsupported builds collapse | — |
 | terrain_modification | Terrain modification | 3 | placement | — | candidate | director | core/building/terrain.gd | — | Flattening and digging | — |
 | structures | Structures | 2 | building | 3 | spec | orchestrator/content-smith | data/building/; core/building/ | §6.2 station, §10 | Stations, storage, beds, walls, decorations and farm plots as placeable pieces | The furniture catalog |
-| crafting_station_structures | Crafting station structures | 3 | structures | 3 | spec | content-smith | data/building/ | §6.2 station | Workbench, forge and campfire as placeable pieces | — |
+| crafting_station_structures | Crafting station structures | 3 | structures | 3 | spec | content-smith | data/building/ | §6.2 station | Workbench, forge and campfire as placeable pieces; the campfire also gives warmth and light and hosts cooking recipes | — |
 | storage_structures | Storage structures | 3 | structures | 3 | implied | content-smith | data/building/ | — | Chests and racks | — |
 | bed_respawn_structure | Bed | 3 | structures | 3 | implied | content-smith | data/building/ | — | The claimable bed | — |
 | defensive_structures_walls | Walls and defenses | 3 | structures | 3 | implied | content-smith | data/building/ | — | Walls, gates and palisades | — |
@@ -75,7 +75,6 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | npc_settlers | reads | npc_defs | settlers | hard | Settlers are NPCs |
 | npc_settlers | reads | player_cities | where they live | hard | Settlers move into cities |
 | build_permissions | reads | party_membership | party rights | hard | Rights follow the party |
-| build_permissions | reads | actor_ids | owner id | hard | Pieces record an owner id |
 | land_claims | reads | build_permissions | claim rights | hard | A claim is a permission area |
 | land_claims | reads | zone_triggers | claim bounds | soft | A claim is a zone |
 | decay_inactive | reads | world_clock_ticks | time since visit | hard | Decay counts game time |
@@ -85,3 +84,5 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | structure_damage_repair | reads | placed_structure_state | health | hard | Damage edits the piece's health |
 | structure_damage_repair | reads | damage_model | damage numbers | soft | Structure damage reuses the damage formula |
 | structure_damage_repair | reads | repair | repair action | soft | Repair restores structure health |
+| build_permissions | reads | actor_registry | — | hard | Ownership is by actor id |
+| crafting_station_structures | references | station_defs | station id | hard | A station piece names the station it provides |

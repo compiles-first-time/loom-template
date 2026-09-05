@@ -37,9 +37,7 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | biome_hazard_zones | Biome hazard zones | 3 | hazards | — | candidate | world-builder | scenes/; data/biomes/ | — | Poison, cold or dark zones inside a biome | — |
 | fire_burning_env | Environmental fire | 3 | hazards | — | candidate | orchestrator | core/survival/hazards.gd | — | Standing in fire applies the burning effect | — |
 | camp_rest | Camp & rest | 2 | survival | 3 | implied | orchestrator | core/survival/; data/building/ | §13 Phase 3 | Fire, bed and cooking: the loop that makes survival a home | The campsite: fire, bed, cooking pot |
-| campfire | Campfire | 3 | camp_rest | 3 | implied | content-smith | data/building/ | §6.2 station | A placeable station that gives warmth, light and cooking | — |
 | bed_spawn_point | Bed as spawn point | 3 | camp_rest | 3 | implied | orchestrator | core/survival/bed.gd | — | Claiming a bed sets the player's respawn location | — |
-| cooking | Cooking | 3 | camp_rest | 3 | implied | content-smith | data/recipes/ | §6.2 station | Recipes at the campfire station that produce food | — |
 | rested_bonus | Rested bonus | 3 | camp_rest | — | candidate | director | core/survival/ | — | A buff for resting near fire and bed | — |
 
 ## Edges
@@ -60,7 +58,6 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | need_thresholds_effects | reads | effect_defs_content | starving, freezing effect ids | hard | The debuffs to request must exist as effects |
 | thirst | extends | hunger | second gauge | hard | Thirst is the hunger pattern with different consumables |
 | temperature_exposure | reads | biome_defs | climate | hard | Biomes carry a base temperature |
-| temperature_exposure | reads | campfire | warmth radius | soft | Fires warm the area |
 | temperature_exposure | reads | equipment | warmth stats | soft | Clothing would carry warmth |
 | rest_sleep | reads | bed_spawn_point | rest in bed | hard | Sleep happens in a bed |
 | disease_sanity | extends | need_thresholds_effects | affliction thresholds | soft | Afflictions are threshold effects with their own gauges |
@@ -97,10 +94,9 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | biome_hazard_zones | reads | biome_defs | zone definitions | hard | Hazard zones are part of biome data |
 | biome_hazard_zones | reads | zone_triggers | enter and exit | hard | Zones are entered through the zone trigger system |
 | fire_burning_env | reads | effect_defs_content | burning effect | hard | Standing in fire applies the burning effect |
-| campfire | extends | crafting_station_structures | station piece | hard | A campfire is a placeable station |
-| campfire | reads | cooking | station recipes | soft | The fire hosts cooking recipes |
 | bed_spawn_point | reads | bed_respawn_structure | placed bed | hard | A claimable bed is a placed structure |
 | bed_spawn_point | reads | state_serialization | claimed bed id | hard | The claim is saved |
-| cooking | reads | recipe_defs | station campfire | hard | Cooking is a set of recipes at the campfire station |
 | rested_bonus | reads | bed_spawn_point | near bed | hard | The bonus applies near a claimed bed |
 | rested_bonus | reads | effect_defs_content | rested effect | hard | The bonus is a status effect |
+| temperature_exposure | reads | crafting_station_structures | — | soft | A campfire (a station piece) is a heat source |
+| resource_nodes | reads | interaction_system | interact target id | hard | Harvesting is an interact on a node |

@@ -17,17 +17,16 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | icon_conventions | Icon conventions | 3 | art_pipeline | 0 | spec | world-builder | art/icons/ | §11 | 256x256 PNG, transparent, path by category and content id | — |
 | model_naming | Model naming | 3 | art_pipeline | 0 | spec | world-builder | art/models/ | §11 | art/models/<category>/<id>.glb | — |
 | placeholder_assets | Placeholder assets | 3 | art_pipeline | 0 | spec | world-builder | art/icons/_placeholder.png | §7.2 | Stand-ins used until generated assets land | — |
-| lod_texture_budgets | LOD & texture budgets | 3 | art_pipeline | 1 | implied | world-builder | art/ | §1 mid-range PCs | Polygon and texture budgets per asset class | — |
-| asset_generation_intake | Asset generation intake | 3 | art_pipeline | 2 | spec | world-builder | art/_inbox/ | §9, §11 | Generated assets enter only through the import pipeline, never hand-placed | — |
+| lod_texture_budgets | LOD & texture budgets | 3 | art_pipeline | 1 | implied | world-builder | docs/art_bible.md | §1 mid-range PCs | Polygon and texture budgets per asset class | — |
 | animation | Animation | 2 | presentation | 1 | implied | world-builder/orchestrator | actors/; art/animations/ | §13 Phase 1 feel | Rigs, state machines, blending, combat animations, sim-driven timing | The puppeteer's strings |
 | rigs_skeletons | Rigs & skeletons | 3 | animation | 1 | implied | world-builder | art/models/; actors/ | — | Shared humanoid rig and creature rigs | — |
-| animation_state_machines | Animation state machines | 3 | animation | 1 | implied | orchestrator | actors/ | — | AnimationTree states driven by simulation state | — |
-| locomotion_blending | Locomotion blending | 3 | animation | 1 | implied | world-builder | actors/ | — | Idle, walk, run and jump blends | — |
-| combat_animations | Combat animations | 3 | animation | 1 | implied | world-builder | actors/ | — | Swings, casts, reactions and deaths | — |
-| hit_reactions_death_anims | Hit reactions & deaths | 3 | animation | 1 | implied | world-builder | actors/ | §5 actor_died | Reactions triggered by damage and death events | — |
-| sim_driven_timing | Sim-driven timing | 3 | animation | 1 | spec | orchestrator | actors/ | §4 R5 | Animation follows simulation timing, never the reverse | — |
-| ik_procedural | IK & procedural animation | 3 | animation | — | candidate | world-builder | actors/ | — | Foot IK and look-at | — |
-| facial_emotes | Facial & emote animation | 3 | animation | — | candidate | world-builder | actors/ | — | Emote and face animations | — |
+| animation_state_machines | Animation state machines | 3 | animation | 1 | implied | orchestrator | actors/player/animation_tree.tres; actors/ | — | AnimationTree states driven by simulation state | — |
+| locomotion_blending | Locomotion blending | 3 | animation | 1 | implied | world-builder | art/animations/; actors/ | — | Idle, walk, run and jump blends | — |
+| combat_animations | Combat animations | 3 | animation | 1 | implied | world-builder | art/animations/; actors/ | — | Swings, casts, reactions and deaths | — |
+| hit_reactions_death_anims | Hit reactions & deaths | 3 | animation | 1 | implied | world-builder | art/animations/; actors/ | §5 actor_died | Reactions triggered by damage and death events | — |
+| sim_driven_timing | Sim-driven timing | 3 | animation | 1 | spec | orchestrator | actors/player/anim_controller.gd | §4 R5 | Animation follows simulation timing, never the reverse | — |
+| ik_procedural | IK & procedural animation | 3 | animation | — | candidate | world-builder | art/animations/; actors/ | — | Foot IK and look-at | — |
+| facial_emotes | Facial & emote animation | 3 | animation | — | candidate | world-builder | art/animations/; actors/ | — | Emote and face animations | — |
 | vfx_spell_effects | VFX & spell effects | 2 | presentation | 2 | spec | world-builder | art/vfx/; scenes/vfx/ | §6.3 vfx, §5 spell_cast, effect_applied | Cast, projectile, impact, buff and telegraph visuals within a budget | The fireworks crew that fires on the announcer's cue |
 | element_default_vfx | Element default VFX | 3 | vfx_spell_effects | 2 | spec | world-builder | scenes/vfx/ | §6.3 vfx, element | Default visuals per element when a spell sets none | — |
 | projectile_visuals | Projectile visuals | 3 | vfx_spell_effects | 2 | implied | world-builder | scenes/vfx/ | — | Visuals that follow simulated projectiles | — |
@@ -36,15 +35,13 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | telegraph_visuals | Telegraph visuals | 3 | vfx_spell_effects | 2 | implied | world-builder | scenes/vfx/ | — | The drawn danger shapes bosses announce | — |
 | vfx_pooling_budget | VFX pooling & budget | 3 | vfx_spell_effects | 2 | implied | orchestrator | scenes/vfx/ | §1 mid-range PCs | Pooled particles within a frame budget | — |
 | screen_effects | Screen effects | 3 | vfx_spell_effects | — | candidate | world-builder | scenes/vfx/ | — | Vignettes, shakes, low-health tint | — |
-| audio | Audio | 2 | presentation | 1 | implied | world-builder | audio/ | §3 audio/ | SFX, ambience, mix buses, and candidate music | The sound booth |
+| audio | Audio | 2 | presentation | 1 | implied | world-builder | audio/; audio/default_bus_layout.tres | §3 audio/ | SFX, ambience, mix buses, and candidate music | The sound booth |
 | sfx_events | SFX events | 3 | audio | 1 | implied | world-builder | audio/sfx/ | §6.3 sfx | Sounds fired on events with per-spell overrides | — |
 | ambience_zones | Ambience zones | 3 | audio | 3 | implied | world-builder | audio/ambience/ | — | Ambient beds per zone, phase and weather | — |
-| spatial_audio_mix_buses | Spatial audio & buses | 3 | audio | 1 | implied | world-builder | audio/ | — | 3D positioning and the bus layout | — |
+| spatial_audio_mix_buses | Spatial audio & buses | 3 | audio | 1 | implied | world-builder | audio/default_bus_layout.tres | — | 3D positioning and the bus layout | — |
 | music_system | Music system | 3 | audio | — | candidate | director | audio/music/ | — | Adaptive music by region and combat state | — |
 | camera | Camera | 2 | presentation | 1 | spec | orchestrator | actors/player/camera/ | §1 third-person | The third-person rig and its behaviors | The cameraman following the lead actor |
-| third_person_rig | Third-person rig | 3 | camera | 1 | spec | orchestrator | actors/player/camera/ | §1 | Follow camera with orbit | — |
-| camera_collision | Camera collision | 3 | camera | 1 | implied | orchestrator | actors/player/camera/ | — | Pulls in when blocked by geometry | — |
-| zoom_orbit | Zoom & orbit | 3 | camera | 1 | implied | orchestrator | actors/player/camera/ | — | Zoom and orbit controls | — |
+| third_person_rig | Third-person rig | 3 | camera | 1 | spec | orchestrator | actors/player/camera/ | §1 | Follow camera with orbit, zoom and collision pull-in | — |
 | target_lock_camera | Target lock camera | 3 | camera | — | candidate | director | actors/player/camera/ | — | Lock-on framing | — |
 | photo_mode | Photo mode | 3 | camera | — | candidate | director | actors/player/camera/ | — | Free camera for screenshots | — |
 | ui_hud | HUD | 2 | presentation | 1 | spec | orchestrator | ui/hud/ | §3 ui/, §5 listeners | The always-on overlay: bars, buffs, action bars, nameplates, frames, toasts | The dashboard of a car |
@@ -63,19 +60,19 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | inventory_screen | Inventory screen | 3 | ui_screens | 2 | implied | orchestrator | ui/screens/inventory/ | — | Bags, drag and drop, use, drop | — |
 | equipment_character_sheet | Character sheet | 3 | ui_screens | 2 | implied | orchestrator | ui/screens/character/ | — | Equip slots and derived stats | — |
 | crafting_screen | Crafting screen | 3 | ui_screens | 3 | implied | orchestrator | ui/screens/crafting/ | — | Recipes, inputs and the queue | — |
-| quest_journal_screen | Quest journal | 3 | ui_screens | 2 | spec | orchestrator | ui/screens/journal/ | §6.7 journal_text | Active and completed quests with journal text | — |
+| quest_journal_screen | Quest journal | 3 | ui_screens | 2 | implied | orchestrator | ui/screens/journal/ | §6.7 journal_text | Active and completed quests with journal text | — |
 | map_screen | Map screen | 3 | ui_screens | 2 | implied | orchestrator | ui/screens/map/ | — | The full map | — |
 | dialogue_screen | Dialogue screen | 3 | ui_screens | 3 | implied | orchestrator | ui/screens/dialogue/ | §6.8 | Speaker, text and choices | — |
 | settings_screens | Settings screens | 3 | ui_screens | 1 | implied | orchestrator | ui/screens/settings/ | — | Graphics, audio and controls | — |
 | server_browser_join | Join screen | 3 | ui_screens | 4 | implied | orchestrator | ui/screens/join/ | §1 no matchmaking | Direct address and recent servers | — |
-| tooltips_item_cards | Tooltips & item cards | 3 | ui_screens | 2 | implied | orchestrator | ui/tooltips/ | §6.1 rarity | Item cards with rarity color and comparison | — |
+| tooltips_item_cards | Tooltips & item cards | 3 | ui_screens | 2 | implied | orchestrator | ui/tooltips/ | §6.1 rarity | Item cards with stats, rarity color and a comparison against the equipped item | — |
 | chat_window | Chat window | 3 | ui_screens | 4 | implied | orchestrator | ui/screens/chat/ | — | Text chat | — |
 | death_screen | Death screen | 3 | ui_screens | 1 | implied | orchestrator | ui/screens/death/ | — | Respawn options | — |
 | combat_log_window | Combat log | 3 | ui_screens | — | candidate | orchestrator | ui/screens/combatlog/ | — | A scrolling log of damage, heals and deaths for players | — |
 | ux_accessibility | UX & accessibility | 2 | presentation | — | candidate | director | ui/theme/ | — | Colorblind modes, text scaling, subtitles, motion reduction | Ramps and large-print signs |
 | colorblind_modes | Colorblind modes | 3 | ux_accessibility | — | candidate | orchestrator | ui/theme/ | — | Alternate palettes for rarity colors and telegraphs | — |
 | text_scaling | Text scaling | 3 | ux_accessibility | — | candidate | orchestrator | ui/theme/ | — | UI scale setting | — |
-| subtitles | Subtitles | 3 | ux_accessibility | — | candidate | orchestrator | ui/ | — | Captions for dialogue and barks | — |
+| subtitles | Subtitles | 3 | ux_accessibility | — | candidate | orchestrator | ui/hud/subtitles.tscn | — | Captions for dialogue and barks | — |
 | motion_reduction | Motion reduction | 3 | ux_accessibility | — | candidate | orchestrator | ui/; scenes/vfx/ | — | Reduce shake and flashes | — |
 | input | Input | 2 | presentation | 1 | spec | orchestrator | project.godot; core/commands/input.gd | §12 | The input map, translation to intents, rebinding, and candidate gamepad and buffering | The steering wheel and pedals, converted into order tickets |
 | input_map_actions | Input map actions | 3 | input | 1 | spec | orchestrator | project.godot | — | Named actions in the project input map | — |
@@ -95,8 +92,6 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | model_naming | reads | id_convention | filename equals id | hard | Model filenames are content ids |
 | placeholder_assets | reads | icon_conventions | placeholder path | hard | The placeholder follows the icon conventions |
 | lod_texture_budgets | reads | frame_time_budget | budget | hard | Asset budgets derive from the frame budget |
-| asset_generation_intake | reads | import_hook | pipeline | hard | Generated assets pass through the same hook |
-| asset_generation_intake | reads | asset_intake_pipeline | generator flow | hard | Intake is the receiving end of the generation pipeline |
 | rigs_skeletons | reads | import_hook | skinned meshes | hard | Rigs are imported through the hook |
 | animation_state_machines | reads | sim_driven_timing | state from sim | hard | States change when the sim says so |
 | animation_state_machines | renders | locomotion | movement state | hard | Locomotion state selects animations |
@@ -129,8 +124,6 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | music_system | reads | threat_table | in combat | soft | Combat music reads whether anything has threat on the player |
 | third_person_rig | reads | locomotion | follow target | hard | The camera follows the player |
 | third_person_rig | reads | input_map_actions | look input | hard | Look input drives orbit |
-| camera_collision | reads | collision_layers | camera layer | hard | The camera probes the world |
-| zoom_orbit | reads | input_map_actions | zoom input | hard | Zoom is an input action |
 | target_lock_camera | reads | targeting_modes | locked target | hard | Lock-on frames the current target |
 | photo_mode | reads | pause_rules | pause | soft | Photo mode pauses in single player |
 | health_resource_bars | renders | health_pool | current and max | hard | Bars show the pools |
@@ -165,10 +158,8 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | dialogue_screen | renders | dialogue_runner | current node | hard | The screen shows the runner's node |
 | dialogue_screen | reads | intent_schema | choice intent | hard | Picking a choice emits an intent |
 | settings_screens | renders | config_settings | settings | hard | Settings screens edit the settings store |
-| settings_screens | reads | graphics_presets | presets | hard | The graphics tab offers presets |
 | server_browser_join | reads | direct_ip_join | join by address | hard | The join screen fronts direct joining |
 | tooltips_item_cards | renders | items | item fields | hard | Cards show item data |
-| tooltips_item_cards | renders | item_comparison | deltas | hard | Cards show comparison deltas |
 | tooltips_item_cards | reads | rarity_tiers | color | hard | Rarity drives the card color |
 | chat_window | renders | text_chat | messages | hard | The window shows chat |
 | death_screen | renders | respawn_rules | options | hard | The screen offers the respawn options the rules allow |
@@ -189,3 +180,9 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | gamepad_support | reads | input_map_actions | controller bindings | hard | Gamepad bindings are actions too |
 | input_buffering | reads | input_to_command_translation | buffered intents | hard | Buffering sits in the translation layer |
 | input_buffering | reads | spell_queueing | queued cast | soft | Buffering feeds the spell queue |
+| settings_screens | reads | graphics_quality_presets | — | hard | The graphics tab lists the presets |
+| tooltips_item_cards | reads | gear_stats_application | — | hard | Comparison deltas come from the equipped item's applied stats |
+| third_person_rig | reads | collision_layers | — | hard | The camera pulls in when geometry blocks the view |
+| locomotion_blending | renders | steering_locomotion | — | hard | Enemy walk cycles follow the steering speed |
+| projectile_visuals | reads | element_default_vfx | — | soft | Trails follow the element default |
+| minimap_compass_hud | renders | objective_tracking | — | soft | Objective pins on the compass |

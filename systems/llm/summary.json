@@ -1,0 +1,1337 @@
+{
+ "registry_hash": "943cd456f349",
+ "source": "systems/registry",
+ "generated_by": "scripts/systems-map.sh render",
+ "counts": {
+  "nodes": 715,
+  "edges": 1171,
+  "by_tier": {
+   "1": 16,
+   "2": 108,
+   "3": 591
+  },
+  "by_status": {
+   "spec": 254,
+   "implied": 226,
+   "candidate": 230,
+   "non-goal": 5
+  },
+  "signals": 28,
+  "runbooks": 17
+ },
+ "domains": [
+  {
+   "id": "foundation",
+   "name": "Foundation",
+   "phase": "0",
+   "status": "spec",
+   "systems": 12,
+   "parts": 86,
+   "spec": 58,
+   "implied": 26,
+   "candidate": 15,
+   "nonGoal": 0,
+   "internal": 38,
+   "outbound": 287,
+   "inbound": 51,
+   "coupling": 90,
+   "blast": 470
+  },
+  {
+   "id": "character",
+   "name": "Character",
+   "phase": "1",
+   "status": "implied",
+   "systems": 10,
+   "parts": 55,
+   "spec": 15,
+   "implied": 23,
+   "candidate": 28,
+   "nonGoal": 0,
+   "internal": 49,
+   "outbound": 75,
+   "inbound": 60,
+   "coupling": 73,
+   "blast": 237
+  },
+  {
+   "id": "combat",
+   "name": "Combat",
+   "phase": "1",
+   "status": "spec",
+   "systems": 8,
+   "parts": 52,
+   "spec": 26,
+   "implied": 12,
+   "candidate": 23,
+   "nonGoal": 0,
+   "internal": 52,
+   "outbound": 57,
+   "inbound": 54,
+   "coupling": 68,
+   "blast": 196
+  },
+  {
+   "id": "survival",
+   "name": "Survival",
+   "phase": "3",
+   "status": "spec",
+   "systems": 5,
+   "parts": 25,
+   "spec": 9,
+   "implied": 10,
+   "candidate": 12,
+   "nonGoal": 0,
+   "internal": 14,
+   "outbound": 23,
+   "inbound": 45,
+   "coupling": 83,
+   "blast": 212
+  },
+  {
+   "id": "economy",
+   "name": "Economy",
+   "phase": "2",
+   "status": "spec",
+   "systems": 7,
+   "parts": 46,
+   "spec": 17,
+   "implied": 10,
+   "candidate": 27,
+   "nonGoal": 0,
+   "internal": 39,
+   "outbound": 54,
+   "inbound": 57,
+   "coupling": 74,
+   "blast": 252
+  },
+  {
+   "id": "ai_entities",
+   "name": "Entities & AI",
+   "phase": "1",
+   "status": "spec",
+   "systems": 5,
+   "parts": 30,
+   "spec": 12,
+   "implied": 15,
+   "candidate": 9,
+   "nonGoal": 0,
+   "internal": 24,
+   "outbound": 33,
+   "inbound": 52,
+   "coupling": 78,
+   "blast": 184
+  },
+  {
+   "id": "encounters",
+   "name": "Encounters",
+   "phase": "2",
+   "status": "spec",
+   "systems": 4,
+   "parts": 20,
+   "spec": 3,
+   "implied": 9,
+   "candidate": 13,
+   "nonGoal": 0,
+   "internal": 12,
+   "outbound": 8,
+   "inbound": 35,
+   "coupling": 78,
+   "blast": 10
+  },
+  {
+   "id": "world",
+   "name": "World",
+   "phase": "1",
+   "status": "spec",
+   "systems": 7,
+   "parts": 36,
+   "spec": 7,
+   "implied": 19,
+   "candidate": 18,
+   "nonGoal": 0,
+   "internal": 38,
+   "outbound": 44,
+   "inbound": 34,
+   "coupling": 67,
+   "blast": 237
+  },
+  {
+   "id": "building",
+   "name": "Building",
+   "phase": "3",
+   "status": "spec",
+   "systems": 5,
+   "parts": 22,
+   "spec": 6,
+   "implied": 9,
+   "candidate": 13,
+   "nonGoal": 0,
+   "internal": 25,
+   "outbound": 14,
+   "inbound": 22,
+   "coupling": 59,
+   "blast": 211
+  },
+  {
+   "id": "narrative",
+   "name": "Narrative",
+   "phase": "2",
+   "status": "spec",
+   "systems": 6,
+   "parts": 26,
+   "spec": 14,
+   "implied": 7,
+   "candidate": 11,
+   "nonGoal": 1,
+   "internal": 23,
+   "outbound": 27,
+   "inbound": 47,
+   "coupling": 76,
+   "blast": 194
+  },
+  {
+   "id": "presentation",
+   "name": "Presentation",
+   "phase": "1",
+   "status": "spec",
+   "systems": 9,
+   "parts": 62,
+   "spec": 20,
+   "implied": 37,
+   "candidate": 14,
+   "nonGoal": 1,
+   "internal": 25,
+   "outbound": 31,
+   "inbound": 113,
+   "coupling": 85,
+   "blast": 295
+  },
+  {
+   "id": "multiplayer",
+   "name": "Multiplayer",
+   "phase": "4",
+   "status": "spec",
+   "systems": 6,
+   "parts": 31,
+   "spec": 11,
+   "implied": 20,
+   "candidate": 5,
+   "nonGoal": 2,
+   "internal": 13,
+   "outbound": 22,
+   "inbound": 41,
+   "coupling": 83,
+   "blast": 187
+  },
+  {
+   "id": "social",
+   "name": "Social",
+   "phase": "4",
+   "status": "implied",
+   "systems": 5,
+   "parts": 19,
+   "spec": 0,
+   "implied": 9,
+   "candidate": 16,
+   "nonGoal": 0,
+   "internal": 10,
+   "outbound": 20,
+   "inbound": 32,
+   "coupling": 84,
+   "blast": 158
+  },
+  {
+   "id": "persistence",
+   "name": "Persistence",
+   "phase": "3",
+   "status": "spec",
+   "systems": 6,
+   "parts": 22,
+   "spec": 15,
+   "implied": 4,
+   "candidate": 10,
+   "nonGoal": 0,
+   "internal": 20,
+   "outbound": 15,
+   "inbound": 26,
+   "coupling": 67,
+   "blast": 21
+  },
+  {
+   "id": "operations",
+   "name": "Operations",
+   "phase": "0",
+   "status": "spec",
+   "systems": 8,
+   "parts": 42,
+   "spec": 23,
+   "implied": 15,
+   "candidate": 12,
+   "nonGoal": 1,
+   "internal": 29,
+   "outbound": 29,
+   "inbound": 51,
+   "coupling": 73,
+   "blast": 350
+  },
+  {
+   "id": "content_factory",
+   "name": "Content factory",
+   "phase": "2",
+   "status": "spec",
+   "systems": 5,
+   "parts": 17,
+   "spec": 18,
+   "implied": 1,
+   "candidate": 4,
+   "nonGoal": 0,
+   "internal": 3,
+   "outbound": 18,
+   "inbound": 37,
+   "coupling": 95,
+   "blast": 220
+  }
+ ],
+ "load_bearing_systems": [
+  {
+   "id": "data_schemas",
+   "name": "Data schemas (the nouns)",
+   "domain": "Foundation",
+   "status": "spec",
+   "phase": "0",
+   "blast": 411,
+   "fanOut": 4,
+   "fanIn": 1
+  },
+  {
+   "id": "architecture_rules",
+   "name": "Architecture rules (R1–R10)",
+   "domain": "Foundation",
+   "status": "spec",
+   "phase": "0",
+   "blast": 376,
+   "fanOut": 1,
+   "fanIn": 1
+  },
+  {
+   "id": "documentation",
+   "name": "Documentation",
+   "domain": "Operations",
+   "status": "spec",
+   "phase": "0",
+   "blast": 365,
+   "fanOut": 0,
+   "fanIn": 0
+  },
+  {
+   "id": "art_pipeline",
+   "name": "Art pipeline",
+   "domain": "Presentation",
+   "status": "spec",
+   "phase": "1",
+   "blast": 331,
+   "fanOut": 0,
+   "fanIn": 0
+  },
+  {
+   "id": "engine_platform",
+   "name": "Engine & Build",
+   "domain": "Foundation",
+   "status": "spec",
+   "phase": "0",
+   "blast": 306,
+   "fanOut": 2,
+   "fanIn": 0
+  },
+  {
+   "id": "state_model",
+   "name": "Serializable game state",
+   "domain": "Foundation",
+   "status": "spec",
+   "phase": "1",
+   "blast": 291,
+   "fanOut": 1,
+   "fanIn": 0
+  },
+  {
+   "id": "items",
+   "name": "Items",
+   "domain": "Economy",
+   "status": "spec",
+   "phase": "0",
+   "blast": 279,
+   "fanOut": 19,
+   "fanIn": 1
+  },
+  {
+   "id": "time_and_tick",
+   "name": "Time & scheduling",
+   "domain": "Foundation",
+   "status": "spec",
+   "phase": "1",
+   "blast": 269,
+   "fanOut": 0,
+   "fanIn": 0
+  },
+  {
+   "id": "command_intents",
+   "name": "Command / intent events",
+   "domain": "Foundation",
+   "status": "spec",
+   "phase": "1",
+   "blast": 246,
+   "fanOut": 0,
+   "fanIn": 0
+  },
+  {
+   "id": "terrain_biomes",
+   "name": "Terrain & biomes",
+   "domain": "World",
+   "status": "spec",
+   "phase": "1",
+   "blast": 241,
+   "fanOut": 1,
+   "fanIn": 0
+  },
+  {
+   "id": "inventory",
+   "name": "Inventory",
+   "domain": "Character",
+   "status": "spec",
+   "phase": "2",
+   "blast": 236,
+   "fanOut": 12,
+   "fanIn": 0
+  },
+  {
+   "id": "spell_effect_content",
+   "name": "Spells & effects content",
+   "domain": "Combat",
+   "status": "spec",
+   "phase": "0",
+   "blast": 227,
+   "fanOut": 1,
+   "fanIn": 0
+  },
+  {
+   "id": "placement",
+   "name": "Placement",
+   "domain": "Building",
+   "status": "spec",
+   "phase": "3",
+   "blast": 226,
+   "fanOut": 2,
+   "fanIn": 3
+  },
+  {
+   "id": "balance_tuning",
+   "name": "Balance & tuning",
+   "domain": "Content factory",
+   "status": "spec",
+   "phase": "2",
+   "blast": 222,
+   "fanOut": 0,
+   "fanIn": 0
+  },
+  {
+   "id": "structures",
+   "name": "Structures",
+   "domain": "Building",
+   "status": "spec",
+   "phase": "3",
+   "blast": 220,
+   "fanOut": 2,
+   "fanIn": 0
+  }
+ ],
+ "load_bearing_parts": [
+  {
+   "id": "game_infra_spec",
+   "name": "GAME_INFRA_SPEC.md",
+   "domain": "Operations",
+   "status": "spec",
+   "phase": "0",
+   "blast": 366,
+   "fanOut": 16,
+   "fanIn": 0
+  },
+  {
+   "id": "id_convention",
+   "name": "ID convention (R7)",
+   "domain": "Foundation",
+   "status": "spec",
+   "phase": "0",
+   "blast": 311,
+   "fanOut": 10,
+   "fanIn": 0
+  },
+  {
+   "id": "project_settings",
+   "name": "Project settings",
+   "domain": "Foundation",
+   "status": "implied",
+   "phase": "0",
+   "blast": 296,
+   "fanOut": 6,
+   "fanIn": 0
+  },
+  {
+   "id": "art_bible_palette",
+   "name": "Art bible & palette",
+   "domain": "Presentation",
+   "status": "spec",
+   "phase": "0",
+   "blast": 294,
+   "fanOut": 5,
+   "fanIn": 0
+  },
+  {
+   "id": "deterministic_sim",
+   "name": "Deterministic simulation (R4)",
+   "domain": "Foundation",
+   "status": "spec",
+   "phase": "1",
+   "blast": 290,
+   "fanOut": 25,
+   "fanIn": 0
+  },
+  {
+   "id": "actor_registry",
+   "name": "Actor registry",
+   "domain": "Foundation",
+   "status": "spec",
+   "phase": "1",
+   "blast": 290,
+   "fanOut": 21,
+   "fanIn": 0
+  },
+  {
+   "id": "schema_item_def",
+   "name": "ItemDef",
+   "domain": "Foundation",
+   "status": "spec",
+   "phase": "0",
+   "blast": 281,
+   "fanOut": 5,
+   "fanIn": 0
+  },
+  {
+   "id": "master_toon_shader",
+   "name": "Master toon shader",
+   "domain": "Presentation",
+   "status": "spec",
+   "phase": "1",
+   "blast": 276,
+   "fanOut": 2,
+   "fanIn": 1
+  },
+  {
+   "id": "import_hook",
+   "name": "Import hook",
+   "domain": "Presentation",
+   "status": "spec",
+   "phase": "1",
+   "blast": 274,
+   "fanOut": 9,
+   "fanIn": 2
+  },
+  {
+   "id": "fixed_tick_sim",
+   "name": "Fixed-tick simulation loop",
+   "domain": "Foundation",
+   "status": "spec",
+   "phase": "1",
+   "blast": 271,
+   "fanOut": 15,
+   "fanIn": 2
+  },
+  {
+   "id": "schema_versioning",
+   "name": "Schema versioning + migrations",
+   "domain": "Foundation",
+   "status": "spec",
+   "phase": "0",
+   "blast": 263,
+   "fanOut": 5,
+   "fanIn": 0
+  },
+  {
+   "id": "state_serialization",
+   "name": "State serialization",
+   "domain": "Foundation",
+   "status": "spec",
+   "phase": "3",
+   "blast": 259,
+   "fanOut": 14,
+   "fanIn": 3
+  },
+  {
+   "id": "intent_schema",
+   "name": "Intent schema",
+   "domain": "Foundation",
+   "status": "spec",
+   "phase": "1",
+   "blast": 249,
+   "fanOut": 18,
+   "fanIn": 0
+  },
+  {
+   "id": "icon_conventions",
+   "name": "Icon conventions",
+   "domain": "Presentation",
+   "status": "spec",
+   "phase": "0",
+   "blast": 235,
+   "fanOut": 6,
+   "fanIn": 1
+  },
+  {
+   "id": "schema_biome_def",
+   "name": "BiomeDef (implied)",
+   "domain": "Foundation",
+   "status": "implied",
+   "phase": "0",
+   "blast": 235,
+   "fanOut": 1,
+   "fanIn": 0
+  }
+ ],
+ "signals": [
+  {
+   "id": "sig_actor_spawned",
+   "signal": "actor_spawned",
+   "status": "spec",
+   "emitters": [
+    "spawning"
+   ],
+   "listeners": [
+    "objective_tracking",
+    "ai_director",
+    "spawn_replication"
+   ]
+  },
+  {
+   "id": "sig_actor_damaged",
+   "signal": "actor_damaged",
+   "status": "spec",
+   "emitters": [
+    "damage_model",
+    "fall_damage"
+   ],
+   "listeners": [
+    "nameplates_floating_text",
+    "impact_effects",
+    "threat_table",
+    "perception",
+    "sfx_events",
+    "combat_log_window"
+   ]
+  },
+  {
+   "id": "sig_actor_healed",
+   "signal": "actor_healed",
+   "status": "spec",
+   "emitters": [
+    "healing_model"
+   ],
+   "listeners": [
+    "health_resource_bars",
+    "nameplates_floating_text",
+    "threat_table",
+    "combat_log_window"
+   ]
+  },
+  {
+   "id": "sig_actor_died",
+   "signal": "actor_died",
+   "status": "spec",
+   "emitters": [
+    "death_resolution"
+   ],
+   "listeners": [
+    "objective_tracking",
+    "loot_rolls_on_death",
+    "xp_award",
+    "hit_reactions_death_anims",
+    "threat_table",
+    "corpse_handling",
+    "respawn_rules",
+    "reputation_sources",
+    "sfx_events",
+    "respawn_timers",
+    "death_screen",
+    "combat_log_window"
+   ]
+  },
+  {
+   "id": "sig_spell_cast",
+   "signal": "spell_cast",
+   "status": "spec",
+   "emitters": [
+    "cast_timing"
+   ],
+   "listeners": [
+    "element_default_vfx",
+    "sfx_events",
+    "perception"
+   ]
+  },
+  {
+   "id": "sig_effect_applied",
+   "signal": "effect_applied",
+   "status": "spec",
+   "emitters": [
+    "effect_kinds_verbs"
+   ],
+   "listeners": [
+    "buff_bars",
+    "buff_debuff_visuals"
+   ]
+  },
+  {
+   "id": "sig_effect_expired",
+   "signal": "effect_expired",
+   "status": "spec",
+   "emitters": [
+    "effect_duration_expiry"
+   ],
+   "listeners": [
+    "buff_bars",
+    "buff_debuff_visuals"
+   ]
+  },
+  {
+   "id": "sig_item_acquired",
+   "signal": "item_acquired",
+   "status": "spec",
+   "emitters": [
+    "item_pickup_drop"
+   ],
+   "listeners": [
+    "objective_tracking",
+    "notifications_toasts"
+   ]
+  },
+  {
+   "id": "sig_item_consumed",
+   "signal": "item_consumed",
+   "status": "spec",
+   "emitters": [
+    "consumables_apply"
+   ],
+   "listeners": [
+    "needs",
+    "inventory_screen",
+    "effect_kinds_verbs"
+   ]
+  },
+  {
+   "id": "sig_item_crafted",
+   "signal": "item_crafted",
+   "status": "spec",
+   "emitters": [
+    "craft_time_queue"
+   ],
+   "listeners": [
+    "objective_tracking",
+    "notifications_toasts",
+    "sfx_events"
+   ]
+  },
+  {
+   "id": "sig_quest_started",
+   "signal": "quest_started",
+   "status": "spec",
+   "emitters": [
+    "quests"
+   ],
+   "listeners": [
+    "quest_journal_screen",
+    "dialogue"
+   ]
+  },
+  {
+   "id": "sig_quest_objective_progressed",
+   "signal": "quest_objective_progressed",
+   "status": "spec",
+   "emitters": [
+    "objective_tracking"
+   ],
+   "listeners": [
+    "notifications_toasts"
+   ]
+  },
+  {
+   "id": "sig_quest_completed",
+   "signal": "quest_completed",
+   "status": "spec",
+   "emitters": [
+    "quests"
+   ],
+   "listeners": [
+    "quest_journal_screen",
+    "quest_rewards",
+    "xp_award",
+    "reputation_sources"
+   ]
+  },
+  {
+   "id": "sig_day_phase_changed",
+   "signal": "day_phase_changed",
+   "status": "spec",
+   "emitters": [
+    "world_clock_ticks"
+   ],
+   "listeners": [
+    "lighting_day_night",
+    "spawn_rules_biome_phase",
+    "ai_brain",
+    "ambience_zones",
+    "temperature_exposure"
+   ]
+  },
+  {
+   "id": "sig_world_saved",
+   "signal": "world_saved",
+   "status": "spec",
+   "emitters": [
+    "save_system"
+   ],
+   "listeners": [
+    "notifications_toasts"
+   ]
+  },
+  {
+   "id": "sig_world_loaded",
+   "signal": "world_loaded",
+   "status": "spec",
+   "emitters": [
+    "save_system"
+   ],
+   "listeners": [
+    "notifications_toasts"
+   ]
+  },
+  {
+   "id": "sig_structure_placed",
+   "signal": "structure_placed",
+   "status": "implied",
+   "emitters": [
+    "placement"
+   ],
+   "listeners": [
+    "structure_persistence",
+    "navmesh_baking",
+    "objective_tracking"
+   ]
+  },
+  {
+   "id": "sig_structure_destroyed",
+   "signal": "structure_destroyed",
+   "status": "candidate",
+   "emitters": [
+    "structure_damage_repair"
+   ],
+   "listeners": [
+    "structure_persistence",
+    "navmesh_baking"
+   ]
+  },
+  {
+   "id": "sig_player_joined",
+   "signal": "player_joined",
+   "status": "implied",
+   "emitters": [
+    "join_leave_flow"
+   ],
+   "listeners": [
+    "party_membership",
+    "group_frames",
+    "text_chat"
+   ]
+  },
+  {
+   "id": "sig_player_left",
+   "signal": "player_left",
+   "status": "implied",
+   "emitters": [
+    "join_leave_flow"
+   ],
+   "listeners": [
+    "party_membership"
+   ]
+  },
+  {
+   "id": "sig_level_up",
+   "signal": "level_up",
+   "status": "implied",
+   "emitters": [
+    "level_curve"
+   ],
+   "listeners": [
+    "notifications_toasts",
+    "ability_unlocks",
+    "talent_points"
+   ]
+  },
+  {
+   "id": "sig_currency_changed",
+   "signal": "currency_changed",
+   "status": "candidate",
+   "emitters": [
+    "wallet"
+   ],
+   "listeners": [
+    "inventory_screen"
+   ]
+  },
+  {
+   "id": "sig_reputation_changed",
+   "signal": "reputation_changed",
+   "status": "candidate",
+   "emitters": [
+    "reputation_sources"
+   ],
+   "listeners": [
+    "faction_unlocks_vendors",
+    "notifications_toasts"
+   ]
+  },
+  {
+   "id": "sig_boss_phase_changed",
+   "signal": "boss_phase_changed",
+   "status": "implied",
+   "emitters": [
+    "boss_phases"
+   ],
+   "listeners": [
+    "boss_frames",
+    "telegraph_visuals",
+    "music_system"
+   ]
+  },
+  {
+   "id": "sig_weather_changed",
+   "signal": "weather_changed",
+   "status": "candidate",
+   "emitters": [
+    "weather"
+   ],
+   "listeners": [
+    "temperature_exposure",
+    "ambience_zones",
+    "lighting_day_night",
+    "fog_atmosphere"
+   ]
+  },
+  {
+   "id": "sig_zone_entered",
+   "signal": "zone_entered",
+   "status": "implied",
+   "emitters": [
+    "zone_triggers"
+   ],
+   "listeners": [
+    "objective_tracking",
+    "ambience_zones",
+    "notifications_toasts",
+    "music_system"
+   ]
+  },
+  {
+   "id": "sig_need_threshold_crossed",
+   "signal": "need_threshold_crossed",
+   "status": "implied",
+   "emitters": [
+    "need_thresholds_effects"
+   ],
+   "listeners": [
+    "effect_kinds_verbs",
+    "health_resource_bars"
+   ]
+  },
+  {
+   "id": "sig_trade_completed",
+   "signal": "trade_completed",
+   "status": "candidate",
+   "emitters": [
+    "player_trade"
+   ],
+   "listeners": [
+    "inventory_screen",
+    "objective_tracking"
+   ]
+  }
+ ],
+ "candidates_by_domain": {
+  "foundation": [
+   "sig_structure_destroyed",
+   "sig_currency_changed",
+   "sig_reputation_changed",
+   "sig_weather_changed",
+   "sig_trade_completed",
+   "schema_class_def",
+   "schema_talent_def",
+   "schema_faction_def",
+   "schema_achievement_def",
+   "in_game_bug_report",
+   "replay_recorder",
+   "localization",
+   "string_tables",
+   "font_pipeline",
+   "locale_switch"
+  ],
+  "character": [
+   "swimming",
+   "climbing",
+   "dodge_roll",
+   "primary_attributes",
+   "achievements",
+   "titles",
+   "prestige",
+   "classes_specs",
+   "class_defs",
+   "role_specs",
+   "class_starting_kit",
+   "multiclass_rules",
+   "talents",
+   "talent_trees",
+   "talent_points",
+   "respec",
+   "talent_modifiers",
+   "skill_ranks",
+   "weapon_skills",
+   "bank_storage",
+   "loot_bags_on_death",
+   "durability_repair",
+   "transmog",
+   "set_bonuses",
+   "appearance_customization",
+   "multiple_characters_per_world",
+   "additional_class_resources",
+   "revive_downed_state"
+  ],
+  "combat": [
+   "crit_hit_tables",
+   "interrupts",
+   "global_cooldown",
+   "spell_queueing",
+   "channeling",
+   "dispel_cleanse",
+   "immunities",
+   "crowd_control_dr",
+   "auras_area_effects",
+   "blocking_parry",
+   "combos",
+   "ranged_weapons",
+   "taunt",
+   "threat_modifiers",
+   "support_enhance_kit",
+   "role_balance_targets",
+   "pvp",
+   "pvp_flagging",
+   "dueling",
+   "arenas",
+   "pvp_balance_split",
+   "faction_warfare",
+   "element_matrix"
+  ],
+  "survival": [
+   "thirst",
+   "temperature_exposure",
+   "rest_sleep",
+   "disease_sanity",
+   "time_skip_sleep",
+   "fishing",
+   "farming",
+   "animal_husbandry",
+   "drowning",
+   "biome_hazard_zones",
+   "fire_burning_env",
+   "rested_bonus"
+  ],
+  "economy": [
+   "random_affixes",
+   "item_levels",
+   "boss_loot_lockouts",
+   "pity_bad_luck_protection",
+   "salvage_disassembly",
+   "item_upgrades_enchanting",
+   "crafting_quality_rolls",
+   "repair",
+   "professions",
+   "profession_defs",
+   "profession_skill_levels",
+   "profession_specializations",
+   "profession_recipe_gating",
+   "gathering_professions",
+   "currencies",
+   "currency_defs",
+   "wallet",
+   "sinks_faucets",
+   "faction_currencies",
+   "trade_vendors",
+   "player_trade",
+   "npc_vendors_stores",
+   "vendor_inventories_restock",
+   "market_board_auction",
+   "commodity_pricing",
+   "mail_system",
+   "carts_transport"
+  ],
+  "ai_entities": [
+   "enemy_abilities",
+   "enemy_factions_hostility",
+   "elite_rare_variants",
+   "behavior_trees_utility",
+   "group_tactics",
+   "llm_npc_intelligence",
+   "trainers",
+   "npc_schedules_routines",
+   "companions_pets"
+  ],
+  "encounters": [
+   "raid_bosses",
+   "enrage_timers",
+   "world_bosses",
+   "difficulty_tiers",
+   "instancing",
+   "procedural_dungeons",
+   "raids",
+   "raid_size_scaling",
+   "raid_roles_check",
+   "raid_lockouts",
+   "world_events",
+   "invasion_events",
+   "event_scheduler"
+  ],
+  "world": [
+   "water_bodies",
+   "caves",
+   "world_generation",
+   "world_seed",
+   "procedural_terrain",
+   "chunk_streaming",
+   "poi_placement",
+   "resource_distribution",
+   "weather",
+   "seasons_calendar",
+   "fast_travel_portals",
+   "roads",
+   "mounts_travel",
+   "boats_ships",
+   "fog_of_war_discovery",
+   "cities",
+   "ragdoll",
+   "destructibles"
+  ],
+  "building": [
+   "structural_integrity",
+   "terrain_modification",
+   "decorations",
+   "farm_plots",
+   "homes_strongholds",
+   "player_home",
+   "stronghold_walls_gates",
+   "base_defense_sieges",
+   "player_cities",
+   "npc_settlers",
+   "land_claims",
+   "decay_inactive",
+   "structure_damage_repair"
+  ],
+  "narrative": [
+   "repeatable_daily_quests",
+   "barks_ambient_lines",
+   "voice_acting",
+   "lore_entries_codex",
+   "onboarding_tutorial",
+   "tutorial_quests",
+   "contextual_hints",
+   "live_events",
+   "holiday_defs",
+   "event_calendar",
+   "seasonal_rewards"
+  ],
+  "presentation": [
+   "ik_procedural",
+   "facial_emotes",
+   "screen_effects",
+   "music_system",
+   "target_lock_camera",
+   "photo_mode",
+   "combat_log_window",
+   "ux_accessibility",
+   "colorblind_modes",
+   "text_scaling",
+   "subtitles",
+   "motion_reduction",
+   "gamepad_support",
+   "input_buffering"
+  ],
+  "multiplayer": [
+   "listen_server_option",
+   "interpolation_prediction",
+   "interest_management",
+   "rate_limits",
+   "save_tamper_resistance"
+  ],
+  "social": [
+   "ready_checks",
+   "guilds",
+   "guild_defs_membership",
+   "guild_bank",
+   "guild_ranks_permissions",
+   "guild_halls",
+   "reputation_factions",
+   "faction_defs",
+   "reputation_tiers",
+   "reputation_sources",
+   "faction_unlocks_vendors",
+   "player_alignment",
+   "emotes",
+   "voice_chat",
+   "friends_list",
+   "block_mute"
+  ],
+  "persistence": [
+   "backup_rotation",
+   "accounts_auth",
+   "account_identity",
+   "authentication_provider",
+   "cross_server_characters",
+   "cloud_db_postgres",
+   "leaderboards",
+   "character_migration_between_worlds",
+   "telemetry_store",
+   "crash_reports_store"
+  ],
+  "operations": [
+   "perf_budget_tests",
+   "nightly_soak_builds",
+   "patching_updates",
+   "steam_platform",
+   "mod_support",
+   "log_aggregation",
+   "crash_reporting",
+   "alerting",
+   "gameplay_analytics",
+   "low_end_fallbacks",
+   "benchmark_scene",
+   "subagent_mirrors"
+  ],
+  "content_factory": [
+   "loot_economy_sim",
+   "combat_sim_harness",
+   "live_content_ops",
+   "hotfix_data_only"
+  ]
+ },
+ "runbooks": [
+  {
+   "id": "rb_add_biome",
+   "name": "Add a biome or zone",
+   "primary": "terrain_biomes"
+  },
+  {
+   "id": "rb_add_building_piece",
+   "name": "Add a placeable building piece (station, storage, bed, wall, decoration)",
+   "primary": "piece_defs"
+  },
+  {
+   "id": "rb_add_dialogue",
+   "name": "Add a dialogue tree (DialogueDef)",
+   "primary": "dialogue_nodes_choices"
+  },
+  {
+   "id": "rb_add_enemy",
+   "name": "Add an enemy (EnemyDef + actor prefab)",
+   "primary": "enemy_defs"
+  },
+  {
+   "id": "rb_add_item",
+   "name": "Add an item (ItemDef)",
+   "primary": "items"
+  },
+  {
+   "id": "rb_add_loot_table",
+   "name": "Add a loot table (LootTableDef)",
+   "primary": "loot_table_defs"
+  },
+  {
+   "id": "rb_add_material",
+   "name": "Add a crafting material (ore, wood, hide, herb …)",
+   "primary": "materials_ingredients"
+  },
+  {
+   "id": "rb_add_npc",
+   "name": "Add a friendly NPC (NpcDef + actor prefab)",
+   "primary": "npc_defs"
+  },
+  {
+   "id": "rb_add_quest",
+   "name": "Add a quest (QuestDef)",
+   "primary": "quest_defs"
+  },
+  {
+   "id": "rb_add_recipe",
+   "name": "Add a crafting recipe (RecipeDef)",
+   "primary": "recipe_defs"
+  },
+  {
+   "id": "rb_add_signal",
+   "name": "Add or change an EventBus signal (R-EB1)",
+   "primary": "event_bus"
+  },
+  {
+   "id": "rb_add_spell",
+   "name": "Add a spell (SpellDef)",
+   "primary": "spell_defs_content"
+  },
+  {
+   "id": "rb_add_status_effect",
+   "name": "Add a status effect (StatusEffectDef)",
+   "primary": "effect_defs_content"
+  },
+  {
+   "id": "rb_add_system",
+   "name": "Add a new system or part to the atlas",
+   "primary": "systems_atlas"
+  },
+  {
+   "id": "rb_add_verb",
+   "name": "Add a new verb (spell delivery, effect kind, AI behavior, objective type)",
+   "primary": "casting"
+  },
+  {
+   "id": "rb_change_schema",
+   "name": "Add, rename or remove a field on a §6 schema",
+   "primary": "data_schemas"
+  },
+  {
+   "id": "rb_retire_content",
+   "name": "Remove or deprecate a content entry (item, spell, effect, enemy, recipe, quest …)",
+   "primary": "id_immutability_migrations"
+  }
+ ],
+ "findings": {
+  "errors": 0,
+  "warnings": 4,
+  "info": 3
+ },
+ "edge_vocabulary": {
+  "listens": "A listens to EventBus signal B",
+  "emits": "A emits EventBus signal B (written from the emitter)",
+  "reads": "A reads B's data or state",
+  "references": "A's data references B's ids (a content-level coupling)",
+  "calls": "A calls B directly (R2: only inside one system subtree or a pure helper)",
+  "renders": "A (presentation) renders B's state — never mutates it (R5)",
+  "validates": "A (a gate or tool) validates B",
+  "persists": "A saves/loads B's state",
+  "configures": "A configures B",
+  "extends": "A is a specialization or variant of B",
+  "transports": "A (networking) carries B's state or commands",
+  "gated_by": "A is blocked until B approves or unlocks it"
+ }
+}

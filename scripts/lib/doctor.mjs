@@ -89,21 +89,25 @@ async function checkSystemsAtlas() {
   } catch (err) {
     return hard("systems-atlas", false, `registry failed to load: ${err.message}`);
   }
-  const { graph, validation, hash } = all;
+  const { graph, validation, hash, runbooks = [] } = all;
   if (validation.errors.length) {
-    return hard("systems-atlas", false, `${validation.errors.length} registry error(s): ${validation.errors.slice(0, 3).join("; ")}${validation.errors.length > 3 ? " …" : ""}`);
+    return hard("systems-atlas", false, `${validation.errors.length} registry/runbook error(s): ${validation.errors.slice(0, 3).join("; ")}${validation.errors.length > 3 ? " …" : ""}`);
   }
-  hard("systems-atlas", true, `${graph.nodes.size} systems, ${graph.influence.length} edges, zero errors (registry ${hash})`);
+  hard("systems-atlas", true, `${graph.nodes.size} systems, ${graph.influence.length} edges, ${runbooks.length} runbooks, zero errors (registry ${hash})`);
   let stale = [];
   try {
-    stale = await mod.staleGenerated(mod.renderAll(graph, validation, { hash }), ROOT);
+    stale = await mod.staleGenerated(mod.renderAll(graph, validation, { hash, runbooks }), ROOT);
   } catch (err) {
     stale = [`render failed: ${err.message}`];
   }
   if (stale.length) hard("systems-atlas-rendered", false, `stale: ${stale.slice(0, 4).join(", ")}${stale.length > 4 ? " …" : ""} — run scripts/systems-map.sh render`);
-  else hard("systems-atlas-rendered", true, "ATLAS.md, atlas/*.md and explorer.html match the registry");
-  if (validation.warnings.length) soft("systems-atlas-design", false, `${validation.warnings.length} design finding(s) awaiting a decision (phase inversion / scope leak / R2 smell / unwired) — see systems/ATLAS.md §Findings`);
-  else soft("systems-atlas-design", true, "no open design findings in the registry");
+  else hard("systems-atlas-rendered", true, "ATLAS.md, atlas/*.md, explorer.html and llm/* match the registry");
+  if (validation.warnings.length) soft("systems-atlas-design", false, `${validation.warnings.length} design finding(s) awaiting a decision (phase inversion / scope leak / R2 smell / unwired / runbook coverage) — see systems/ATLAS.md §Findings`);
+  else soft("systems-atlas-design", true, "no open design findings in the registry or runbooks");
+  // ADR-0066: the change runbooks are what make the atlas actionable for an agent; a project with a
+  // registry but no runbooks has a map and no procedures. Soft — a backlog, not a build break.
+  if (!runbooks.length) soft("systems-runbooks", false, "no change runbooks under systems/runbooks/ — agents get a map but no procedures");
+  else soft("systems-runbooks", true, `${runbooks.length} runbook(s), each validated against the registry (ids exist, hard downstream covered)`);
 }
 
 // ── ADR-0063: skill authoring standards ──────────────────────────────────

@@ -57,8 +57,8 @@ Not applicable — no LLM loop. Every command is deterministic and runs in under
 
 **Open for the DIRECTOR (surfaced by the tool, not decided here):**
 1. The `time <phase>` console command versus the Phase 3 clock (stub clock in Phase 0, or move the clock earlier).
-2. Twelve proposed signals for §5: `structure_placed`, `structure_destroyed`, `player_joined`, `player_left`, `level_up`, `currency_changed`, `reputation_changed`, `boss_phase_changed`, `weather_changed`, `zone_entered`, `need_threshold_crossed`, `trade_completed`.
-3. 242 candidate systems across 16 domains — the scope of the game beyond the spec.
+2. Twelve proposed signals for §5 — seven of them emitted by spec or implied systems and therefore required rows (`structure_placed`, `player_joined`, `player_left`, `level_up`, `boss_phase_changed`, `zone_entered`, `need_threshold_crossed`), five candidates (`structure_destroyed`, `currency_changed`, `reputation_changed`, `weather_changed`, `trade_completed`). *(Split by the 2026-09-05 audit, ADR-0066.)*
+3. 230 candidate systems across 16 domains — the scope of the game beyond the spec *(242 before the 2026-09-05 audit merged duplicates and re-statused raids and enemy abilities, ADR-0066)*.
 4. Where the Godot project root sits relative to Loom's directories (`.gdignore` on the governance folders, or the game under `game/`).
 
 ## Alternatives considered
@@ -81,6 +81,7 @@ Not applicable — no LLM loop. Every command is deterministic and runs in under
 - `.claude/commands/impact.md` — the `/impact` skill
 - `layers/L1-skeleton.md` — `systems/` added to the project skeleton
 - `CLAUDE.md` — session ritual (impact before edits) and the atlas pointer
+- [ADR-0066](./0066-agent-ready-change-discipline.md) — the runbooks, path→system resolver, checklist, registry mutation API, LLM pack and edit guard built on this registry
 
 **This ADR is affected by** *(upstream — these define constraints on this decision)*:
 

@@ -16,8 +16,8 @@
 ## Goals
 
 1. Finish Phase 0 (studio setup) per spec §13 — engine pinned, gates G0–G3 green in CI, EventBus + schemas + converter + console, one sample of each noun.
-2. Get DIRECTOR decisions on the atlas's open questions: repo layout (Godot root vs Loom folders), the console-versus-clock phase tension, the 12 proposed §5 signals, and the 242 candidate systems.
-3. Keep the systems atlas true: every change to `core/`, `data/`, `ui/`, `scenes/` starts with `/impact` and ends with the registry updated.
+2. Get DIRECTOR decisions on the atlas's open questions: repo layout (Godot root vs Loom folders), the Phase 0 console's dependencies (clock, inventory, spawning), the 12 proposed §5 signals (7 required by spec systems, 5 candidates), the §7.1 write-scope gaps (`actors/`, `audio/`, `data/npcs/`), and the 230 candidate systems.
+3. Keep the systems atlas true: every change to `core/`, `data/`, `ui/`, `scenes/` starts with `checklist <id>` (the hook names the id), follows the runbook when one exists, and ends with the registry updated through `add-node` / `add-edge` and `render`.
 
 ## Working agreements
 

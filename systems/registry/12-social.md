@@ -12,8 +12,6 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | groups_parties | Groups & parties | 2 | social | 4 | implied | orchestrator | core/social/party.gd | §1 2 to 10 co-op | Membership, roles, loot rules, raid groups | Your adventuring party |
 | party_membership | Party membership | 3 | groups_parties | 4 | implied | orchestrator | core/social/party.gd | — | Who is in the party; in co-op the server is the party | — |
 | party_roles | Party roles | 3 | groups_parties | 4 | implied | orchestrator | core/social/party.gd | — | Declared roles for frames and raid checks | — |
-| party_loot_rules | Party loot rules | 3 | groups_parties | 4 | implied | orchestrator | core/social/party.gd | — | The party's chosen loot rule | — |
-| raid_groups | Raid groups | 3 | groups_parties | 4 | implied | orchestrator | core/social/party.gd | — | Full-server groups for raids | — |
 | ready_checks | Ready checks | 3 | groups_parties | — | candidate | orchestrator | core/social/party.gd | — | Everyone ready before a pull | — |
 | guilds | Guilds | 2 | social | — | candidate | director | core/social/guild.gd | — | Persistent clubs with banks and ranks; an MMO structure at co-op scale | A club with a clubhouse and a shared bank |
 | guild_defs_membership | Guild identity & membership | 3 | guilds | — | candidate | director | core/social/guild.gd | — | Guild identity and members | — |
@@ -25,7 +23,6 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | reputation_tiers | Reputation tiers | 3 | reputation_factions | — | candidate | orchestrator | core/social/reputation.gd | — | Thresholds from hated to exalted | — |
 | reputation_sources | Reputation sources | 3 | reputation_factions | — | candidate | orchestrator | core/social/reputation.gd | — | Kills and quests move standing; emits reputation_changed | — |
 | faction_unlocks_vendors | Faction unlocks | 3 | reputation_factions | — | candidate | director | data/factions/ | — | Vendors and recipes gated by standing | — |
-| mob_faction_hostility | Mob faction hostility | 3 | reputation_factions | — | candidate | director | core/ai/ | — | Standing decides whether mobs attack | — |
 | player_alignment | Player alignment | 3 | reputation_factions | — | candidate | director | core/social/ | — | A player-side alignment track | — |
 | communication | Communication | 2 | social | 4 | implied | orchestrator | ui/; core/net/ | — | Chat, pings, and candidate emotes and voice | The walkie-talkies and hand signals |
 | text_chat | Text chat | 3 | communication | 4 | implied | orchestrator | core/net/chat.gd | — | Server-relayed text | — |
@@ -33,7 +30,7 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | emotes | Emotes | 3 | communication | — | candidate | director | data/emotes/ | — | Animated emotes | — |
 | voice_chat | Voice chat | 3 | communication | — | candidate | director | core/net/voice.gd | — | In-game voice; a new dependency | — |
 | community_admin | Community & admin | 2 | social | 4 | implied | orchestrator | server/ | — | House rules, friends, blocking | The house rules and the host who enforces them |
-| server_rules_config | Server rules | 3 | community_admin | 4 | implied | orchestrator | server/config | — | PvP off, friendly fire, loot rule defaults | — |
+| server_rules_config | Server rules | 3 | community_admin | 4 | implied | orchestrator | server/config | — | Password, slot cap, friendly fire, loot rule and PvP flag as one server config | — |
 | friends_list | Friends list | 3 | community_admin | — | candidate | director | core/social/ | — | Needs identity that spans servers | — |
 | block_mute | Block & mute | 3 | community_admin | — | candidate | orchestrator | core/social/ | — | Per-player mute and block | — |
 
@@ -45,10 +42,6 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | party_membership | reads | player_identity_local | identities | hard | Members are identities |
 | party_roles | reads | party_membership | members | hard | Roles are per member |
 | party_roles | reads | role_specs | declared spec | soft | If specs exist, roles come from them |
-| party_loot_rules | extends | group_loot_rules | party choice | hard | The party picks one of the loot rules |
-| party_loot_rules | reads | party_membership | members | hard | Rules apply among members |
-| raid_groups | reads | party_membership | members | hard | A raid group is the party at full size |
-| raid_groups | reads | raid_size_scaling | size | hard | Raid size feeds scaling |
 | ready_checks | reads | party_membership | members | hard | Everyone in the party answers |
 | guild_defs_membership | reads | player_identity_local | members | hard | Members are identities |
 | guild_defs_membership | reads | server_database | persistence | hard | Guilds persist on the server |
@@ -64,9 +57,6 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | faction_unlocks_vendors | reads | reputation_tiers | tier reached | hard | Unlocks open at a tier |
 | faction_unlocks_vendors | reads | npc_vendors_stores | gated stock | hard | Unlocks gate vendor stock |
 | faction_unlocks_vendors | reads | recipe_unlocks | gated recipes | soft | Unlocks can gate recipes |
-| mob_faction_hostility | reads | enemy_factions_hostility | mob factions | hard | Mobs need factions first |
-| mob_faction_hostility | reads | reputation_tiers | standing | hard | Hostility reads standing |
-| mob_faction_hostility | reads | perception | attack decision | hard | The AI's perception consults hostility |
 | player_alignment | reads | reputation_sources | choices | hard | Alignment is driven by the same sources |
 | text_chat | reads | sessions_players | senders | hard | Chat is between connected players |
 | text_chat | reads | event_replication | relay | soft | Chat rides on replication |
@@ -76,10 +66,11 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | emotes | reads | intent_schema | emote intent | soft | An emote is an intent |
 | voice_chat | reads | net_architecture | transport | hard | Voice rides the network layer |
 | voice_chat | gated_by | dependency_policy_r10 | voice library | hard | A voice library is a new dependency |
-| server_rules_config | reads | server_config_password | server settings | hard | Rules are server settings |
 | server_rules_config | reads | friendly_fire_rules | friendly fire default | hard | The host sets friendly fire |
-| server_rules_config | reads | party_loot_rules | loot default | hard | The host sets the loot default |
 | server_rules_config | reads | pvp_flagging | pvp default | soft | If PvP exists, the host can disable it |
 | friends_list | reads | account_identity | cross-server identity | hard | Friends need identity beyond one server |
 | block_mute | reads | text_chat | mute | hard | Muting filters chat |
 | block_mute | reads | player_identity_local | who | hard | Blocks are per identity |
+| server_rules_config | reads | user_settings_store | — | soft | The host's saved server settings seed the rules |
+| server_rules_config | reads | group_loot_rules | — | hard | The server's loot rule is the party's default |
+| party_roles | reads | roles | — | soft | A party role is a combat role |

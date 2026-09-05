@@ -17,7 +17,7 @@ Skills use the portable Agent Skills format — `SKILL.md` with `name` + `descri
 ## Workflow contract (any harness)
 
 - **Start:** spec §13 (phase + checklist), the tail of `docs/changelog.md`, `scripts/systems-map.sh validate`.
-- **Before touching `core/`, `data/`, `ui/`, `scenes/`:** `scripts/systems-map.sh impact <id>` — the atlas says what moves, how, where, why ([ADR-0065](./adr/0065-systems-atlas-and-impact-map.md)). Candidates in the blast radius are unapproved.
+- **Before touching `core/`, `data/`, `ui/`, `scenes/`:** the PreToolUse hook names the system you are opening; `scripts/systems-map.sh checklist <id>` says what to touch, check and run, and which runbook in `systems/runbooks/` to follow ([ADR-0065](./adr/0065-systems-atlas-and-impact-map.md), [ADR-0066](./adr/0066-agent-ready-change-discipline.md)). Candidates in the blast radius are unapproved. Registry edits go through `add-node` / `add-edge` (they validate and revert); generated `systems/` files are never hand-edited. `audit-diff` before the PR.
 - **End of task:** run the gates (spec §8: G0 style, G1 GUT, G2 data, G3 smoke; G4/G5 from Phase 1), paste results, one changelog line, commit via PR.
 - **DIRECTOR** items: stop and ask Nick. Ambiguity: ask, don't guess.
 - **MCP:** the godot-mcp server (`.mcp.json`; chosen in Phase 0, recorded in spec §9) runs scenes headless, captures output, runs GUT. Prefer live runs over guessing from `.tscn` text.

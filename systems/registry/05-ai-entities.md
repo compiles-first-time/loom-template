@@ -11,13 +11,13 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | ai_entities | Entities & AI | 1 | — | 1 | spec | orchestrator | actors/; core/ai/; core/spawn/; data/enemies/; data/npcs/ | §6.5 | Enemies, spawning, AI brains, friendly NPCs, actor lifecycle | The cast of the play and the brains that move them |
 | enemies | Enemies | 2 | ai_entities | 0 | spec | content-smith | data/enemies/ | §6.5 | EnemyDef content: stats, behavior, loot, biomes, families, abilities | Monster manual pages |
 | enemy_defs | Enemy definitions | 3 | enemies | 0 | spec | content-smith | data/enemies/ | §6.5 | One .tres per enemy: scene, health, damage, armor, move_speed, behavior, loot_table, xp, biomes, day_phases | — |
-| enemy_stats_scaling | Enemy stat scaling | 3 | enemies | 2 | implied | content-smith | data/enemies/; docs/balance_ranges.md | §6.5 | Stat bands by biome tier, night and player count | — |
+| enemy_stats_scaling | Enemy stat scaling | 3 | enemies | 2 | implied | director/content-smith | data/enemies/; docs/balance_ranges.md | §6.5 | Stat bands by biome tier, night and player count | — |
 | enemy_families | Enemy families | 3 | enemies | 1 | implied | content-smith | data/enemies/ | §6.5 biomes | Groups per biome that share art, sounds and behavior | — |
-| enemy_abilities | Enemy abilities | 3 | enemies | 2 | implied | content-smith | data/enemies/; data/spells/ | §6.3 | Enemies cast the same SpellDefs players do | — |
+| enemy_abilities | Enemy abilities | 3 | enemies | — | candidate | content-smith | data/enemies/; data/spells/ | §6.3 | Enemies casting SpellDefs; needs an abilities field on §6.5 EnemyDef (spec PR) before it exists | — |
 | enemy_factions_hostility | Enemy factions | 3 | enemies | — | candidate | director | data/enemies/ | — | Which enemies fight each other and which ignore players | — |
 | elite_rare_variants | Elite and rare variants | 3 | enemies | — | candidate | content-smith | data/enemies/ | — | Named or elite versions with better loot | — |
 | spawning | Spawn system | 2 | ai_entities | 1 | spec | orchestrator/world-builder | core/spawn/; scenes/ | §5 actor_spawned, §6.5 biomes and day_phases | Where, when and how many actors appear; emits actor_spawned | The stage manager sending actors on at their cue |
-| spawn_points_zones | Spawn points and zones | 3 | spawning | 1 | implied | world-builder | scenes/ | — | Placed spawn markers and zone volumes | — |
+| spawn_points_zones | Spawn points and zones | 3 | spawning | 1 | implied | world-builder | scenes/spawns/ | — | Placed spawn markers and zone volumes | — |
 | spawn_rules_biome_phase | Spawn rules by biome and phase | 3 | spawning | 2 | spec | orchestrator | core/spawn/rules.gd | §6.5 biomes, day_phases | Which enemies may spawn where and at which clock phase | — |
 | spawn_density_caps | Density caps | 3 | spawning | 2 | implied | orchestrator | core/spawn/density.gd | — | Population limits per zone; the AI director nudges them | — |
 | respawn_timers | Respawn timers | 3 | spawning | 2 | implied | orchestrator | core/spawn/respawn.gd | — | Killed spawns return after a timer | — |
@@ -30,7 +30,7 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | steering_locomotion | Steering and locomotion | 3 | ai_brain | 1 | implied | orchestrator | core/ai/steer.gd | §6.5 move_speed | Movement along the path on the tick at the enemy's speed | — |
 | target_selection | Target selection | 3 | ai_brain | 1 | implied | orchestrator | core/ai/target.gd | — | Picks a target from threat and perception | — |
 | leashing_evade | Leashing and evade | 3 | ai_brain | 2 | implied | orchestrator | core/ai/leash.gd | — | Returns home and resets when dragged too far | — |
-| ai_director | AI director | 3 | ai_brain | 2 | implied | orchestrator | core/ai/director.gd | §5 listeners | Paces pressure by nudging spawn caps and firing events | The dungeon master adjusting the difficulty dial |
+| ai_director | AI director | 3 | ai_brain | 2 | implied | orchestrator | core/ai/director.gd | §5 listeners | Paces spawns and pressure against the party; dynamic events would be its candidate extension | The dungeon master adjusting the difficulty dial |
 | behavior_trees_utility | Behavior trees / utility AI | 3 | ai_brain | — | candidate | orchestrator | core/ai/ | — | A data-driven decision layer beneath the four verbs | — |
 | group_tactics | Group tactics | 3 | ai_brain | — | candidate | orchestrator | core/ai/tactics.gd | — | Flanking, focus fire, retreat for packs | — |
 | llm_npc_intelligence | LLM-enhanced NPC intelligence | 3 | ai_brain | — | candidate | director | tools/ai/; core/dialogue/ | §4 R4, §9 | Model-driven NPC talk or planning; must run outside the fixed tick because it is nondeterministic | A dungeon master on the radio who never touches the dice |
@@ -40,10 +40,8 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | trainers | Trainers | 3 | npcs | — | candidate | director | data/npcs/ | — | NPCs that teach spells or recipes | — |
 | npc_schedules_routines | Schedules and routines | 3 | npcs | — | candidate | director | core/ai/schedule.gd | — | Daily routines by clock phase | — |
 | companions_pets | Companions and pets | 3 | npcs | — | candidate | director | core/ai/companion.gd | — | Player-owned followers with their own brain | — |
-| mounts | Mounts | 3 | npcs | — | candidate | director | actors/mounts/ | — | Rideable actors | — |
 | actor_lifecycle | Actor lifecycle | 2 | ai_entities | 1 | spec | orchestrator | core/state/actors.gd; actors/ | §5, §12 | Ids, prefabs, corpses and the sync hooks every actor shares | Birth and death certificates for every creature |
-| actor_ids | Actor ids | 3 | actor_lifecycle | 1 | spec | orchestrator | core/state/actors.gd | §12 | Every actor has an id; logic never uses node paths | — |
-| actor_prefabs_scenes | Actor prefabs | 3 | actor_lifecycle | 1 | spec | world-builder | actors/ | §6.5 scene | The .tscn per enemy and NPC referenced by EnemyDef.scene | — |
+| actor_prefabs_scenes | Actor prefabs | 3 | actor_lifecycle | 0 | spec | world-builder | actors/enemies/; actors/npcs/ | §6.5 scene | The .tscn per enemy and NPC referenced by EnemyDef.scene; Phase 0 ships one stub capsule so the sample enemy passes G2 | — |
 | corpse_handling | Corpse handling | 3 | actor_lifecycle | 2 | implied | orchestrator | core/state/corpse.gd | — | A corpse replaces the actor, holds loot, is cleaned up later | — |
 | actor_state_sync_hooks | Actor state sync hooks | 3 | actor_lifecycle | 4 | implied | orchestrator | core/net/ | §12 | Serializable actor state ready for replication | — |
 
@@ -64,7 +62,6 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | enemy_factions_hostility | reads | faction_defs | faction ids | soft | If factions are approved, enemies belong to them |
 | elite_rare_variants | extends | enemy_defs | variant of a base enemy | hard | A variant is a base enemy with overrides |
 | elite_rare_variants | references | loot_table_defs | better table | hard | Variants name a richer table |
-| spawning | reads | actor_ids | id assignment | hard | Every spawned actor gets an id |
 | spawn_points_zones | reads | biome_defs | zone biome | hard | A spawn zone belongs to a biome |
 | spawn_points_zones | reads | navmesh_baking | valid ground | soft | Spawns are placed on navigable ground |
 | spawn_rules_biome_phase | reads | enemy_defs | EnemyDef.biomes, day_phases | hard | The rules read what each enemy allows |
@@ -108,12 +105,16 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | npc_schedules_routines | reads | pathfinding_navmesh | walk between spots | hard | Routines move NPCs |
 | companions_pets | reads | behavior_verbs | follower verb | hard | A companion is an actor with a follow verb |
 | companions_pets | reads | party_membership | owner | soft | Ownership follows the party |
-| mounts | reads | locomotion | rider control | hard | Riding replaces the rider's locomotion |
-| mounts | reads | actor_prefabs_scenes | mount prefab | hard | A mount is an actor prefab |
-| actor_ids | extends | actor_registry | id space | hard | Actor ids are entries in the registry |
-| actor_prefabs_scenes | reads | import_hook | meshes and collision | hard | Prefab meshes pass through the import hook |
 | actor_prefabs_scenes | reads | character_capsule | proportions | soft | Actors share the 1 m scale and door clearance |
-| corpse_handling | reads | actor_ids | corpse id | hard | A corpse keeps the dead actor's id for loot |
 | corpse_handling | reads | despawn_cleanup | cleanup | hard | Corpses are removed by cleanup |
 | actor_state_sync_hooks | reads | state_serialization | serializable state | hard | Sync hooks expose the same state the save uses |
 | actor_state_sync_hooks | reads | replication | replication api | hard | Hooks are consumed by replication |
+| enemy_factions_hostility | reads | reputation_tiers | — | hard | Hostility toward a player follows their standing |
+| enemy_factions_hostility | reads | perception | — | hard | Hostile factions attack on sight |
+| spawning | reads | actor_registry | — | hard | A spawned actor is registered by id |
+| corpse_handling | reads | actor_registry | — | hard | A corpse keeps the dead actor's id |
+| behavior_verbs | reads | schema_enemy_def | behavior enum | hard | Every behavior enum value is a verb here (R1) |
+| actor_prefabs_scenes | reads | enemy_families | — | soft | Prefabs in a family share a rig and sounds |
+| actor_prefabs_scenes | reads | import_hook | — | soft | Real prefabs pass the import hook from Phase 1; the Phase 0 stub capsule does not |
+| actor_prefabs_scenes | reads | rigs_skeletons | rig + AnimationTree | soft | Real prefabs carry a rig and an AnimationTree from Phase 1; the Phase 0 stub capsule has none |
+| ai_brain | reads | client_server_roles | server-only tick | soft | AI thinks only on the server from Phase 4; until then the local authority runs it |

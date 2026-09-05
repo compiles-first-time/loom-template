@@ -16,7 +16,7 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | telegraph_decals | Telegraphs | 3 | boss_encounters | 2 | implied | orchestrator | core/encounters/mechanics/telegraph.gd | §6.3 aoe_radius_m | Danger shapes announced before an AoE lands | — |
 | boss_gates_progression | Boss gates | 3 | boss_encounters | 2 | spec | orchestrator | core/encounters/gates.gd | §1 boss gates | A defeated boss sets a world flag that unlocks the next region | — |
 | boss_arena_rules | Boss arena rules | 3 | boss_encounters | 2 | implied | world-builder | scenes/arenas/ | — | Arena bounds, entry conditions, reset on wipe | — |
-| raid_bosses | Raid bosses | 3 | boss_encounters | 4 | implied | orchestrator | core/encounters/ | §1 2–10 players | Bosses tuned for the whole server | — |
+| raid_bosses | Raid bosses | 3 | boss_encounters | — | candidate | orchestrator | core/encounters/ | §1 2–10 players | Bosses tuned for the whole server | — |
 | enrage_timers | Enrage timers | 3 | boss_encounters | — | candidate | director | core/encounters/mechanics/ | — | Soft or hard enrage after a time limit | — |
 | world_bosses | World bosses | 3 | boss_encounters | — | candidate | director | core/encounters/ | — | Roaming open-world bosses | — |
 | dungeons | Dungeons | 2 | encounters | 2 | implied | world-builder | scenes/dungeons/; data/dungeons/ | §7.2 world-builder | Built places with scripted doors, traps, puzzles and a boss at the end | The haunted house with rooms that unlock in order |
@@ -26,14 +26,13 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | difficulty_tiers | Difficulty tiers | 3 | dungeons | — | candidate | director | data/dungeons/ | — | Scaled versions of the same dungeon | — |
 | instancing | Instancing | 3 | dungeons | — | candidate | director | core/net/ | — | Private copies per group versus one shared world; a Phase 4 architecture decision | — |
 | procedural_dungeons | Procedural dungeons | 3 | dungeons | — | candidate | director | core/world/gen/ | — | Layouts generated from room pieces and a seed | — |
-| raids | Raids | 2 | encounters | 4 | implied | orchestrator | core/encounters/raid.gd | §1 2–10 players | Encounters sized for the whole server | The whole team on the field for the championship |
-| raid_size_scaling | Raid size scaling | 3 | raids | 4 | implied | orchestrator | core/encounters/raid.gd | — | Health and mechanics scale with player count | — |
-| raid_roles_check | Raid roles check | 3 | raids | 4 | implied | orchestrator | core/encounters/raid.gd | — | Warns when the group lacks a role | — |
+| raids | Raids | 2 | encounters | — | candidate | orchestrator | core/encounters/raid.gd | §1 2–10 players | Encounters sized for 6–10 players with their own bosses; asked for by the Director, not in the spec (§1 names boss gates only) | The whole team on the field for the championship |
+| raid_size_scaling | Raid size scaling | 3 | raids | — | candidate | orchestrator | core/encounters/raid.gd | — | Health and mechanics scale with player count | — |
+| raid_roles_check | Raid roles check | 3 | raids | — | candidate | orchestrator | core/encounters/raid.gd | — | Warns when the group lacks a role | — |
 | raid_lockouts | Raid lockouts | 3 | raids | — | candidate | director | core/encounters/raid.gd | — | Weekly resets on rewards | — |
 | world_events | World events | 2 | encounters | — | candidate | director | core/events_world/ | — | Invasions and timed events that change the world for a while | The surprise fire drill |
 | invasion_events | Invasion events | 3 | world_events | — | candidate | director | core/events_world/invasion.gd | — | Waves that attack a player base | — |
 | event_scheduler | Event scheduler | 3 | world_events | — | candidate | orchestrator | core/events_world/schedule.gd | — | Clock-driven, seeded event timing | — |
-| dynamic_events_ai_director | Director-driven events | 3 | world_events | — | candidate | orchestrator | core/ai/director.gd | — | Events fired by the AI director's pacing | — |
 
 ## Edges
 
@@ -83,4 +82,6 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | invasion_events | reads | structures | target base | soft | Invasions target player structures |
 | event_scheduler | reads | world_clock_ticks | clock | hard | Events are timed on the clock |
 | event_scheduler | reads | deterministic_sim | seeded timing | hard | Event timing is seeded |
-| dynamic_events_ai_director | reads | ai_director | pacing | hard | The director decides when to fire |
+| encounter_defs | references | boss_mechanics_library | mechanics[] | hard | Every mechanic an encounter names must exist as a verb (R1) |
+| telegraph_decals | extends | boss_mechanics_library | — | hard | Telegraph is one of the library's mechanic verbs |
+| boss_phases | reads | client_server_roles | — | soft | Boss phases advance only on the server from Phase 4; until then the local authority runs them |

@@ -8,7 +8,7 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 
 | ID | Name | Tier | Parent | Phase | Status | Owner | Where | Spec | Summary | Analogy |
 |---|---|---|---|---|---|---|---|---|---|---|
-| economy | Economy | 1 | — | 2 | spec | content-smith | data/items/; data/loot_tables/; data/recipes/; core/crafting/; core/economy/ | §6.1, §6.2, §6.6 | Items, loot, crafting, professions, currencies, trade, storage | The town's supply chain |
+| economy | Economy | 1 | — | 2 | spec | content-smith/orchestrator | data/items/; data/loot_tables/; data/recipes/; core/crafting/; core/economy/ | §6.1, §6.2, §6.6 | Items, loot, crafting, professions, currencies, trade, storage | The town's supply chain |
 | items | Items | 2 | economy | 0 | spec | content-smith | data/items/ | §6.1 | ItemDef content: categories, rarity, consumables, equipment, materials, stats, icons | The product catalog |
 | item_categories_tags | Categories & tags | 3 | items | 0 | spec | content-smith | data/items/ | §6.1 tags | weapon, food, ore and other tags that systems filter on | — |
 | rarity_tiers | Rarity tiers | 3 | items | 0 | spec | content-smith | data/items/ | §6.1 rarity | common, uncommon, rare, epic; drives UI color | — |
@@ -20,16 +20,15 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | item_icons_models | Item icons & models | 3 | items | 0 | spec | world-builder | art/icons/items/; art/models/items/ | §6.1 icon, model, §11 | Icon named by id; model optional | — |
 | random_affixes | Random affixes | 3 | items | — | candidate | director | core/economy/affixes.gd | — | Rolled prefixes and suffixes on drops; a big economy decision | — |
 | item_levels | Item levels | 3 | items | — | candidate | director | data/items/ | — | A single power number per item | — |
-| loot | Loot | 2 | economy | 2 | spec | content-smith | data/loot_tables/; core/loot/ | §6.6 | Weighted tables, guaranteed drops, rolls on death, chests, group rules | A raffle drum: weighted tickets plus a guaranteed prize |
+| loot | Loot | 2 | economy | 2 | spec | content-smith/orchestrator | data/loot_tables/; core/loot/ | §6.6 | Weighted tables, guaranteed drops, rolls on death, chests, group rules | A raffle drum: weighted tickets plus a guaranteed prize |
 | loot_table_defs | Loot table definitions | 3 | loot | 0 | spec | content-smith | data/loot_tables/ | §6.6 | entries with relative weights and min/max, plus guaranteed | — |
 | weighted_rolls | Weighted rolls | 3 | loot | 2 | spec | orchestrator | core/loot/roll.gd | §6.6, §4 R4 | Seeded weighted selection; property-tested | — |
 | guaranteed_drops | Guaranteed drops | 3 | loot | 2 | spec | orchestrator | core/loot/roll.gd | §6.6 guaranteed | Always-drop entries alongside the roll | — |
 | loot_rolls_on_death | Loot on death | 3 | loot | 2 | implied | orchestrator | core/loot/on_death.gd | §5 actor_died, §6.5 loot_table | Listens for deaths and rolls the enemy's table | — |
-| world_chests_containers | World chests | 3 | loot | — | candidate | world-builder | scenes/prefabs/chests/ | — | Placed containers with loot tables and respawn | — |
 | group_loot_rules | Group loot rules | 3 | loot | 4 | implied | orchestrator | core/loot/group.gd | §1 co-op | Free-for-all, round-robin or need/greed among a party | — |
 | boss_loot_lockouts | Boss loot lockouts | 3 | loot | — | candidate | director | core/loot/lockouts.gd | — | One roll per boss per reset | — |
 | pity_bad_luck_protection | Bad-luck protection | 3 | loot | — | candidate | director | core/loot/pity.gd | — | Rising odds after dry streaks, saved per character | — |
-| loot_economy_tuning | Loot economy tuning | 3 | loot | 2 | implied | content-smith | docs/balance_ranges.md | §8 G2 | Drop rates and material flow as balance numbers | — |
+| loot_economy_tuning | Loot economy tuning | 3 | loot | 2 | implied | director/content-smith | docs/balance_ranges.md | §8 G2 | Drop rates and material flow as balance numbers | — |
 | crafting | Crafting | 2 | economy | 3 | spec | orchestrator/content-smith | core/crafting/; data/recipes/ | §6.2 | Recipes, stations, timed crafts, unlocks | The kitchen: recipe cards plus stations plus time |
 | recipe_defs | Recipe definitions | 3 | crafting | 0 | spec | content-smith | data/recipes/ | §6.2 | output, station, inputs, craft time, unlocked_by | — |
 | crafting_stations | Crafting stations | 3 | crafting | 3 | spec | orchestrator | core/crafting/stations.gd | §6.2 station | hands, workbench, forge and the rest; the station must exist near the crafter | — |
@@ -58,10 +57,11 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | commodity_pricing | Commodity pricing | 3 | trade_vendors | — | candidate | director | core/economy/pricing.gd | — | Dynamic prices from supply and demand | — |
 | mail_system | Mail | 3 | trade_vendors | — | candidate | director | core/economy/mail.gd | — | Sending items to offline players | — |
 | storage_logistics | Storage & logistics | 2 | economy | 3 | implied | orchestrator | core/inventory/containers.gd; scenes/prefabs/ | §10 placed structures | Chests, shared storage, transfer rules, carts | The warehouse and shipping |
-| chests_containers | Chests & containers | 3 | storage_logistics | 3 | implied | orchestrator | core/inventory/containers.gd | §13 Phase 3 build | Placed storage with its own inventory, saved with the world | — |
+| chests_containers | Chests & containers | 3 | storage_logistics | 3 | implied | orchestrator | core/inventory/containers.gd | §13 Phase 3 build | Placed containers with an inventory, an optional loot table and a respawn timer | — |
 | shared_storage | Shared storage | 3 | storage_logistics | 4 | implied | orchestrator | core/inventory/containers.gd | §1 co-op | Containers any party member can use | — |
 | item_transfer_rules | Item transfer rules | 3 | storage_logistics | 3 | implied | orchestrator | core/inventory/transfer.gd | — | Move, split and merge between inventories and containers | — |
 | carts_transport | Carts & transport | 3 | storage_logistics | — | candidate | director | core/inventory/ | — | Movable bulk storage | — |
+| station_defs | Station definitions | 3 | crafting | 3 | implied | content-smith | data/stations/ | §6.2 station | One def per crafting station id (hands, workbench, forge, campfire): display name, the piece that provides it, the recipes it hosts | — |
 
 ## Edges
 
@@ -90,8 +90,6 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | loot_rolls_on_death | reads | weighted_rolls | roll | hard | Death loot is a weighted roll |
 | loot_rolls_on_death | reads | guaranteed_drops | guaranteed | hard | Plus the guaranteed entries |
 | loot_rolls_on_death | reads | corpse_handling | drop location | soft | Loot appears at the corpse |
-| world_chests_containers | reads | loot_table_defs | chest table | hard | Chests roll a table |
-| world_chests_containers | reads | timers_cooldowns | respawn | soft | Chests can refill on a timer |
 | group_loot_rules | reads | party_membership | who rolls | hard | Rules are applied among party members |
 | group_loot_rules | reads | loot_rolls_on_death | drops to assign | hard | Rules decide who gets a drop |
 | boss_loot_lockouts | reads | encounter_defs | boss id | hard | Lockouts are per encounter |
@@ -102,7 +100,6 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | loot_economy_tuning | reads | loot_economy_sim | simulated outcomes | soft | A simulation would inform the numbers |
 | recipe_defs | reads | schema_recipe_def | RecipeDef | hard | Every recipe file must match the schema |
 | recipe_defs | references | items | output_item, inputs[].item_id | hard | A recipe names its output and inputs |
-| recipe_defs | references | crafting_stations | RecipeDef.station | hard | A recipe names its station |
 | crafting_stations | reads | schema_station_def | StationDef | hard | Stations need a definition |
 | crafting_stations | reads | crafting_station_structures | placed station | hard | A station must be built and nearby |
 | craft_time_queue | reads | recipe_defs | RecipeDef.craft_time_s | hard | Craft time is a recipe field |
@@ -122,12 +119,10 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | crafting_quality_rolls | reads | profession_skill_levels | skill bonus | soft | Skill improves quality if professions exist |
 | repair | reads | durability_repair | durability value | hard | Repair restores durability |
 | repair | reads | materials_ingredients | repair cost | soft | Repair consumes materials |
-| profession_defs | reads | id_convention | profession ids | hard | Professions would carry ids like all content |
 | profession_skill_levels | reads | craft_time_queue | skill-ups on craft | hard | Skill grows by crafting |
 | profession_specializations | reads | profession_defs | parent trade | hard | A specialization belongs to a trade |
 | profession_recipe_gating | reads | profession_skill_levels | current skill | hard | Gates compare against skill |
 | gathering_professions | reads | resource_nodes | node harvests | hard | Gathering skill grows by harvesting |
-| currency_defs | reads | id_convention | currency ids | hard | Currencies would carry ids like all content |
 | wallet | reads | currency_defs | balances per currency | hard | The wallet holds one balance per currency |
 | wallet | reads | character_save_state | saved balances | hard | Balances are saved with the character |
 | sinks_faucets | reads | wallet | flows | hard | Sinks and faucets are accounted against the wallet |
@@ -157,3 +152,13 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | item_transfer_rules | reads | intent_schema | transfer intent | hard | A transfer is an intent |
 | carts_transport | reads | placement | placed cart | soft | A cart is a placed, movable structure |
 | carts_transport | reads | weight_encumbrance | cart capacity | hard | Carts have weight limits |
+| recipe_defs | references | crafting_stations | station | soft | `hands` needs no station structure; other stations exist from Phase 3 |
+| chests_containers | reads | loot_table_defs | — | hard | A placed chest may roll a loot table when first opened |
+| chests_containers | reads | timers_cooldowns | — | soft | Loot chests respawn their contents on a timer |
+| chests_containers | reads | interaction_system | interact target id | hard | Opening a container is an interact |
+| recipe_defs | references | materials_ingredients | inputs[].item_id | soft | Recipe inputs are usually materials |
+| item_icons_models | reads | placeholder_assets | — | soft | An item without art points at the placeholder |
+| crafting_stations | reads | schema_recipe_def | station | soft | RecipeDef.station names a station |
+| weighted_rolls | reads | schema_loot_table_def | entries shape | soft | The roll reads entries and weights |
+| station_defs | reads | schema_station_def | — | hard | Every station file must match the schema |
+| crafting_stations | reads | station_defs | — | hard | The station registry is built from the defs |

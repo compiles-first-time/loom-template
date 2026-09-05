@@ -20,7 +20,7 @@ This file is the entry point for Claude and Claude Code. Hard cap ~10 KB — det
 ## Session ritual
 
 - **Start:** spec §13 (current phase + checklist), the tail of `docs/changelog.md`, and `scripts/systems-map.sh validate`.
-- **Before editing `core/`, `data/`, `ui/` or `scenes/`:** run [`/impact <system_id>`](./.claude/commands/impact.md) — what changes, how, where, why. Paste the hard rows into the PR ([ADR-0065](./adr/0065-systems-atlas-and-impact-map.md)).
+- **Before editing `core/`, `data/`, `ui/` or `scenes/`:** the PreToolUse hook names the system you are opening; run `scripts/systems-map.sh checklist <id>` (or [`/impact <id>`](./.claude/commands/impact.md)) — what to touch, check and run, in order — and follow the runbook it names ([`systems/runbooks/`](./systems/runbooks/)). Paste the hard rows into the PR ([ADR-0065](./adr/0065-systems-atlas-and-impact-map.md), [ADR-0066](./adr/0066-agent-ready-change-discipline.md)).
 - **End of any task:** run the gates, paste results, one line in `docs/changelog.md`, commit via PR. Stay inside your role's write scope (spec §7.1).
 
 ## Commands (verify flags once in Phase 0, then pin here)
@@ -31,7 +31,8 @@ godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests/unit -gexit   # G1
 godot --headless -s tools/validate_data.gd                                  # G2 data integrity
 godot --headless res://scenes/main.tscn                                     # G3 smoke (30s, no ERROR lines)
 godot --headless -s tools/json_to_tres.gd                                   # data/_inbox JSON → .tres
-scripts/systems-map.sh impact <id>   # also: validate | render | tree | find  (ADR-0065)
+scripts/systems-map.sh checklist <id>   # also: which <path> | impact | runbook <rb_id> | audit-diff | validate | render  (ADR-0065/0066)
+scripts/systems-map.sh add-node … | add-edge …   # registry edits that validate and revert; generated systems/ files are never hand-edited
 bash scripts/doctor.sh && npm test                                          # Loom governance
 ```
 
@@ -49,7 +50,7 @@ Skills for the four game roles: `.claude/skills/<name>/SKILL.md` (materialize fr
 
 ## The systems atlas ([ADR-0065](./adr/0065-systems-atlas-and-impact-map.md))
 
-[`systems/registry/*.md`](./systems/registry/) is the ledger: **740 systems in 16 domains** (tier 1 domain → 2 system → 3 parts), **1,131 wired edges**, each with how / via / strength / why. Status tells scope: `spec` · `implied` · **`candidate` = asked for but not in the spec → DIRECTOR decision + spec PR** · `non-goal`. Read [`systems/ATLAS.md`](./systems/ATLAS.md) (index, big picture, load-bearing systems, decisions) and open [`systems/explorer.html`](./systems/explorer.html) (click a system: what it affects in ember, what affects it in blue). `loom doctor` fails on a broken or stale atlas.
+[`systems/registry/*.md`](./systems/registry/) is the ledger: **715 systems in 16 domains** (tier 1 domain → 2 system → 3 parts), **1,171 wired edges**, each with how / via / strength / why. Status tells scope: `spec` · `implied` · **`candidate` = asked for but not in the spec → DIRECTOR decision + spec PR** · `non-goal`. [`systems/runbooks/`](./systems/runbooks/) holds **17 change runbooks** (add an item, a material, a spell, an enemy, a signal, a schema field …), each validated against the ledger: every system id exists and every hard downstream of the runbook's primary system is a step or an explained "not touched". For a model: [`systems/llm/`](./systems/llm/) (JSONL + a README written for LLMs — grep it, never load it whole). For a person: [`systems/ATLAS.md`](./systems/ATLAS.md) and [`systems/explorer.html`](./systems/explorer.html). Generated files are never hand-edited (the hook denies it); `loom doctor` fails on a broken or stale atlas.
 
 ## Current focus
 
@@ -57,10 +58,11 @@ Skills for the four game roles: `.claude/skills/<name>/SKILL.md` (materialize fr
 
 ## Open questions (blocking — DIRECTOR)
 
-- **Repo layout:** the Godot project root (`res://`) and Loom's governance folders share this root. Add `.gdignore` to `adr/`, `layers/`, `scripts/`, `systems/` and the rest so Godot ignores them, or move the game under `game/`?
-- **Console vs clock:** spec §13 puts `time <phase>` in the Phase 0 console but the world clock in Phase 3 — stub clock in Phase 0, or move the clock earlier?
-- **12 proposed signals** need §5 rows (R-EB1): `systems/ATLAS.md` §EventBus.
-- **242 candidate systems** (PvP, classes/talents, professions, currencies/markets, guilds, factions, procedural world, accounts, …) — none is built until the spec says so. Decide by domain in `systems/ATLAS.md` §DIRECTOR decisions.
+- **Repo layout:** the Godot project root (`res://`) and Loom's governance folders share this root. Add `.gdignore` to `adr/`, `layers/`, `scripts/`, `systems/` and the rest so Godot ignores them, or move the game under `game/`? Also §3 lists no `data/building`, `data/npcs`, `data/encounters`, `data/markers`, `data/dungeons`, `data/stations` or `server/`, which the atlas needs — amend §3.
+- **Phase 0 console:** `give`, `spawn`, `tp`, `time` need inventory (P2), spawning (P1), the actor registry (P1) and the clock (P3) — the four open findings in `validate`. Stub them in Phase 0, or move the console to Phase 2 (where §13's phase map already puts it)?
+- **12 proposed signals** need §5 rows (R-EB1): 7 are emitted by spec/implied systems and are required (`structure_placed`, `player_joined`, `player_left`, `level_up`, `boss_phase_changed`, `zone_entered`, `need_threshold_crossed`); 5 are candidates (`structure_destroyed`, `currency_changed`, `reputation_changed`, `weather_changed`, `trade_completed`).
+- **Spec seams the atlas found:** §7.1 grants nobody `actors/**`, `audio/**`, `data/npcs/**`, `data/dungeons/**`, `data/markers/**`; §7.2 has content-smith write `art/_inbox/icon_requests.md`, which §7.1 does not grant; §8 runs G4's gather/craft from Phase 1 while §13 lands them in Phase 3. Amend the spec, or reassign owners in the registry.
+- **230 candidate systems** (PvP, classes/talents, professions, currencies/markets, guilds, factions, raids, procedural world, accounts, …) — none is built until the spec says so. Decide by domain in `systems/ATLAS.md` §DIRECTOR decisions.
 
 ## Loom governance (inherited — read L0 before any consequential action)
 
@@ -81,6 +83,7 @@ Skills for the four game roles: `.claude/skills/<name>/SKILL.md` (materialize fr
 ## ADRs in flight
 
 - [ADR-0065](./adr/0065-systems-atlas-and-impact-map.md) — Systems atlas: validated registry + computed impact map. **Awaiting DIRECTOR review.**
+- [ADR-0066](./adr/0066-agent-ready-change-discipline.md) — Agent-ready change discipline: runbooks, path→system resolver, checklist, registry mutation API, LLM pack, PreToolUse edit guard. **Awaiting DIRECTOR review.**
 - [ADR-0057](./adr/0057-research-scout-update-bus-intake.md) — Research Scout (inherited from Loom, proposal-only; the weekly trigger stays un-armed).
 
 Accepted ADRs inherited from Loom: 0003–0064 — index in [`adr/`](./adr/).

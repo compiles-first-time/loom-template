@@ -158,6 +158,10 @@ try {
   // Best-effort.
 }
 
+// The hook may write ONE JSON object to stdout. The destructive guard and the
+// systems-atlas guard below each contribute to it; it is written once at the end.
+let hookOutput = null;
+
 // ── BR_01 (ADR-0047): hook-enforced confirmation for destructive actions ──
 // Act on the classification above instead of only logging it. Risk-proportionate
 // tiers (deny / ask / allow) mapped to reversibility × blast-radius (Rule 20):
@@ -187,10 +191,46 @@ try {
       })
     );
     const output = toHookOutput(guard);
-    if (output) process.stdout.write(JSON.stringify(output) + "\n");
+    if (output) hookOutput = output;
   }
 } catch {
   // Fail-open — never break a tool call on a guard fault.
 }
+
+// ── ADR-0066: systems-atlas edit context ──
+// When the call is about to edit a file the systems registry maps to a
+// system, tell the agent — at the moment of the edit — which system it is
+// inside, what that system hard-affects, and which runbook applies. Generated
+// atlas files are denied (edit the registry, run render). Fail-open.
+try {
+  const { editContextFor } = await import("../lib/systems-guard.mjs");
+  const ctx = await editContextFor({ tool: toolName, input: toolInput, sessionId });
+  if (ctx) {
+    appendEvent(
+      mechanicalRecord("systems_edit_context", {
+        session_id: sessionId,
+        tool: toolName,
+        path: ctx.path,
+        systems: ctx.systems,
+        decision: ctx.decision,
+        announced: Boolean(ctx.context),
+        rule: "ADR-0066",
+      })
+    );
+    if (ctx.decision === "deny" || ctx.context) {
+      hookOutput = hookOutput || { hookSpecificOutput: { hookEventName: "PreToolUse" } };
+      const hso = hookOutput.hookSpecificOutput;
+      if (ctx.decision === "deny" && hso.permissionDecision !== "deny") {
+        hso.permissionDecision = "deny";
+        hso.permissionDecisionReason = ctx.reason;
+      }
+      if (ctx.context) hso.additionalContext = [hso.additionalContext, ctx.context].filter(Boolean).join("\n");
+    }
+  }
+} catch {
+  // Fail-open — the atlas guard never breaks a tool call.
+}
+
+if (hookOutput) process.stdout.write(JSON.stringify(hookOutput) + "\n");
 
 process.exit(0);

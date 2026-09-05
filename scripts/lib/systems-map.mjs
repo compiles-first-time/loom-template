@@ -148,7 +148,7 @@ export function parseRegistryText(text, file = "<memory>") {
           phase: isEmpty(o.phase) ? null : o.phase.trim(),
           status: o.status.trim().toLowerCase(),
           owner: isEmpty(o.owner) ? [] : o.owner.split("/").map((s) => s.trim()).filter(Boolean),
-          where: isEmpty(o.where) ? [] : o.where.split(";").map((s) => s.trim()).filter(Boolean),
+          where: isEmpty(o.where) ? [] : o.where.split(/[;,]/).map((s) => s.trim()).filter(Boolean),
           spec: isEmpty(o.spec) ? "" : o.spec.trim(),
           summary: o.summary.trim(),
           analogy: isEmpty(o.analogy ?? "") ? "" : String(o.analogy).trim(),
@@ -443,7 +443,12 @@ export function validate(registry, graph, { specText = null } = {}) {
     for (const s of specSignals) if (!regAll.has(s)) errors.push(`spec §5 declares signal \`${s}\` but the registry has no ${SIGNAL_PREFIX}${s} node (R-EB1: the table and the ledger must agree)`);
     for (const s of regSpec) if (!specSignals.has(s)) errors.push(`registry marks ${SIGNAL_PREFIX}${s} as status spec but spec §5 has no such row (R-EB1)`);
     const proposed = [...regAll].filter((s) => !specSignals.has(s));
-    if (proposed.length) info.push(`${proposed.length} candidate signal(s) await a §5 entry (R-EB1 PR): ${proposed.join(", ")}`);
+    if (proposed.length) {
+      const byStatus = (s) => proposed.filter((p) => graph.nodes.get(`${SIGNAL_PREFIX}${p}`)?.status === s);
+      const implied = byStatus("implied");
+      const cand = byStatus("candidate");
+      info.push(`${proposed.length} proposed signal(s) await a §5 row (R-EB1 PR): ${implied.length} required by spec/implied systems (${implied.join(", ") || "—"}) · ${cand.length} candidate (${cand.join(", ") || "—"})`);
+    }
   } else if (specText != null) {
     warnings.push("spec text given but no `## 5.` section with a signal table was found — §5 cross-check skipped");
   }
@@ -864,12 +869,13 @@ export function renderDomainPage(graph, domainId, { hash = "" } = {}) {
 }
 
 /** Every generated file, keyed by repo-relative path. The CLI and the doctor share this. */
-export function renderAll(graph, validation, { hash = "", template } = {}) {
+export function renderAll(graph, validation, { hash = "", template, runbooks = [] } = {}) {
   const st = stats(graph);
   const out = new Map();
   out.set(ATLAS_FILE, renderAtlas(graph, validation, { hash }));
   st.domains.forEach((d, i) => out.set(`${ATLAS_DIR}/${domainFile(i, d.id)}`, renderDomainPage(graph, d.id, { hash })));
   out.set(EXPLORER_FILE, renderExplorer(graph, validation, { hash, template }));
+  for (const [rel, content] of renderLlmPack(graph, validation, { hash, runbooks })) out.set(rel, content);
   return out;
 }
 
@@ -880,9 +886,10 @@ export async function staleGenerated(files, root) {
     const p = path.resolve(root, rel);
     if (!existsSync(p) || (await fs.readFile(p, "utf8")).replace(/\r\n/g, "\n") !== content) stale.push(rel);
   }
-  const atlasDir = path.resolve(root, ATLAS_DIR);
-  if (existsSync(atlasDir)) {
-    for (const f of await fs.readdir(atlasDir)) if (f.endsWith(".md") && !files.has(`${ATLAS_DIR}/${f}`)) stale.push(`${ATLAS_DIR}/${f} (orphan)`);
+  for (const [dir, ext] of [[ATLAS_DIR, ".md"], [LLM_DIR, ""]]) {
+    const abs = path.resolve(root, dir);
+    if (!existsSync(abs)) continue;
+    for (const f of await fs.readdir(abs)) if (f.endsWith(ext) && !files.has(`${dir}/${f}`)) stale.push(`${dir}/${f} (orphan)`);
   }
   return stale;
 }
@@ -909,6 +916,172 @@ export function renderExplorer(graph, validation, { hash = "", template } = {}) 
   return tpl.replace("/*__ATLAS_JSON__*/null", json).split("__REGISTRY_HASH__").join(hash);
 }
 
+// ── Path → system resolution ────────────────────────────────────────────────
+
+function globToRegExp(glob) {
+  const esc = glob.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*\*/g, " ").replace(/\*/g, "[^/]*").replace(/ /g, ".*");
+  return new RegExp(`^${esc}$`);
+}
+
+/**
+ * Which systems own a repo-relative path? Every node whose Where covers the
+ * path is returned in `all` (most specific first). `primary` collapses the
+ * best-specificity matches: a node whose Where is dedicated to that one path
+ * beats a broader node that merely lists it among others; among those, tier 2
+ * (the system) beats its tier-3 facets, else the deepest tier present.
+ */
+export function whichSystems(graph, p, { root = null } = {}) {
+  let rel = String(p || "").replace(/\\/g, "/");
+  if (root && path.isAbsolute(rel)) rel = path.relative(root, rel).split(path.sep).join("/");
+  rel = rel.replace(/^res:\/\//, "").replace(/^\.\//, "").replace(/\/+$/, "");
+  const best = new Map();
+  for (const n of graph.nodes.values()) {
+    for (const w0 of n.where) {
+      const w = w0.replace(/^res:\/\//, "").replace(/^\.\//, "");
+      if (!w) continue;
+      let hit;
+      if (w.includes("*")) hit = globToRegExp(w).test(rel);
+      else if (w.endsWith("/")) hit = rel === w.slice(0, -1) || rel.startsWith(w);
+      else hit = rel === w || rel.startsWith(`${w}/`);
+      if (!hit) continue;
+      const spec = w.replace(/\*/g, "").length;
+      const prev = best.get(n.id);
+      if (!prev || prev.specificity < spec) best.set(n.id, { id: n.id, where: w, specificity: spec, tier: n.tier, dedicated: n.where.length === 1 });
+    }
+  }
+  const all = [...best.values()].sort((a, b) => b.specificity - a.specificity || b.tier - a.tier || a.id.localeCompare(b.id));
+  if (!all.length) return { path: rel, primary: [], all: [] };
+  let top = all.filter((m) => m.specificity === all[0].specificity);
+  if (top.some((m) => m.dedicated)) top = top.filter((m) => m.dedicated);
+  const tiers = new Set(top.map((m) => m.tier));
+  const pick = tiers.has(2) ? 2 : Math.max(...tiers);
+  const primary = top.filter((m) => m.tier === pick).sort((a, b) => a.id.localeCompare(b.id));
+  return { path: rel, primary, all };
+}
+
+// ── LLM pack (systems/llm) ──────────────────────────────────────────────────
+
+export const LLM_DIR = "systems/llm";
+
+const compact = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => !(v == null || v === "" || (Array.isArray(v) && v.length === 0))));
+
+/** JSONL records + an orientation README written for a model, not a person. */
+export function renderLlmPack(graph, validation, { hash = "", runbooks = [] } = {}) {
+  const out = new Map();
+  const st = stats(graph);
+  const rbByPrimary = new Map();
+  for (const rb of runbooks) { const list = rbByPrimary.get(rb.meta.primary) || []; list.push(rb.id); rbByPrimary.set(rb.meta.primary, list); }
+  const nodeLines = [];
+  for (const n of graph.nodes.values()) {
+    const down = affects(graph, n.id);
+    const up = affectedBy(graph, n.id);
+    const outs = graph.out.get(n.id) || [];
+    const ins = graph.in.get(n.id) || [];
+    nodeLines.push(JSON.stringify(compact({
+      id: n.id, name: n.name, kind: n.kind === "signal" ? "signal" : undefined, tier: n.tier, parent: n.parent, domain: n.domain,
+      phase: n.phase == null ? null : Number(n.phase), status: n.status, owner: n.owner, where: n.where, spec: n.spec, summary: n.summary, analogy: n.analogy,
+      children: n.children,
+      out: outs.length, in: ins.length,
+      blast_hard: down.hits.filter((h) => h.edge.strength === "hard").length, blast_all: down.hits.length, upstream: up.hits.length,
+      emits: outs.filter((ie) => ie.how === "emits").map((ie) => ie.dst.slice(SIGNAL_PREFIX.length)),
+      listens: ins.filter((ie) => ie.how === "listens").map((ie) => ie.src.slice(SIGNAL_PREFIX.length)),
+      runbooks: rbByPrimary.get(n.id),
+      file: `${DEFAULT_REGISTRY_DIR}/${n.file}`, line: n.line,
+    })));
+  }
+  const edgeLines = graph.influence.map((ie) => JSON.stringify(compact({
+    src: ie.src, dst: ie.dst, how: ie.how, via: ie.via, strength: ie.strength, why: ie.why,
+    from: ie.from, to: ie.to,
+    cross_domain: graph.nodes.get(ie.src).domain !== graph.nodes.get(ie.dst).domain ? true : undefined,
+    file: `${DEFAULT_REGISTRY_DIR}/${ie.file}`, line: ie.line,
+  })));
+  const rbLines = runbooks.map((rb) => JSON.stringify({
+    id: rb.id, name: rb.name, trigger: rb.meta.trigger, primary: rb.meta.primary, roles: rb.meta.roles, director: rb.meta.director || "none", spec: rb.meta.spec,
+    steps: rb.steps.map((s) => compact({ n: s.n, action: s.action, system: s.system, artifact: s.artifact, verify: s.verify, note: s.note })),
+    not_touched: rb.meta.notTouched, file: `systems/runbooks/${rb.file}`,
+  }));
+  const signals = st.signals.map((s) => ({ id: s.id, signal: s.id.slice(SIGNAL_PREFIX.length), status: s.status, emitters: (graph.in.get(s.id) || []).filter((ie) => ie.how === "emits").map((ie) => ie.src), listeners: (graph.out.get(s.id) || []).filter((ie) => ie.how === "listens").map((ie) => ie.dst) }));
+  const candidatesByDomain = {};
+  for (const c of st.candidates) { const d = graph.nodes.get(c.id ?? c).domain; (candidatesByDomain[d] ||= []).push(c.id ?? c); }
+  const summary = {
+    registry_hash: hash, source: DEFAULT_REGISTRY_DIR, generated_by: "scripts/systems-map.sh render",
+    counts: { nodes: st.nodes, edges: st.edges, by_tier: st.byTier, by_status: st.byStatus, signals: st.signals.length, runbooks: runbooks.length },
+    domains: st.domains, load_bearing_systems: st.topSystems, load_bearing_parts: st.topParts,
+    signals, candidates_by_domain: candidatesByDomain,
+    runbooks: runbooks.map((rb) => ({ id: rb.id, name: rb.name, primary: rb.meta.primary })),
+    findings: { errors: validation.errors.length, warnings: validation.warnings.length, info: validation.info.length },
+    edge_vocabulary: HOWS,
+  };
+  out.set(`${LLM_DIR}/nodes.jsonl`, nodeLines.join("\n") + "\n");
+  out.set(`${LLM_DIR}/edges.jsonl`, edgeLines.join("\n") + "\n");
+  out.set(`${LLM_DIR}/runbooks.jsonl`, rbLines.length ? rbLines.join("\n") + "\n" : "");
+  out.set(`${LLM_DIR}/summary.json`, JSON.stringify(summary, null, 1) + "\n");
+  out.set(`${LLM_DIR}/README.md`, renderLlmReadme(graph, st, { hash, runbooks, nodeBytes: nodeLines.join("\n").length, edgeBytes: edgeLines.join("\n").length }));
+  return out;
+}
+
+function renderLlmReadme(graph, st, { hash, runbooks, nodeBytes, edgeBytes }) {
+  const kb = (b) => `${Math.round(b / 1024)} KB (~${Math.round(b / 4 / 1000)}k tokens)`;
+  const L = [];
+  L.push(`# EMBER systems atlas — machine pack (registry ${hash})`);
+  L.push(``);
+  L.push(`> Generated by \`scripts/systems-map.sh render\` from \`systems/registry/*.md\` and \`systems/runbooks/*.md\` (ADR-0065: the atlas; ADR-0066: runbooks, this pack, the edit hook). Do not edit; edit the registry. Read this file first; then **query, do not load** — the two JSONL files together are ${kb(nodeBytes + edgeBytes)}.`);
+  L.push(``);
+  L.push(`## What this is`);
+  L.push(`A ledger of every system in the game (${st.nodes} nodes in ${st.domains.length} domains, tiers 1 domain → 2 system → 3+ part) and every dependency between them (${st.edges} edges), each edge carrying **how** it depends, **via** what, how **strong**, and **why**. It exists so that an agent about to change one thing can know what else moves, where, and why — before editing.`);
+  L.push(``);
+  L.push(`## Files`);
+  L.push(`| File | One record per | Use it to |`, `|---|---|---|`);
+  L.push(`| \`nodes.jsonl\` | system or signal | look a system up by id; see its paths, owner, phase, status, parts, and precomputed reach (\`blast_hard\`, \`blast_all\`, \`upstream\`) |`);
+  L.push(`| \`edges.jsonl\` | influence edge \`src → dst\` | see who depends on what and why; \`src\`/\`dst\` is the direction a change travels, \`from\`/\`to\` is the row as written |`);
+  L.push(`| \`runbooks.jsonl\` | change runbook | get the ordered procedure for a kind of change (add an item, a spell, a signal, a schema field …) |`);
+  L.push(`| \`summary.json\` | — | counts, domains, load-bearing systems, the signal table, candidates awaiting the Director, edge vocabulary |`);
+  L.push(``);
+  L.push(`## How to query (prefer these over reading the files)`);
+  L.push("```");
+  L.push(`scripts/systems-map.sh which <path>          # which system owns this file?`);
+  L.push(`scripts/systems-map.sh checklist <id>        # what to touch / check / run, in order`);
+  L.push(`scripts/systems-map.sh runbook <rb_id>       # the procedure for a kind of change (runbooks: list)`);
+  L.push(`scripts/systems-map.sh impact <id>           # PR-ready report: downstream + upstream + review checklist`);
+  L.push(`scripts/systems-map.sh show <id>             # one system: parts, direct in/out edges`);
+  L.push(`scripts/systems-map.sh find <text>           # search ids, names, summaries, paths`);
+  L.push(`scripts/systems-map.sh audit-diff [--base r] # which systems this diff touches and what it did not`);
+  L.push(`grep '"id":"<id>"' systems/llm/nodes.jsonl   # one record; grep '"domain":"combat"' for a domain`);
+  L.push("```");
+  L.push(`Add \`--json\` to any query for machine output.`);
+  L.push(``);
+  L.push(`## Reading a record`);
+  L.push(`- **status** decides what you may do: \`spec\` = in GAME_INFRA_SPEC.md, build it · \`implied\` = the spec needs it but does not name it, build it and cite the section · \`candidate\` = the Director asked for it but the spec does not have it — **stop; a DIRECTOR decision and a spec PR come first (§14)** · \`non-goal\` = ruled out.`);
+  L.push(`- **owner** is a spec §7.1 role with a write scope: orchestrator (anywhere, via PR) · content-smith (data/**, art/icons/**, changelog) · world-builder (scenes/**, art/**, data/biomes/**) · quest-writer (data/quests/**, data/dialogue/**, docs/lore/**) · test-pilot (tests/**, tools/testing/**, workflows) · director (decides).`);
+  L.push(`- **phase** is when it lands (spec §13: 0 setup · 1 feel · 2 data spine · 3 survival loop · 4 multiplayer · 5 content factory). A hard dependency on a later-phase system is a design finding.`);
+  L.push(`- **where** is the path the system lives at; \`which <path>\` inverts it. **spec** is the section that defines it.`);
+  L.push(`- Edge **how** vocabulary: ${Object.entries(HOWS).map(([k, v]) => `\`${k}\` (${typeof v === "string" ? v : v.desc || v.meaning || ""})`).join(" · ")}.`);
+  L.push(`- Edge **strength**: \`hard\` = breaks or must change when src changes · \`soft\` = should be reviewed.`);
+  L.push(`- Signals are nodes named \`sig_<signal>\` under \`event_bus\`; \`emits\`/\`listens\` edges wire them. The registry's \`sig_*\` set is cross-checked against spec §5 (R-EB1).`);
+  L.push(``);
+  L.push(`## The change protocol (what an agent does with this)`);
+  L.push(`1. \`which <path>\` (or read the hook's context line) → the system id.`);
+  L.push(`2. \`checklist <id>\` → read §0 (stop conditions, owner, runbook) and §2 (must-check systems).`);
+  L.push(`3. If a runbook applies, follow it step by step; each step names the system, the artifact and how to verify.`);
+  L.push(`4. Make the change inside the owner's write scope. New signal or schema field ⇒ spec PR in the same change (§5/§6, §14).`);
+  L.push(`5. Run the gates for the phase (§8), then \`scripts/systems-map.sh validate\` and \`render --check\`, then \`bash scripts/doctor.sh\`.`);
+  L.push(`6. Added, removed or rewired a system? \`add-node\` / \`add-edge\` / \`set-node\` / \`remove-*\` — they validate and refuse to leave the ledger invalid — then \`render\`.`);
+  L.push(`7. One line in \`docs/changelog.md\`; paste the checklist's hard rows into the PR.`);
+  L.push(``);
+  L.push(`## Do not`);
+  L.push(`- hand-edit \`systems/ATLAS.md\`, \`systems/atlas/\`, \`systems/explorer.html\` or this directory (generated; the hook denies it);`);
+  L.push(`- build a \`candidate\` system, add a signal without a §5 row, or add a dependency/addon/service without a spec PR (R10);`);
+  L.push(`- load both JSONL files whole into context — grep by id or domain, or use the CLI.`);
+  L.push(``);
+  L.push(`## Load-bearing systems (largest blast radius)`);
+  for (const r of st.topSystems.slice(0, 8)) L.push(`- \`${r.id}\` — ${r.blast} systems downstream (${r.domain})`);
+  L.push(``);
+  L.push(`## Runbooks (${runbooks.length})`);
+  for (const rb of runbooks) L.push(`- \`${rb.id}\` — ${rb.name} · primary \`${rb.meta.primary}\`${rb.meta.director && rb.meta.director !== "none" ? " · DIRECTOR decision involved" : ""}`);
+  L.push(``);
+  return L.join("\n") + "\n";
+}
+
 // ── Event log (Rule 22 trace for queries) ───────────────────────────────────
 
 async function trace(eventType, fields) {
@@ -920,35 +1093,53 @@ async function trace(eventType, fields) {
 
 // ── CLI ─────────────────────────────────────────────────────────────────────
 
+const BOOL_FLAGS = new Set(["json", "check", "help", "no-expand", "no-candidates", "dry-run", "force", "strict", "render"]);
+const MUTATION_CMDS = new Set(["add-node", "add-edge", "set-node", "remove-node", "remove-edge"]);
+
 function parseArgs(argv) {
   const flags = {};
   const pos = [];
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a.startsWith("--")) {
-      const [k, v] = a.slice(2).split("=");
-      if (v !== undefined) flags[k] = v;
-      else if (["depth", "phase", "registry", "spec", "out"].includes(k)) flags[k] = argv[++i];
+      const eq = a.indexOf("=");
+      const k = eq >= 0 ? a.slice(2, eq) : a.slice(2);
+      if (eq >= 0) flags[k] = a.slice(eq + 1);
+      else if (BOOL_FLAGS.has(k)) flags[k] = true;
+      else if (i + 1 < argv.length && !argv[i + 1].startsWith("--")) flags[k] = argv[++i];
       else flags[k] = true;
     } else pos.push(a);
   }
   return { cmd: pos[0], args: pos.slice(1), flags };
 }
 
-const USAGE = `systems-map — the EMBER systems atlas (ADR-0065)
+const USAGE = `systems-map — the EMBER systems atlas (ADR-0065, ADR-0066)
 
-  validate                     check the registry; exit 1 on errors (design warnings listed)
-  affects <id>                 everything a change in <id> can reach (downstream), with how/where/why
-  affected-by <id>             everything that can reach <id> (upstream)
-  impact <id>                  PR-ready report: both directions + review checklist
-  show <id>                    one system's card: parts, direct in/out edges
-  tree [id] [--depth N]        the containment hierarchy with badges
-  find <text>                  search ids, names, summaries, paths
-  stats                        counts, load-bearing systems, DIRECTOR decisions, signals
-  render [--check]             write systems/ATLAS.md + systems/explorer.html (--check: fail if stale)
+  query
+    validate                     check registry + runbooks; exit 1 on errors (design warnings listed)
+    which <path>                 which system(s) own a file or directory
+    checklist <id>               what to touch, check, run — in order — before changing <id>
+    impact <id>                  PR-ready report: both directions + review checklist
+    affects <id>                 everything a change in <id> can reach (downstream), with how/where/why
+    affected-by <id>             everything that can reach <id> (upstream)
+    show <id>                    one system's card: parts, direct in/out edges
+    tree [id] [--depth N]        the containment hierarchy with badges
+    find <text>                  search ids, names, summaries, paths
+    stats                        counts, load-bearing systems, DIRECTOR decisions, signals
+    runbooks | runbook <rb_id>   list the change runbooks / print one with coverage
+    audit-diff [--base <ref>]    map the working tree's changed files to systems; list hard downstream not touched
+
+  write (each validates afterwards and reverts if the ledger would become invalid; --dry-run, --force)
+    add-node --id x --name "..." --parent <id> --status <s> --owner <role> --summary "..." [--phase N --where p --spec § --analogy a --tier N --file f]
+    add-edge --from <dependent> --how <how> --to <dependency> --why "..." [--via v --strength hard|soft --file f]
+    set-node <id> column=value ...     (columns: name parent phase status owner where spec summary analogy; id is immutable)
+    remove-node <id>                   (refused while parts or edges still reference it)
+    remove-edge <from> <how> <to> [--via v]
+
+  render [--check]             write ATLAS.md, atlas/*.md, explorer.html and systems/llm/* (--check: fail if stale)
 
   flags: --depth N  --phase N (hide systems that land after phase N)  --no-expand (do not include contained parts)
-         --no-candidates  --json  --registry <dir>  --spec <file>`;
+         --no-candidates  --json  --registry <dir>  --spec <file> (query commands only; for add-node --spec is the column)`;
 
 export async function loadAll({ registryDir = DEFAULT_REGISTRY_DIR, specFile = DEFAULT_SPEC_FILE, root = process.cwd() } = {}) {
   const dir = path.resolve(root, registryDir || DEFAULT_REGISTRY_DIR);
@@ -958,14 +1149,24 @@ export async function loadAll({ registryDir = DEFAULT_REGISTRY_DIR, specFile = D
   const specPath = path.resolve(root, specFile || DEFAULT_SPEC_FILE);
   const specText = existsSync(specPath) ? await fs.readFile(specPath, "utf8") : null;
   const validation = validate(registry, graph, { specText });
-  return { registry, graph, validation, hash: contentHash(registry), specText };
+  // Runbooks (ADR-0066) validate against the same graph; their findings join the ledger's.
+  const rbmod = await import("./systems-runbooks.mjs");
+  const rbs = await loadRunbooks_(rbmod, path.resolve(root, rbmod.RUNBOOK_DIR));
+  const rv = rbmod.validateRunbooks(rbs.runbooks, graph);
+  validation.errors.push(...rv.errors);
+  validation.warnings.push(...rv.warnings);
+  validation.info.push(...rv.info);
+  validation.ok = validation.errors.length === 0;
+  return { registry, graph, validation, hash: contentHash(registry), specText, runbooks: rbs.runbooks };
 }
+const loadRunbooks_ = (mod, dir) => mod.loadRunbooks(dir);
 
 async function main() {
   const { cmd, args, flags } = parseArgs(process.argv.slice(2));
   if (!cmd || flags.help) { console.log(USAGE); process.exit(cmd ? 0 : 1); }
   const root = process.cwd();
-  const { graph, validation, hash } = await loadAll({ registryDir: flags.registry, specFile: flags.spec, root });
+  const mutation = MUTATION_CMDS.has(cmd);
+  const { graph, validation, hash, runbooks } = await loadAll({ registryDir: flags.registry, specFile: mutation ? undefined : flags.spec, root });
   const opts = {
     depth: flags.depth ? Number(flags.depth) : Infinity,
     expand: !flags["no-expand"],
@@ -1038,8 +1239,79 @@ async function main() {
       console.log(`signals: ${st.signals.length} (${st.signals.filter((s) => s.status === "spec").length} in spec §5, ${st.signals.filter((s) => s.status !== "spec").length} proposed)`);
       break;
     }
+    case "which": {
+      const p = args[0];
+      if (!p) { console.error("usage: which <path>"); process.exit(1); }
+      const r = whichSystems(graph, p, { root });
+      if (flags.json) { console.log(JSON.stringify(r, null, 2)); break; }
+      if (!r.primary.length) { console.log(`no system owns \`${r.path}\` (governance path, or a Where the registry does not record yet)`); process.exit(2); }
+      console.log(`\`${r.path}\` → ${r.primary.map((m) => `\`${m.id}\``).join(", ")}`);
+      for (const m of r.primary) console.log(`  ${nodeCard(graph, m.id).split("\n").slice(0, 2).join("\n  ")}`);
+      const rest = r.all.filter((m) => !r.primary.some((p2) => p2.id === m.id));
+      if (rest.length) console.log(`  also within: ${rest.map((m) => `${m.id} (${m.where})`).join(", ")}`);
+      break;
+    }
+    case "checklist": {
+      const id = args[0];
+      if (!id) { console.error("usage: checklist <id>"); process.exit(1); }
+      const ops = await import("./systems-ops.mjs");
+      const data = ops.checklistData(graph, id, runbooks, opts);
+      await trace("systems_impact_query", { query: "checklist", system: id, hard: data.hard.length, soft: data.soft.length, ripple: data.rippleTotal });
+      console.log(flags.json ? JSON.stringify(data, null, 2) : ops.renderChecklist(data));
+      break;
+    }
+    case "runbooks": {
+      if (flags.json) { console.log(JSON.stringify(runbooks.map((rb) => ({ id: rb.id, name: rb.name, primary: rb.meta.primary, trigger: rb.meta.trigger, steps: rb.steps.length })), null, 2)); break; }
+      if (!runbooks.length) console.log("no runbooks under systems/runbooks/");
+      for (const rb of runbooks) console.log(`${rb.id.padEnd(28)} ${rb.name.padEnd(40)} primary ${rb.meta.primary.padEnd(26)} ${rb.steps.length} steps — ${rb.meta.trigger}`);
+      break;
+    }
+    case "runbook": {
+      const id = args[0];
+      const rb = runbooks.find((r) => r.id === id || r.id === `rb_${id}`);
+      if (!rb) { console.error(`unknown runbook: ${id} (run: runbooks)`); process.exit(1); }
+      const rbmod = await import("./systems-runbooks.mjs");
+      await trace("systems_impact_query", { query: "runbook", system: rb.meta.primary, runbook: rb.id });
+      console.log(flags.json ? JSON.stringify(rbmod.runbookRecord(rb), null, 2) : rbmod.renderRunbook(rb, graph));
+      break;
+    }
+    case "audit-diff": {
+      const ops = await import("./systems-ops.mjs");
+      const files = args.length ? args : ops.changedFiles(root, { base: flags.base || null });
+      const a = ops.auditDiff(graph, runbooks, files);
+      await trace("systems_impact_query", { query: "audit-diff", files: files.length, systems: a.systems.length, gaps: a.gaps });
+      console.log(flags.json ? JSON.stringify(a, null, 2) : ops.renderAudit(a));
+      if (flags.strict && (a.gaps || a.candidates.length || a.generatedTouched)) process.exit(1);
+      break;
+    }
+    case "add-node":
+    case "add-edge":
+    case "set-node":
+    case "remove-node":
+    case "remove-edge": {
+      const ops = await import("./systems-ops.mjs");
+      const mopts = { dryRun: !!flags["dry-run"], force: !!flags.force };
+      let res;
+      if (cmd === "add-node") res = await ops.addNode(root, graph, flags, mopts);
+      else if (cmd === "add-edge") res = await ops.addEdge(root, graph, flags, mopts);
+      else if (cmd === "set-node") { if (!args[0]) { console.error("usage: set-node <id> column=value ..."); process.exit(1); } res = await ops.setNode(root, graph, args[0], ops.parseAssignments(args.slice(1)), mopts); }
+      else if (cmd === "remove-node") { if (!args[0]) { console.error("usage: remove-node <id>"); process.exit(1); } res = await ops.removeNode(root, graph, args[0], mopts); }
+      else { if (args.length < 3) { console.error("usage: remove-edge <from> <how> <to> [--via v]"); process.exit(1); } res = await ops.removeEdge(root, graph, { from: args[0], how: args[1], to: args[2], via: flags.via ?? null }, mopts); }
+      await trace("systems_registry_mutation", { command: cmd, file: res.file, ok: res.ok, reverted: !!res.reverted, dry_run: !!res.dryRun });
+      if (flags.json) { console.log(JSON.stringify(res, null, 2)); process.exit(res.ok ? 0 : 1); }
+      for (const l of res.diff) console.log(l);
+      if (res.dryRun) { console.log(`dry run — nothing written (${res.file})`); break; }
+      if (!res.ok) { console.error(`\n✗ reverted ${res.file}: the change would leave the ledger invalid:`); for (const e2 of res.errors) console.error(`  ✗ ${e2}`); process.exit(1); }
+      console.log(`\n✓ ${res.file}:${res.line} · registry ${res.hash} · ${res.errors.length} error(s), ${res.warnings.length} warning(s)`);
+      if (flags.render) {
+        const all = await loadAll({ root });
+        for (const [rel, content] of renderAll(all.graph, all.validation, { hash: all.hash, runbooks: all.runbooks })) { const p = path.resolve(root, rel); await fs.mkdir(path.dirname(p), { recursive: true }); await fs.writeFile(p, content, "utf8"); }
+        console.log(`rendered ATLAS.md, atlas/, explorer.html, llm/`);
+      } else console.log(`next: scripts/systems-map.sh render   (or pass --render)`);
+      break;
+    }
     case "render": {
-      const files = renderAll(graph, validation, { hash });
+      const files = renderAll(graph, validation, { hash, runbooks });
       if (flags.check) {
         const stale = await staleGenerated(files, root);
         if (stale.length) { console.error(`stale generated file(s): ${stale.join(", ")} — run: node scripts/lib/systems-map.mjs render`); process.exit(1); }
@@ -1047,8 +1319,11 @@ async function main() {
         break;
       }
       for (const [rel, content] of files) { const p = path.resolve(root, rel); await fs.mkdir(path.dirname(p), { recursive: true }); await fs.writeFile(p, content, "utf8"); console.log(`wrote ${rel} (${content.length} bytes)`); }
-      const atlasDir = path.resolve(root, ATLAS_DIR);
-      for (const f of await fs.readdir(atlasDir)) if (f.endsWith(".md") && !files.has(`${ATLAS_DIR}/${f}`)) { await fs.unlink(path.join(atlasDir, f)); console.log(`removed orphan ${ATLAS_DIR}/${f}`); }
+      for (const [dir, ext] of [[ATLAS_DIR, ".md"], [LLM_DIR, ""]]) {
+        const abs = path.resolve(root, dir);
+        if (!existsSync(abs)) continue;
+        for (const f of await fs.readdir(abs)) if (f.endsWith(ext) && !files.has(`${dir}/${f}`)) { await fs.unlink(path.join(abs, f)); console.log(`removed orphan ${dir}/${f}`); }
+      }
       printValidation();
       process.exit(validation.ok ? 0 : 1);
     }

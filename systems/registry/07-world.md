@@ -8,23 +8,22 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 
 | ID | Name | Tier | Parent | Phase | Status | Owner | Where | Spec | Summary | Analogy |
 |---|---|---|---|---|---|---|---|---|---|---|
-| world | World | 1 | — | 1 | spec | world-builder | scenes/; data/biomes/; core/world/ | §1, §3, §11 | Terrain and biomes, generation, environment, travel, places, physics, navigation | The stage everything happens on |
+| world | World | 1 | — | 1 | spec | world-builder/orchestrator | scenes/; data/biomes/; core/world/ | §1, §3, §11 | Terrain and biomes, generation, environment, travel, places, physics, navigation | The stage everything happens on |
 | terrain_biomes | Terrain & biomes | 2 | world | 1 | spec | world-builder | scenes/; data/biomes/ | §3 data/biomes, §11 | Biomes and the terrain, vegetation and water that make them | The painted backdrop and floor of the stage |
-| biome_defs | Biome definitions | 3 | terrain_biomes | 1 | spec | world-builder | data/biomes/ | §3 | One def per biome: palette slice, climate, enemy families, node sets | — |
+| biome_defs | Biome definitions | 3 | terrain_biomes | 0 | spec | world-builder | data/biomes/ | §3 | One def per biome; Phase 0 ships one stub so the sample EnemyDef.biomes resolves (G2) | — |
 | terrain_meshes_heightmap | Terrain meshes | 3 | terrain_biomes | 1 | implied | world-builder | scenes/terrain/ | §11 | Terrain geometry with trimesh collision from the import hook | — |
 | gray_box_island | Gray-box island | 3 | terrain_biomes | 1 | spec | world-builder | scenes/main.tscn | §13 Phase 1 | The Phase 1 island: blockout geometry to test feel | — |
-| vegetation_placement | Vegetation placement | 3 | terrain_biomes | 1 | implied | world-builder | scenes/ | — | Trees and grass placed per biome | — |
+| vegetation_placement | Vegetation placement | 3 | terrain_biomes | 1 | implied | world-builder | scenes/terrain/ | — | Trees and grass placed per biome | — |
 | biome_palette_lighting | Biome palette & light rig | 3 | terrain_biomes | 1 | implied | world-builder | art/; scenes/env/ | §11 art bible | Each biome's palette slice and light rig | — |
-| water_bodies | Water bodies | 3 | terrain_biomes | — | candidate | world-builder | scenes/ | — | Lakes, rivers and sea with swim and drown volumes | — |
-| caves | Caves | 3 | terrain_biomes | — | candidate | world-builder | scenes/ | — | Underground spaces | — |
+| water_bodies | Water bodies | 3 | terrain_biomes | — | candidate | world-builder | scenes/terrain/ | — | Lakes, rivers and sea with swim and drown volumes | — |
+| caves | Caves | 3 | terrain_biomes | — | candidate | world-builder | scenes/terrain/ | — | Underground spaces | — |
 | world_generation | World generation | 2 | world | — | candidate | director | core/world/gen/ | — | Procedural terrain from a seed versus the hand-built world the spec starts with | Rolling a new board every game versus a fixed board |
-| handmade_world | Hand-built world | 3 | world_generation | 1 | implied | world-builder | scenes/ | §13 Phase 1 | The current path: authored scenes | — |
 | world_seed | World seed | 3 | world_generation | — | candidate | orchestrator | core/world/gen/seed.gd | §4 R4 | One seed drives all generation | — |
 | procedural_terrain | Procedural terrain | 3 | world_generation | — | candidate | director | core/world/gen/terrain.gd | — | Noise-based terrain and biome placement | — |
 | chunk_streaming | Chunk streaming | 3 | world_generation | — | candidate | orchestrator | core/world/gen/chunks.gd | — | Load and unload terrain around players | — |
 | poi_placement | Point-of-interest placement | 3 | world_generation | — | candidate | orchestrator | core/world/gen/poi.gd | — | Placing dungeons, villages and landmarks by rule | — |
 | resource_distribution | Resource distribution | 3 | world_generation | — | candidate | orchestrator | core/world/gen/resources.gd | — | Placing resource nodes by biome | — |
-| environment | Environment | 2 | world | 1 | implied | world-builder | scenes/env/; core/world/ | §5 lighting listener | Lighting, fog, weather and seasons | The mood lighting and the weather machine |
+| environment | Environment | 2 | world | 1 | implied | world-builder/orchestrator | scenes/env/; core/world/ | §5 lighting listener | Lighting, fog, weather and seasons | The mood lighting and the weather machine |
 | lighting_day_night | Day/night lighting | 3 | environment | 3 | spec | world-builder | scenes/env/ | §5 day_phase_changed | The light rig follows the clock phase | — |
 | fog_atmosphere | Fog & atmosphere | 3 | environment | 1 | implied | world-builder | scenes/env/ | — | Fog and sky per biome | — |
 | weather | Weather | 3 | environment | — | candidate | director | core/world/weather.gd | — | Rain, storms and snow with gameplay effects; emits weather_changed | — |
@@ -35,25 +34,24 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | markers_waypoints | Markers & waypoints | 3 | travel | 1 | spec | world-builder | scenes/markers/; data/markers/ | §6.7 reach | Named positions quests can target | — |
 | map_minimap | Map data | 3 | travel | 2 | implied | orchestrator | core/world/map.gd | — | Discovered areas, markers and positions the map screens render | — |
 | fast_travel_portals | Fast travel | 3 | travel | — | candidate | director | core/world/travel.gd | — | Portals or waypoints unlocked by discovery | — |
-| roads | Roads | 3 | travel | — | candidate | world-builder | scenes/ | — | Paths that speed travel and guide players | — |
+| roads | Roads | 3 | travel | — | candidate | world-builder | scenes/terrain/ | — | Paths that speed travel and guide players | — |
 | mounts_travel | Mounted travel | 3 | travel | — | candidate | director | core/world/travel.gd | — | Riding for speed | — |
 | boats_ships | Boats & ships | 3 | travel | — | candidate | director | core/world/vehicles.gd | — | Water travel | — |
 | fog_of_war_discovery | Map discovery | 3 | travel | — | candidate | orchestrator | core/world/map.gd | — | The map reveals as explored | — |
 | places | Places | 2 | world | 1 | implied | world-builder | scenes/; data/ | §7.2 world-builder | Villages, dungeon entrances, hubs, landmarks, and candidate cities | The towns and landmarks on the map |
 | villages_settlements | Villages & settlements | 3 | places | 3 | implied | world-builder | scenes/villages/ | §7.2 | NPC settlements with quest givers | — |
-| dungeon_entrances | Dungeon entrances | 3 | places | 2 | implied | world-builder | scenes/ | — | Where dungeons connect to the world | — |
-| spawn_hubs | Spawn hubs | 3 | places | 1 | implied | world-builder | scenes/ | — | Default player spawn locations | — |
-| landmarks_poi | Landmarks | 3 | places | 1 | implied | world-builder | scenes/ | — | Visual anchors for navigation | — |
+| dungeon_entrances | Dungeon entrances | 3 | places | 2 | implied | world-builder | scenes/prefabs/ | — | Where dungeons connect to the world | — |
+| spawn_hubs | Spawn hubs | 3 | places | 1 | implied | world-builder | scenes/markers/ | — | Default player spawn locations | — |
+| landmarks_poi | Landmarks | 3 | places | 1 | implied | world-builder | scenes/prefabs/ | — | Visual anchors for navigation | — |
 | cities | Cities | 3 | places | — | candidate | director | scenes/cities/ | — | Large NPC cities beyond village scale | — |
 | physics_collision | Physics & collision | 2 | world | 1 | spec | orchestrator | tools/import_post.gd; project.godot | §11 | Collision generation, layers and tick settings | The laws of physics on the set |
-| collision_generation_import | Collision on import | 3 | physics_collision | 1 | spec | orchestrator | tools/import_post.gd | §11 | Convex for props, trimesh for terrain, generated automatically | — |
 | collision_layers | Collision layers | 3 | physics_collision | 1 | implied | orchestrator | project.godot | — | Layer and mask conventions for actors, terrain, projectiles, triggers | — |
-| physics_tick_settings | Physics tick settings | 3 | physics_collision | 1 | spec | orchestrator | project.godot | §4 R4 | The fixed physics rate the sim runs on | — |
 | ragdoll | Ragdoll | 3 | physics_collision | — | candidate | world-builder | actors/ | — | Physics death poses; presentation only | — |
-| destructibles | Destructibles | 3 | physics_collision | — | candidate | director | scenes/ | — | Breakable props | — |
+| destructibles | Destructibles | 3 | physics_collision | — | candidate | director | scenes/prefabs/ | — | Breakable props | — |
 | navigation | Navigation | 2 | world | 1 | implied | world-builder/orchestrator | scenes/ | — | Navmesh and links the AI walks on | The sidewalks the AI is allowed to walk on |
-| navmesh_baking | Navmesh baking | 3 | navigation | 1 | implied | world-builder | scenes/ | — | Baked navigation regions, rebaked when geometry changes | — |
-| nav_regions_links | Nav regions & links | 3 | navigation | 1 | implied | world-builder | scenes/ | — | Regions and links across gaps | — |
+| navmesh_baking | Navmesh baking | 3 | navigation | 1 | implied | world-builder | scenes/terrain/nav/; tools/bake_navmesh.gd | — | Baked navigation regions, rebaked when geometry changes | — |
+| nav_regions_links | Nav regions & links | 3 | navigation | 1 | implied | world-builder | scenes/terrain/nav/ | — | Regions and links across gaps | — |
+| scene_transitions_loading | Scene transitions & loading | 3 | travel | 2 | implied | orchestrator | core/world/scene_loader.gd; scenes/loading.tscn | §3 scenes/ | Loading and switching scenes — entering a dungeon, a loading screen — while actor state crosses the switch as data | — |
 
 ## Edges
 
@@ -61,7 +59,6 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 |---|---|---|---|---|---|
 | biome_defs | reads | schema_biome_def | BiomeDef | hard | Biomes need a schema |
 | biome_defs | reads | art_bible_palette | palette slice | hard | Each biome takes its colors from the art bible |
-| terrain_meshes_heightmap | reads | collision_generation_import | trimesh | hard | Terrain collision is generated on import |
 | terrain_meshes_heightmap | reads | import_hook | scale and material | hard | Terrain meshes pass through the import hook |
 | gray_box_island | reads | terrain_meshes_heightmap | blockout | hard | The island is terrain |
 | gray_box_island | reads | spawn_hubs | start point | hard | The island needs a spawn |
@@ -72,7 +69,6 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | water_bodies | reads | collision_layers | water volume layer | hard | Water volumes are a collision layer |
 | caves | reads | terrain_meshes_heightmap | carved terrain | hard | Caves are terrain |
 | caves | reads | navmesh_baking | navigation | hard | Enemies navigate caves |
-| handmade_world | reads | terrain_meshes_heightmap | authored terrain | hard | The world is authored terrain scenes |
 | world_seed | reads | deterministic_sim | seeded generation | hard | The seed is the root of deterministic generation |
 | procedural_terrain | reads | world_seed | seed | hard | Terrain derives from the seed |
 | procedural_terrain | reads | biome_defs | biome placement | hard | Generation places biomes |
@@ -104,7 +100,6 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | roads | reads | terrain_meshes_heightmap | road mesh | hard | Roads are terrain features |
 | roads | reads | navmesh_baking | preferred paths | hard | AI should prefer roads |
 | roads | reads | movement_terrain_rules | speed bonus | hard | Roads are a surface type |
-| mounts_travel | reads | mounts | mount actors | hard | Mounted travel needs mounts |
 | mounts_travel | reads | locomotion | rider control | hard | Riding replaces walking |
 | boats_ships | reads | water_bodies | water | hard | Boats need water |
 | boats_ships | reads | physics_collision | buoyancy and collision | hard | Boats are physics bodies |
@@ -118,13 +113,14 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | landmarks_poi | reads | import_hook | meshes | hard | Landmark meshes pass through the import hook |
 | cities | extends | villages_settlements | scale | hard | A city is a large settlement |
 | cities | reads | npc_schedules_routines | living city | soft | Cities want routines to feel alive |
-| collision_generation_import | extends | import_hook | collision step | hard | Collision generation is one step of the import hook |
 | collision_layers | reads | project_settings | layer names | hard | Layers are project settings |
-| physics_tick_settings | extends | project_settings | tick rate | hard | The tick rate is a project setting |
 | ragdoll | reads | rigs_skeletons | rig | hard | Ragdolls are built on the rig |
 | ragdoll | reads | sim_presentation_split | never affects sim | hard | A ragdoll is presentation; it must not move gameplay state (R5) |
 | destructibles | reads | damage_model | damage taken | soft | Props take damage |
 | destructibles | reads | structure_damage_repair | shared health model | soft | Props and structures share a damage model |
 | navmesh_baking | reads | terrain_meshes_heightmap | walkable surfaces | hard | The navmesh is baked from terrain |
-| navmesh_baking | reads | collision_generation_import | obstacles | hard | Collision shapes define obstacles |
 | nav_regions_links | reads | navmesh_baking | regions | hard | Links connect baked regions |
+| navmesh_baking | reads | import_hook | — | hard | The navmesh bakes on the collision the import hook generated |
+| mounts_travel | reads | actor_prefabs_scenes | — | hard | A mount is an actor prefab the player rides |
+| dungeon_entrances | reads | scene_transitions_loading | — | hard | Entering a dungeon loads its scene |
+| scene_transitions_loading | reads | state_serialization | — | soft | From Phase 3 actor state crosses a scene switch as serialized data; before that it stays in memory |

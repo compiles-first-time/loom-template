@@ -8,7 +8,7 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 
 | ID | Name | Tier | Parent | Phase | Status | Owner | Where | Spec | Summary | Analogy |
 |---|---|---|---|---|---|---|---|---|---|---|
-| narrative | Narrative | 1 | — | 2 | spec | quest-writer | core/quests/; core/dialogue/; data/quests/; data/dialogue/; docs/lore_bible.md | §6.7, §6.8 | Quests, dialogue, lore, onboarding, live events, in-engine story moments | The storyteller's notebook and the town notice board |
+| narrative | Narrative | 1 | — | 2 | spec | quest-writer/orchestrator | core/quests/; core/dialogue/; data/quests/; data/dialogue/; docs/lore_bible.md | §6.7, §6.8 | Quests, dialogue, lore, onboarding, live events, in-engine story moments | The storyteller's notebook and the town notice board |
 | quests | Quest system | 2 | narrative | 2 | spec | orchestrator/quest-writer | core/quests/; data/quests/ | §6.7, §5 quest_started, quest_objective_progressed, quest_completed | Definitions, objective types, tracking, prerequisites, rewards, journal | The errand board with checklists |
 | quest_defs | Quest definitions | 3 | quests | 0 | spec | quest-writer | data/quests/ | §6.7 | giver_npc, prereqs, objectives, rewards, dialogue, journal_text | — |
 | objective_types | Objective types | 3 | quests | 2 | spec | orchestrator | core/quests/objectives.gd | §6.7 objectives.type | kill, collect, reach, talk, craft; each resolves its target_id against a different content type | — |
@@ -30,7 +30,7 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | lore_additions | Lore additions | 3 | lore | 0 | spec | quest-writer | docs/lore/ | §7.2 | Proposed additions filed for approval instead of contradicting the bible | — |
 | naming_conventions_lore | Naming conventions | 3 | lore | 0 | implied | quest-writer | docs/lore_bible.md | — | Names of places, factions and people that ids and display names follow | — |
 | lore_entries_codex | Codex entries | 3 | lore | — | candidate | quest-writer | data/lore/ | — | Discoverable in-game lore entries | — |
-| onboarding_tutorial | Onboarding & tutorial | 2 | narrative | — | candidate | quest-writer | data/quests/; ui/hints/ | — | The first hour: tutorial quests and just-in-time hints | The first-day orientation tour |
+| onboarding_tutorial | Onboarding & tutorial | 2 | narrative | — | candidate | quest-writer/orchestrator | data/quests/; ui/hints/ | — | The first hour: tutorial quests and just-in-time hints | The first-day orientation tour |
 | tutorial_quests | Tutorial quests | 3 | onboarding_tutorial | — | candidate | quest-writer | data/quests/ | — | Guided first quests that teach the loop | — |
 | contextual_hints | Contextual hints | 3 | onboarding_tutorial | — | candidate | orchestrator | ui/hints/ | — | Tips shown the first time a situation occurs | — |
 | live_events | Live events & holidays | 2 | narrative | — | candidate | director | data/events/; core/events_calendar/ | — | Holidays and seasonal events on a calendar | Seasonal festivals on the town calendar |
@@ -47,14 +47,12 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | From | How | To | Via | Strength | Why |
 |---|---|---|---|---|---|
 | quest_defs | reads | schema_quest_def | QuestDef | hard | Every quest file must match the schema |
-| quest_defs | references | npc_defs | QuestDef.giver_npc | hard | A quest names its giver |
 | quest_defs | references | dialogue_nodes_choices | QuestDef.dialogue | hard | A quest names its dialogue |
 | quest_defs | reads | lore_bible | voice and facts | soft | Quests are written in the bible's voice |
 | objective_types | reads | schema_quest_def | objectives.type enum | hard | The five types are the schema's enum |
 | objective_types | references | enemy_defs | kill target_id | hard | A kill objective names an enemy |
 | objective_types | references | items | collect target_id | hard | A collect objective names an item |
 | objective_types | references | markers_waypoints | reach target_id | hard | A reach objective names a marker |
-| objective_types | references | npc_defs | talk target_id | hard | A talk objective names an NPC |
 | objective_types | references | items | craft target_id | hard | A craft objective names the item crafted |
 | objective_tracking | reads | objective_types | type per objective | hard | The tracker counts per type |
 | objective_tracking | reads | quest_defs | objectives and counts | hard | Required counts come from the quest |
@@ -93,7 +91,6 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | contextual_hints | reads | world_state_flags | shown once | hard | Hints track whether they have been shown |
 | contextual_hints | reads | interaction_system | prompts | soft | Hints attach to interaction prompts |
 | holiday_defs | reads | event_calendar | active window | hard | A holiday is active on calendar dates |
-| holiday_defs | reads | id_convention | ids | hard | Holidays would carry ids like all content |
 | event_calendar | reads | world_clock_ticks | game time | hard | Game-time events read the clock |
 | event_calendar | reads | seasons_calendar | seasons | soft | Seasonal events read the season |
 | event_calendar | reads | deterministic_sim | no wall-clock in core | hard | Real-date holidays need wall-clock time, which R4 bans inside core/; the date must be injected from outside the sim |
@@ -105,3 +102,8 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | scripted_sequences | reads | condition_evaluator | trigger | soft | Sequences trigger on conditions |
 | camera_cues | reads | camera | rig control | hard | Cues drive the camera rig |
 | camera_cues | reads | scripted_sequences | timing | hard | Cues are timed inside sequences |
+| quest_defs | references | npc_defs | giver_npc (optional) | soft | giver_npc is optional (empty = auto-granted); the Phase 0 sample quest has no giver |
+| objective_types | references | npc_defs | talk target_id | soft | talk objectives name an npc id; unusable until NPCs land in Phase 3 |
+| dialogue_runner | reads | interaction_system | interact target id | hard | Talking is an interact on an NPC |
+| dialogue_runner | reads | schema_dialogue_def | goto end | soft | The runner follows goto and stops at end |
+| objective_types | references | quest_items | — | soft | Collect objectives usually name quest items |
