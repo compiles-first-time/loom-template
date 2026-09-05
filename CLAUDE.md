@@ -1,7 +1,7 @@
 # CLAUDE.md — EMBER
 
 > **Project:** `ember` — co-op survival RPG (2–10 players per server), WoW-style systems, stylized, hardcore-leaning. **Godot 4.x + GDScript.**
-> **Substrate:** Loom 1.0.0 · Kernel v6 · cloned from `loom-template` on `2026-09-04`. **LR-08:** never push to the template; upstream is fetch-only.
+> **Substrate:** Loom 1.0.0 · Kernel v6 · cloned from `loom-template` on `2026-09-04`. **LR-08:** never push to the template; upstream is fetch-only. Until `ember` exists, pushes go only to the seed branch — ratified by the Director 2026-09-05.
 > **The law lives in [`GAME_INFRA_SPEC.md`](./GAME_INFRA_SPEC.md).** Read it before your first action each session. On any conflict the spec wins over this file. Cite rule ids (R1, G2…) when you act or refuse. Anything marked **DIRECTOR** is Nick's decision: stop and ask. Ambiguity: ask, don't guess.
 
 This file is the entry point for Claude and Claude Code. Hard cap ~10 KB — detail lives in the spec, [`systems/`](./systems/), and [`layers/`](./layers/).
@@ -62,7 +62,6 @@ Skills for the four game roles: `.claude/skills/<name>/SKILL.md` (materialize fr
 - **Repo layout:** the Godot project root (`res://`) and Loom's governance folders share this root. Add `.gdignore` to `adr/`, `layers/`, `scripts/`, `systems/` and the rest so Godot ignores them, or move the game under `game/`? Also §3 lists no `data/building`, `data/npcs`, `data/encounters`, `data/markers`, `data/dungeons`, `data/stations` or `server/`, which the atlas needs — amend §3.
 - **Phase 0 console:** `give`, `spawn`, `tp`, `time` need inventory (P2), spawning (P1), the actor registry (P1) and the clock (P3) — the 4 findings in `validate`. Stub them in P0, or move the console to Phase 2 (where §13's phase map puts it)?
 - **12 proposed signals** need §5 rows (R-EB1): 7 are required (spec/implied systems emit them), 5 are candidates — names in `systems/ATLAS.md` §EventBus and in `scripts/systems-map.sh validate`.
-- **LR-08 (escalated by the Critic):** the seed branch received pushes after the founding one; the exception allowing that is a *proposal* in `constitution/local-rules.md`, deviations logged, until you ratify or reject it with a dated line.
 - **Spec seams the atlas found:** §7.1 grants nobody `actors/**`, `audio/**`, `data/npcs/**`, `data/dungeons/**`, `data/markers/**`; §7.2 has content-smith write `art/_inbox/icon_requests.md`; §8 runs G4's gather/craft from Phase 1 while §13 lands them in Phase 3. Amend the spec, or reassign owners. Fill `systems/codeowners.json` (teams or your username).
 - **230 candidate systems** — asked for, not in the spec; none is built until it is. Decide by domain in `systems/ATLAS.md` §DIRECTOR decisions.
 
