@@ -23,8 +23,8 @@
 import path from "node:path";
 import os from "node:os";
 import { promises as fs, existsSync } from "node:fs";
-import { loadRegistry, buildGraph, whichSystems, affects, subtreeIds, DEFAULT_REGISTRY_DIR, ATLAS_FILE, ATLAS_DIR, EXPLORER_FILE, LLM_DIR } from "./systems-map.mjs";
-import { loadRunbooks, runbooksFor, RUNBOOK_DIR } from "./systems-runbooks.mjs";
+import { loadRegistry, buildGraph, whichSystems, affects, DEFAULT_REGISTRY_DIR, ATLAS_FILE, ATLAS_DIR, EXPLORER_FILE, LLM_DIR } from "./systems-map.mjs";
+import { loadRunbooks, runbooksFor, coverageTargets, RUNBOOK_DIR } from "./systems-runbooks.mjs";
 import { WRITE_SCOPES } from "./systems-ops.mjs";
 
 const EDIT_TOOLS = new Set(["Edit", "Write", "MultiEdit", "NotebookEdit", "mcp__filesystem__write_file", "mcp__filesystem__edit_file", "mcp__filesystem__create_directory", "mcp__filesystem__move_file"]);
@@ -127,9 +127,8 @@ export async function editContextFor({ tool, input, root = process.cwd(), sessio
   const lines = [];
   for (const id of fresh.slice(0, 3)) {
     const n = graph.nodes.get(id);
-    const own = new Set(subtreeIds(graph, id));
-    const hard = affects(graph, id, { depth: 1 }).hits.filter((h) => h.edge.strength === "hard" && !h.id.startsWith("sig_") && !own.has(h.id));
-    const hardIds = [...new Set(hard.map((h) => h.id))].sort();
+    // The same "direct hard downstream" the checklist and the runbook coverage rule use.
+    const hardIds = [...new Set(coverageTargets(graph, id).map((h) => h.id))].sort();
     const emits = affects(graph, id, { depth: 1 }).hits.filter((h) => h.id.startsWith("sig_")).map((h) => h.id.slice(4));
     const rbs = runbooksFor(rb.runbooks, graph, id);
     const rbIds = [...rbs.primary, ...rbs.related].map((r) => r.id);

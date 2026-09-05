@@ -58,7 +58,9 @@ export function checklistData(graph, id, runbooks = [], opts = {}) {
   if (!n) throw new Error(`unknown system id: ${id}`);
   const own = new Set(subtreeIds(graph, id));
   const d1 = affects(graph, id, { ...opts, depth: 1 });
-  const direct = d1.hits.filter((h) => !own.has(h.id));
+  // Listeners reached through this system's own signals belong to the signal, not to the
+  // system (the same rule the hook and the runbook coverage check apply).
+  const direct = d1.hits.filter((h) => !own.has(h.id) && !isSignal(h.viaNode));
   const row = (h) => {
     const t = graph.nodes.get(h.id);
     return { id: h.id, name: t.name, path: pathOf(graph, h.id), where: t.where, how: h.edge.how, via: h.edge.via, strength: h.edge.strength, why: h.edge.why, owner: t.owner, status: t.status, phase: t.phase };
@@ -254,16 +256,52 @@ const rowLine = (header, values) => `| ${header.map((h) => cell(values[h])).join
 async function readFile(root, file) { return fs.readFile(path.join(root, DEFAULT_REGISTRY_DIR, file), "utf8"); }
 async function writeFile(root, file, text) { return fs.writeFile(path.join(root, DEFAULT_REGISTRY_DIR, file), text, "utf8"); }
 
-/** Re-load and validate; on new errors restore the previous text unless forced. */
-async function commit(root, file, before, after, { dryRun = false, force = false } = {}) {
-  if (dryRun) return { ok: true, dryRun: true, diff: diffLines(before, after) };
+/**
+ * The text a mutation edits is the text the graph was built from — not a fresh
+ * read. `commit()` then refuses the write if the file on disk differs, so a
+ * stale graph (another process wrote the file since it was loaded) can never
+ * produce a row at the wrong line or clobber someone else's change.
+ */
+async function sourceOf(root, graph, file) {
+  const src = graph?.registry?.sources?.find((s) => s.file === file);
+  return src ? src.text : readFile(root, file);
+}
+
+/** Rule 22: every mutation is traced from here, whatever called it (CLI, a script, a test). Never throws. */
+async function trace(fields) {
+  try {
+    const lib = await import("../hooks/_lib.mjs");
+    lib.appendEvent(lib.mechanicalRecord("systems_registry_mutation", { session_id: process.env.CLAUDE_SESSION_ID || "cli", ...fields }));
+  } catch { /* the trace never blocks the write */ }
+}
+
+/**
+ * Write, re-load, validate; on errors restore the previous text unless forced.
+ * Refuses to write when the file changed on disk since it was read (drift), and
+ * reports — rather than hides — a revert that itself fails.
+ */
+async function commit(root, file, before, after, { dryRun = false, force = false, op = "mutation" } = {}) {
+  const diff = diffLines(before, after);
+  if (dryRun) { await trace({ op, file, dry_run: true, ok: true }); return { ok: true, dryRun: true, diff }; }
+  const current = await readFile(root, file);
+  if (current !== before) {
+    await trace({ op, file, ok: false, drift: true });
+    return { ok: false, drift: true, errors: [`${file} changed on disk between read and write — re-run the command on a fresh read`], diff };
+  }
   await writeFile(root, file, after);
   const all = await loadAll({ root });
   if (all.validation.errors.length && !force) {
-    await writeFile(root, file, before);
-    return { ok: false, reverted: true, errors: all.validation.errors, diff: diffLines(before, after) };
+    try {
+      await writeFile(root, file, before);
+    } catch (err) {
+      await trace({ op, file, ok: false, reverted: false, revert_failed: true });
+      return { ok: false, reverted: false, errors: [`could not revert ${file} after a failed validation (${err.message}) — the registry may be invalid; restore it from git`, ...all.validation.errors], diff };
+    }
+    await trace({ op, file, ok: false, reverted: true, errors: all.validation.errors.length });
+    return { ok: false, reverted: true, errors: all.validation.errors, diff };
   }
-  return { ok: true, errors: all.validation.errors, warnings: all.validation.warnings, hash: all.hash, diff: diffLines(before, after) };
+  await trace({ op, file, ok: true, forced: force && all.validation.errors.length > 0, hash: all.hash, warnings: all.validation.warnings.length });
+  return { ok: true, errors: all.validation.errors, warnings: all.validation.warnings, hash: all.hash, diff };
 }
 
 function diffLines(before, after) {
@@ -310,7 +348,7 @@ export async function addNode(root, graph, f, opts = {}) {
     if (tier !== 1) throw new Error(`add-node: a tier ${tier} node needs --parent`);
     if (!file) throw new Error(`add-node: a tier-1 node needs --file <NN-domain.md> (a new domain file must already carry the two table headers)`);
   }
-  const before = await readFile(root, file);
+  const before = await sourceOf(root, graph, file);
   const lines = before.split(/\r?\n/);
   const nt = findTable(before, "Nodes");
   if (!nt) throw new Error(`add-node: ${file} has no Nodes table`);
@@ -323,7 +361,7 @@ export async function addNode(root, graph, f, opts = {}) {
   const idx = tableInsertIndex(lines, nt);
   lines.splice(idx + 1, 0, rowLine(nt.header, values));
   const after = lines.join("\n");
-  return { file, line: idx + 2, ...(await commit(root, file, before, after, opts)) };
+  return { file, line: idx + 2, ...(await commit(root, file, before, after, { ...opts, op: "add-node" })) };
 }
 
 /** Add an edge row. Signal edges go to the foundation file (where all bus wiring lives); others to the From node's domain file. */
@@ -338,14 +376,14 @@ export async function addEdge(root, graph, f, opts = {}) {
   if (dup) throw new Error(`add-edge: that edge already exists (${dup.file}:${dup.line})`);
   const signalInvolved = isSignal(f.from) || isSignal(f.to);
   const file = f.file || (signalInvolved ? graph.nodes.get("event_bus")?.file || domainFileOf(graph, f.from) : domainFileOf(graph, f.from));
-  const before = await readFile(root, file);
+  const before = await sourceOf(root, graph, file);
   const lines = before.split(/\r?\n/);
   const et = findTable(before, "Edges");
   if (!et) throw new Error(`add-edge: ${file} has no Edges table`);
   const values = { from: f.from, how: f.how, to: f.to, via: f.via || "—", strength, why: f.why };
   const idx = tableInsertIndex(lines, et);
   lines.splice(idx + 1, 0, rowLine(et.header, values));
-  return { file, line: idx + 2, ...(await commit(root, file, before, lines.join("\n"), opts)) };
+  return { file, line: idx + 2, ...(await commit(root, file, before, lines.join("\n"), { ...opts, op: "add-edge" })) };
 }
 
 /** Rewrite cells of an existing node row. `changes` is { column: value }. The id is immutable (R7). */
@@ -361,7 +399,7 @@ export async function setNode(root, graph, id, changes, opts = {}) {
   if (changes.parent && graph.nodes.has(changes.parent) && graph.nodes.get(changes.parent).domain !== n.domain) {
     throw new Error(`set-node: moving ${id} into another domain (${graph.nodes.get(changes.parent).domain}) means moving its row to that file — use remove-node + add-node`);
   }
-  const before = await readFile(root, n.file);
+  const before = await sourceOf(root, graph, n.file);
   const lines = before.split(/\r?\n/);
   const nt = findTable(before, "Nodes");
   const rowIdx = n.line - 1;
@@ -371,7 +409,7 @@ export async function setNode(root, graph, id, changes, opts = {}) {
   if (values.id !== id) throw new Error(`set-node: row at ${n.file}:${n.line} is not ${id} (registry changed under us — re-run)`);
   for (const [k, v] of Object.entries(changes)) values[k] = v;
   lines[rowIdx] = rowLine(nt.header, values);
-  return { file: n.file, line: n.line, ...(await commit(root, n.file, before, lines.join("\n"), opts)) };
+  return { file: n.file, line: n.line, ...(await commit(root, n.file, before, lines.join("\n"), { ...opts, op: "set-node" })) };
 }
 
 /** Delete a node row. Refuses while children or edges still point at it. */
@@ -381,12 +419,12 @@ export async function removeNode(root, graph, id, opts = {}) {
   if (n.children.length) throw new Error(`remove-node: ${id} still has parts: ${n.children.join(", ")} — move or remove them first`);
   const refs = graph.registry.edges.filter((e) => e.from === id || e.to === id);
   if (refs.length) throw new Error(`remove-node: ${id} is still wired by ${refs.length} edge(s): ${refs.slice(0, 6).map((e) => `${e.from} ${e.how} ${e.to} (${e.file}:${e.line})`).join("; ")}${refs.length > 6 ? " …" : ""} — remove-edge them first`);
-  const before = await readFile(root, n.file);
+  const before = await sourceOf(root, graph, n.file);
   const lines = before.split(/\r?\n/);
   const cells = splitRow(lines[n.line - 1]);
   if (cells[0] !== id) throw new Error(`remove-node: row at ${n.file}:${n.line} is not ${id} (registry changed under us — re-run)`);
   lines.splice(n.line - 1, 1);
-  return { file: n.file, line: n.line, ...(await commit(root, n.file, before, lines.join("\n"), opts)) };
+  return { file: n.file, line: n.line, ...(await commit(root, n.file, before, lines.join("\n"), { ...opts, op: "remove-node" })) };
 }
 
 /** Delete an edge row identified by from/how/to (and via when several match). */
@@ -396,12 +434,12 @@ export async function removeEdge(root, graph, f, opts = {}) {
   if (!matches.length) throw new Error(`remove-edge: no edge ${f.from} ${f.how} ${f.to}${f.via ? ` via ${f.via}` : ""}`);
   if (matches.length > 1) throw new Error(`remove-edge: ${matches.length} edges match — disambiguate with --via: ${matches.map((e) => `"${e.via}"`).join(", ")}`);
   const e = matches[0];
-  const before = await readFile(root, e.file);
+  const before = await sourceOf(root, graph, e.file);
   const lines = before.split(/\r?\n/);
   const cells = splitRow(lines[e.line - 1]);
   if (cells[0] !== e.from) throw new Error(`remove-edge: row at ${e.file}:${e.line} is not that edge (registry changed under us — re-run)`);
   lines.splice(e.line - 1, 1);
-  return { file: e.file, line: e.line, ...(await commit(root, e.file, before, lines.join("\n"), opts)) };
+  return { file: e.file, line: e.line, ...(await commit(root, e.file, before, lines.join("\n"), { ...opts, op: "remove-edge" })) };
 }
 
 /** Column names for `set-node` args of the form column=value. */

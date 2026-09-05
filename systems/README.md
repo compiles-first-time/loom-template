@@ -70,6 +70,7 @@ A runbook turns "what moves" into "do this, in this order, verify with that". On
 | Director | none | or the decision the Director must make first
 | Spec | §6.1, §11 |
 | Not touched | equipment: only when slot != none (step 9); ... |
+| Coverage | direct |                     ← default; `through-signals` for a runbook that changes the bus itself
 
 ## Steps
 | # | Action | System | Artifact | Verify | Note |
@@ -77,7 +78,9 @@ A runbook turns "what moves" into "do this, in this order, verify with that". On
 | 1 | create | items | data/_inbox/<id>.json | converter accepts it | ... |
 ```
 
-Actions: `create` · `update` · `delete` · `check` · `run` · `decide` (a DIRECTOR stop; the only action allowed without a System). The validator makes runbooks honest: **every System cell must be a registry id**, and **every direct hard downstream of the Primary system must appear as a step or under `Not touched` with a reason**. A runbook that silently skips a system the map says is affected fails the check. `render` publishes runbooks into `llm/runbooks.jsonl`; `checklist <id>` attaches the runbooks whose primary is (or contains) the system.
+Actions: `create` · `update` · `delete` · `check` · `run` · `decide` (a DIRECTOR stop; the only action allowed without a System). The validator makes runbooks honest: **every System cell must be a registry id**, and **every direct hard downstream of the Primary system must appear as a step or under `Not touched` with a reason**. A runbook that silently skips a system the map says is affected fails the check.
+
+**One rule about signals, applied everywhere:** a listener reached *through* a system's own signal belongs to the signal, not to the system — adding a signal to the bus does not break the listeners of the other signals. The runbook coverage check, the hook's "direct hard downstream" and the checklist all compute it the same way (`coverageTargets`). A runbook that changes how the bus itself dispatches opts in with `Coverage: through-signals`, and every listener becomes a target. `render` publishes runbooks into `llm/runbooks.jsonl`; `checklist <id>` attaches the runbooks whose primary is (or contains) the system.
 
 Write a runbook when a kind of change will happen more than once. The first 17 cover the §6 nouns (item, material, recipe, spell, status effect, enemy, loot table, quest, dialogue, NPC, biome, building piece), the two contracts (signal, schema field), a new verb, retiring content, and adding a system to the atlas itself.
 

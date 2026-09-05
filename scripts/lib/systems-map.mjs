@@ -998,7 +998,7 @@ export function renderLlmPack(graph, validation, { hash = "", runbooks = [] } = 
   const rbLines = runbooks.map((rb) => JSON.stringify({
     id: rb.id, name: rb.name, trigger: rb.meta.trigger, primary: rb.meta.primary, roles: rb.meta.roles, director: rb.meta.director || "none", spec: rb.meta.spec,
     steps: rb.steps.map((s) => compact({ n: s.n, action: s.action, system: s.system, artifact: s.artifact, verify: s.verify, note: s.note })),
-    not_touched: rb.meta.notTouched, file: `systems/runbooks/${rb.file}`,
+    not_touched: rb.meta.notTouched, coverage: rb.meta.coverage, file: `systems/runbooks/${rb.file}`,
   }));
   const signals = st.signals.map((s) => ({ id: s.id, signal: s.id.slice(SIGNAL_PREFIX.length), status: s.status, emitters: (graph.in.get(s.id) || []).filter((ie) => ie.how === "emits").map((ie) => ie.src), listeners: (graph.out.get(s.id) || []).filter((ie) => ie.how === "listens").map((ie) => ie.dst) }));
   const candidatesByDomain = {};
@@ -1297,7 +1297,7 @@ async function main() {
       else if (cmd === "set-node") { if (!args[0]) { console.error("usage: set-node <id> column=value ..."); process.exit(1); } res = await ops.setNode(root, graph, args[0], ops.parseAssignments(args.slice(1)), mopts); }
       else if (cmd === "remove-node") { if (!args[0]) { console.error("usage: remove-node <id>"); process.exit(1); } res = await ops.removeNode(root, graph, args[0], mopts); }
       else { if (args.length < 3) { console.error("usage: remove-edge <from> <how> <to> [--via v]"); process.exit(1); } res = await ops.removeEdge(root, graph, { from: args[0], how: args[1], to: args[2], via: flags.via ?? null }, mopts); }
-      await trace("systems_registry_mutation", { command: cmd, file: res.file, ok: res.ok, reverted: !!res.reverted, dry_run: !!res.dryRun });
+      // (the Rule 22 trace is written by the mutation itself, whatever called it)
       if (flags.json) { console.log(JSON.stringify(res, null, 2)); process.exit(res.ok ? 0 : 1); }
       for (const l of res.diff) console.log(l);
       if (res.dryRun) { console.log(`dry run — nothing written (${res.file})`); break; }

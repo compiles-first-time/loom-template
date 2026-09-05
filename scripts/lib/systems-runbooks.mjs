@@ -42,7 +42,8 @@ export const RUNBOOK_DIR = "systems/runbooks";
 export const RUNBOOK_PREFIX = "rb_";
 export const ACTIONS = ["create", "update", "delete", "check", "run", "decide"];
 export const STEP_COLUMNS = ["#", "action", "system", "artifact", "verify", "note"];
-export const META_FIELDS = ["trigger", "primary", "roles", "director", "spec", "not touched"];
+export const META_FIELDS = ["trigger", "primary", "roles", "director", "spec", "not touched", "coverage"];
+export const COVERAGE_MODES = ["direct", "through-signals"];
 
 const DASH = new Set(["", "—", "-", "–", "n/a", "none"]);
 const isDash = (s) => DASH.has(String(s ?? "").trim().toLowerCase());
@@ -72,7 +73,7 @@ export function parseRunbookText(text, file = "<memory>") {
   const name = m ? m[2].trim() : title;
   if (!m) problems.push(`${file}:${Math.max(titleIdx, 0) + 1}: title must read "# rb_<name> — <Title>"`);
 
-  const meta = { trigger: "", primary: "", roles: [], director: "", spec: "", notTouched: [] };
+  const meta = { trigger: "", primary: "", roles: [], director: "", spec: "", notTouched: [], coverage: "direct" };
   const mt = findTable(text, "Runbook");
   if (!mt) problems.push(`${file}: no \`## Runbook\` table`);
   else {
@@ -85,6 +86,7 @@ export function parseRunbookText(text, file = "<memory>") {
       else if (k === "director") meta.director = isDash(v) ? "" : v;
       else if (k === "spec") meta.spec = isDash(v) ? "" : v;
       else if (k === "not touched") meta.notTouched = parseNotTouched(v);
+      else if (k === "coverage") meta.coverage = isDash(v) ? "direct" : v.toLowerCase();
       else problems.push(`${file}:${r.line}: unknown runbook field "${k}" (allowed: ${META_FIELDS.join(", ")})`);
     }
   }
@@ -143,16 +145,18 @@ function coveredBy(graph, id, stepSystems) {
 }
 
 /**
- * Direct hard-downstream systems of the primary (its parts included). Signals are
- * excluded, and so is anything reached THROUGH one of the primary's own signal
- * parts: a listener of an existing signal is a consumer of that signal, not
- * something a change to the emitting system breaks (this matters for event_bus,
- * whose parts are all the signals).
+ * Direct hard-downstream systems of the primary (its parts included). Signals
+ * themselves are excluded. By default so is anything reached THROUGH one of the
+ * primary's own signal parts: a listener of an existing signal is a consumer of
+ * that signal, not something adding a signal breaks (this matters for event_bus,
+ * whose parts are all the signals). A runbook that changes how the bus itself
+ * dispatches opts in with `Coverage: through-signals`, and every listener becomes
+ * a target. The hook and the checklist apply the same default rule.
  */
-export function coverageTargets(graph, primary) {
+export function coverageTargets(graph, primary, { throughSignals = false } = {}) {
   if (!graph.nodes.has(primary)) return [];
   const own = new Set(subtreeIds(graph, primary));
-  return affects(graph, primary, { depth: 1 }).hits.filter((h) => h.edge.strength === "hard" && !isSignal(h.id) && !own.has(h.id) && !isSignal(h.viaNode));
+  return affects(graph, primary, { depth: 1 }).hits.filter((h) => h.edge.strength === "hard" && !isSignal(h.id) && !own.has(h.id) && (throughSignals || !isSignal(h.viaNode)));
 }
 
 /** Validate runbooks against the registry graph. Returns { errors, warnings, info }. */
@@ -173,6 +177,7 @@ export function validateRunbooks(runbooks, graph) {
     if (!rb.meta.primary) errors.push(`${at(rb)}: ${rb.id} has no Primary system`);
     else if (!graph.nodes.has(rb.meta.primary)) errors.push(`${at(rb)}: ${rb.id} Primary "${rb.meta.primary}" is not a registry id`);
     for (const role of rb.meta.roles) if (!OWNERS.includes(role)) errors.push(`${at(rb)}: ${rb.id} role "${role}" not in ${OWNERS.join("|")}`);
+    if (!COVERAGE_MODES.includes(rb.meta.coverage)) errors.push(`${at(rb)}: ${rb.id} Coverage "${rb.meta.coverage}" must be ${COVERAGE_MODES.join("|")}`);
     for (const nt of rb.meta.notTouched) {
       if (!graph.nodes.has(nt.system)) errors.push(`${at(rb)}: ${rb.id} "Not touched" names unknown system "${nt.system}"`);
       if (!nt.reason) errors.push(`${at(rb)}: ${rb.id} "Not touched: ${nt.system}" has no reason — write why it is safe to skip`);
@@ -189,7 +194,7 @@ export function validateRunbooks(runbooks, graph) {
     }
     if (rb.meta.primary && graph.nodes.has(rb.meta.primary)) {
       const nt = new Set(rb.meta.notTouched.map((x) => x.system));
-      for (const h of coverageTargets(graph, rb.meta.primary)) {
+      for (const h of coverageTargets(graph, rb.meta.primary, { throughSignals: rb.meta.coverage === "through-signals" })) {
         if (coveredBy(graph, h.id, stepSystems) || nt.has(h.id)) continue;
         warnings.push(`${at(rb)}: ${rb.id} never mentions ${h.id} — a direct hard downstream of ${rb.meta.primary} (${h.edge.how}: ${h.edge.why}); add a step or a "Not touched: ${h.id}: <reason>"`);
       }
@@ -239,7 +244,7 @@ export function renderRunbook(rb, graph) {
     L.push(`**Not touched (and why):** ${rb.meta.notTouched.map((x) => `\`${x.system}\` — ${x.reason}`).join(" · ")}`);
   }
   if (p) {
-    const targets = coverageTargets(graph, p.id);
+    const targets = coverageTargets(graph, p.id, { throughSignals: rb.meta.coverage === "through-signals" });
     const stepSystems = new Set(rb.steps.map((s) => s.system).filter(Boolean));
     const nt = new Set(rb.meta.notTouched.map((x) => x.system));
     const gaps = targets.filter((h) => !coveredBy(graph, h.id, stepSystems) && !nt.has(h.id));
@@ -263,6 +268,7 @@ export function runbookRecord(rb) {
     spec: rb.meta.spec,
     steps: rb.steps.map((s) => ({ n: s.n, action: s.action, system: s.system || null, artifact: s.artifact || null, verify: s.verify || null, note: s.note || null })),
     not_touched: rb.meta.notTouched,
+    coverage: rb.meta.coverage,
     file: `${RUNBOOK_DIR}/${rb.file}`,
   };
 }

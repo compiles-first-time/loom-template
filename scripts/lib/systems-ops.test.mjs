@@ -139,6 +139,13 @@ console.log("\nrunbooks");
   assert(noTitle.problems.some((p) => p.includes("rb_<name>")), "a title without an rb_ id is a problem");
   const dup = validateRunbooks([good, good], graph);
   assert(dup.errors.some((x) => x.includes("duplicate runbook id")), "duplicate runbook ids are errors");
+  const busDefault = parseRunbookText(RB("rb_bus_default", "Bus default", "event_bus", [["check", "event_bus", "core/events/event_bus.gd", "ok", "—"]]), "bd.md");
+  assert(busDefault.meta.coverage === "direct" && validateRunbooks([busDefault], graph).warnings.filter((w) => w.includes("never mentions")).length === 0, "by default a bus runbook is not asked to cover listeners of existing signals");
+  const busThrough = parseRunbookText(RB("rb_bus_through", "Bus through", "event_bus", [["check", "event_bus", "core/events/event_bus.gd", "ok", "—"]], "| Coverage | through-signals |"), "bt.md");
+  const vt = validateRunbooks([busThrough], graph).warnings.filter((w) => w.includes("never mentions"));
+  assert(vt.length === 2 && vt.some((w) => w.includes("loot_rolls")) && vt.some((w) => w.includes("hunger")), "Coverage: through-signals makes every listener a coverage target");
+  const badCov = parseRunbookText(RB("rb_bad_cov", "Bad coverage", "event_bus", [["check", "event_bus", "x", "y", "—"]], "| Coverage | sometimes |"), "bc.md");
+  assert(validateRunbooks([badCov], graph).errors.some((e2) => e2.includes("Coverage")), "an unknown Coverage value is an error");
   assert(ACTIONS.includes("decide") && ACTIONS.length === 6, "the action vocabulary is pinned");
 
   const f = runbooksFor([good, gap], graph, "death_resolution");
@@ -208,6 +215,9 @@ console.log("\nmutations");
   assert((g.in.get("crit_tables") || []).length === 1, "the new edge is parsed back (damage_model → crit_tables)");
   const r3 = await addEdge(tmp, g, { from: "crit_tables", how: "listens", to: "sig_actor_died", why: "signal wiring goes to the bus file" });
   assert(r3.ok && r3.file === "t.md", "signal edges land in the event_bus file");
+  const staleAfterWrite = await setNode(tmp, g, "crit_tables", parseAssignments(["where=core/combat/stale.gd"]));
+  assert(!staleAfterWrite.ok && staleAfterWrite.drift, "a graph loaded before another write is refused (drift) — reload after every mutation");
+  g = await load();
   const r4 = await setNode(tmp, g, "crit_tables", parseAssignments(["where=core/combat/crit_tables.gd", "summary=crit chance, multiplier and the roll"]));
   assert(r4.ok, "set-node rewrites cells");
   g = await load();
@@ -239,6 +249,12 @@ console.log("\nmutations");
   try { await addEdge(tmp, g, { from: "hunger", how: "reads", to: "damage_model", via: "damage taken", why: "dup" }); } catch (err) { threw = err.message; }
   assert(threw.includes("already exists"), "duplicate edges are refused before writing");
   assert(cell("a|b\nc") === "a\\|b c" && cell("") === "—", "cells escape pipes and newlines and never go empty");
+  // drift: the file changes between the read that produced `graph` and the write
+  const stale = g; // graph read before the concurrent edit below
+  await fs.writeFile(path.join(regDir, "t.md"), REG_TEXT + "\n", "utf8");
+  const drifted = await addNode(tmp, stale, { id: "late_part", name: "Late", parent: "loot", phase: "2", status: "implied", owner: "orchestrator", summary: "written after a concurrent edit" });
+  assert(!drifted.ok && drifted.drift && (await fs.readFile(path.join(regDir, "t.md"), "utf8")) === REG_TEXT + "\n", "a write is refused when the file changed since it was read, and the file is left alone");
+  await fs.writeFile(path.join(regDir, "t.md"), REG_TEXT, "utf8");
   await fs.rm(tmp, { recursive: true, force: true });
 }
 
