@@ -1,23 +1,23 @@
 {
- "registry_hash": "943cd456f349",
+ "registry_hash": "95b296a15be1",
  "source": "systems/registry",
  "generated_by": "scripts/systems-map.sh render",
  "counts": {
-  "nodes": 715,
-  "edges": 1171,
+  "nodes": 719,
+  "edges": 1189,
   "by_tier": {
    "1": 16,
    "2": 108,
-   "3": 591
+   "3": 595
   },
   "by_status": {
    "spec": 254,
    "implied": 226,
-   "candidate": 230,
+   "candidate": 234,
    "non-goal": 5
   },
   "signals": 28,
-  "runbooks": 17
+  "runbooks": 18
  },
  "domains": [
   {
@@ -26,16 +26,16 @@
    "phase": "0",
    "status": "spec",
    "systems": 12,
-   "parts": 86,
+   "parts": 88,
    "spec": 58,
    "implied": 26,
-   "candidate": 15,
+   "candidate": 17,
    "nonGoal": 0,
-   "internal": 38,
-   "outbound": 287,
+   "internal": 40,
+   "outbound": 293,
    "inbound": 51,
    "coupling": 90,
-   "blast": 470
+   "blast": 471
   },
   {
    "id": "character",
@@ -49,10 +49,10 @@
    "candidate": 28,
    "nonGoal": 0,
    "internal": 49,
-   "outbound": 75,
-   "inbound": 60,
-   "coupling": 73,
-   "blast": 237
+   "outbound": 76,
+   "inbound": 61,
+   "coupling": 74,
+   "blast": 238
   },
   {
    "id": "combat",
@@ -69,7 +69,7 @@
    "outbound": 57,
    "inbound": 54,
    "coupling": 68,
-   "blast": 196
+   "blast": 197
   },
   {
    "id": "survival",
@@ -103,7 +103,7 @@
    "outbound": 54,
    "inbound": 57,
    "coupling": 74,
-   "blast": 252
+   "blast": 253
   },
   {
    "id": "ai_entities",
@@ -120,7 +120,7 @@
    "outbound": 33,
    "inbound": 52,
    "coupling": 78,
-   "blast": 184
+   "blast": 186
   },
   {
    "id": "encounters",
@@ -154,7 +154,7 @@
    "outbound": 44,
    "inbound": 34,
    "coupling": 67,
-   "blast": 237
+   "blast": 238
   },
   {
    "id": "building",
@@ -196,16 +196,16 @@
    "phase": "1",
    "status": "spec",
    "systems": 9,
-   "parts": 62,
+   "parts": 63,
    "spec": 20,
    "implied": 37,
-   "candidate": 14,
+   "candidate": 15,
    "nonGoal": 1,
-   "internal": 25,
-   "outbound": 31,
-   "inbound": 113,
-   "coupling": 85,
-   "blast": 295
+   "internal": 27,
+   "outbound": 32,
+   "inbound": 115,
+   "coupling": 84,
+   "blast": 296
   },
   {
    "id": "multiplayer",
@@ -218,11 +218,11 @@
    "implied": 20,
    "candidate": 5,
    "nonGoal": 2,
-   "internal": 13,
-   "outbound": 22,
-   "inbound": 41,
-   "coupling": 83,
-   "blast": 187
+   "internal": 16,
+   "outbound": 23,
+   "inbound": 42,
+   "coupling": 80,
+   "blast": 188
   },
   {
    "id": "social",
@@ -264,14 +264,14 @@
    "phase": "0",
    "status": "spec",
    "systems": 8,
-   "parts": 42,
+   "parts": 43,
    "spec": 23,
    "implied": 15,
-   "candidate": 12,
+   "candidate": 13,
    "nonGoal": 1,
-   "internal": 29,
+   "internal": 31,
    "outbound": 29,
-   "inbound": 51,
+   "inbound": 56,
    "coupling": 73,
    "blast": 350
   },
@@ -300,7 +300,7 @@
    "domain": "Foundation",
    "status": "spec",
    "phase": "0",
-   "blast": 411,
+   "blast": 412,
    "fanOut": 4,
    "fanIn": 1
   },
@@ -310,7 +310,7 @@
    "domain": "Foundation",
    "status": "spec",
    "phase": "0",
-   "blast": 376,
+   "blast": 378,
    "fanOut": 1,
    "fanIn": 1
   },
@@ -320,7 +320,7 @@
    "domain": "Operations",
    "status": "spec",
    "phase": "0",
-   "blast": 365,
+   "blast": 366,
    "fanOut": 0,
    "fanIn": 0
   },
@@ -330,7 +330,7 @@
    "domain": "Presentation",
    "status": "spec",
    "phase": "1",
-   "blast": 331,
+   "blast": 332,
    "fanOut": 0,
    "fanIn": 0
   },
@@ -340,7 +340,7 @@
    "domain": "Foundation",
    "status": "spec",
    "phase": "0",
-   "blast": 306,
+   "blast": 308,
    "fanOut": 2,
    "fanIn": 0
   },
@@ -350,7 +350,7 @@
    "domain": "Foundation",
    "status": "spec",
    "phase": "1",
-   "blast": 291,
+   "blast": 293,
    "fanOut": 1,
    "fanIn": 0
   },
@@ -360,7 +360,7 @@
    "domain": "Economy",
    "status": "spec",
    "phase": "0",
-   "blast": 279,
+   "blast": 280,
    "fanOut": 19,
    "fanIn": 1
   },
@@ -370,7 +370,7 @@
    "domain": "Foundation",
    "status": "spec",
    "phase": "1",
-   "blast": 269,
+   "blast": 270,
    "fanOut": 0,
    "fanIn": 0
   },
@@ -380,7 +380,7 @@
    "domain": "Foundation",
    "status": "spec",
    "phase": "1",
-   "blast": 246,
+   "blast": 247,
    "fanOut": 0,
    "fanIn": 0
   },
@@ -390,7 +390,7 @@
    "domain": "World",
    "status": "spec",
    "phase": "1",
-   "blast": 241,
+   "blast": 242,
    "fanOut": 1,
    "fanIn": 0
   },
@@ -400,7 +400,7 @@
    "domain": "Character",
    "status": "spec",
    "phase": "2",
-   "blast": 236,
+   "blast": 237,
    "fanOut": 12,
    "fanIn": 0
   },
@@ -452,7 +452,7 @@
    "domain": "Operations",
    "status": "spec",
    "phase": "0",
-   "blast": 366,
+   "blast": 367,
    "fanOut": 16,
    "fanIn": 0
   },
@@ -462,7 +462,7 @@
    "domain": "Foundation",
    "status": "spec",
    "phase": "0",
-   "blast": 311,
+   "blast": 313,
    "fanOut": 10,
    "fanIn": 0
   },
@@ -472,8 +472,8 @@
    "domain": "Foundation",
    "status": "implied",
    "phase": "0",
-   "blast": 296,
-   "fanOut": 6,
+   "blast": 298,
+   "fanOut": 7,
    "fanIn": 0
   },
   {
@@ -482,7 +482,7 @@
    "domain": "Presentation",
    "status": "spec",
    "phase": "0",
-   "blast": 294,
+   "blast": 295,
    "fanOut": 5,
    "fanIn": 0
   },
@@ -492,7 +492,7 @@
    "domain": "Foundation",
    "status": "spec",
    "phase": "1",
-   "blast": 290,
+   "blast": 292,
    "fanOut": 25,
    "fanIn": 0
   },
@@ -502,7 +502,7 @@
    "domain": "Foundation",
    "status": "spec",
    "phase": "1",
-   "blast": 290,
+   "blast": 292,
    "fanOut": 21,
    "fanIn": 0
   },
@@ -512,7 +512,7 @@
    "domain": "Foundation",
    "status": "spec",
    "phase": "0",
-   "blast": 281,
+   "blast": 282,
    "fanOut": 5,
    "fanIn": 0
   },
@@ -522,7 +522,7 @@
    "domain": "Presentation",
    "status": "spec",
    "phase": "1",
-   "blast": 276,
+   "blast": 277,
    "fanOut": 2,
    "fanIn": 1
   },
@@ -532,7 +532,7 @@
    "domain": "Presentation",
    "status": "spec",
    "phase": "1",
-   "blast": 274,
+   "blast": 275,
    "fanOut": 9,
    "fanIn": 2
   },
@@ -542,8 +542,8 @@
    "domain": "Foundation",
    "status": "spec",
    "phase": "1",
-   "blast": 271,
-   "fanOut": 15,
+   "blast": 273,
+   "fanOut": 16,
    "fanIn": 2
   },
   {
@@ -552,7 +552,7 @@
    "domain": "Foundation",
    "status": "spec",
    "phase": "0",
-   "blast": 263,
+   "blast": 265,
    "fanOut": 5,
    "fanIn": 0
   },
@@ -562,7 +562,7 @@
    "domain": "Foundation",
    "status": "spec",
    "phase": "3",
-   "blast": 259,
+   "blast": 261,
    "fanOut": 14,
    "fanIn": 3
   },
@@ -572,7 +572,7 @@
    "domain": "Foundation",
    "status": "spec",
    "phase": "1",
-   "blast": 249,
+   "blast": 250,
    "fanOut": 18,
    "fanIn": 0
   },
@@ -980,7 +980,9 @@
    "localization",
    "string_tables",
    "font_pipeline",
-   "locale_switch"
+   "locale_switch",
+   "render_interpolation",
+   "pure_movement_step"
   ],
   "character": [
    "swimming",
@@ -1168,7 +1170,8 @@
    "subtitles",
    "motion_reduction",
    "gamepad_support",
-   "input_buffering"
+   "input_buffering",
+   "input_sampling"
   ],
   "multiplayer": [
    "listen_server_option",
@@ -1219,7 +1222,8 @@
    "gameplay_analytics",
    "low_end_fallbacks",
    "benchmark_scene",
-   "subagent_mirrors"
+   "subagent_mirrors",
+   "g6_feel_gate"
   ],
   "content_factory": [
    "loot_economy_sim",
@@ -1305,6 +1309,11 @@
    "primary": "casting"
   },
   {
+   "id": "rb_change_movement",
+   "name": "Change movement, camera, input translation or movement netcode (ADR-0068)",
+   "primary": "locomotion"
+  },
+  {
    "id": "rb_change_schema",
    "name": "Add, rename or remove a field on a §6 schema",
    "primary": "data_schemas"
@@ -1317,7 +1326,7 @@
  ],
  "findings": {
   "errors": 0,
-  "warnings": 4,
+  "warnings": 9,
   "info": 3
  },
  "edge_vocabulary": {

@@ -59,6 +59,7 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | loom_governance_layer | Loom governance layer | 3 | agent_harness | 0 | implied | orchestrator | constitution/; scripts/; layers/ | Appendix B | Loom's constitution, hooks, doctor and atlas on top of the spec | — |
 | subagent_mirrors | Subagent mirrors | 3 | agent_harness | — | candidate | orchestrator | .claude/agents/ | §7.2 | Optional subagents mirroring the four skills | — |
 | harness_adapters | Harness adapters (CLAUDE.md, AGENTS.md) | 3 | agent_harness | 0 | spec | orchestrator | CLAUDE.md; AGENTS.md; .claude/; .agents/ | Appendix B, §13 item 2 | The always-loaded adapters that point any harness at the spec, the session ritual, the write scopes and the atlas | — |
+| g6_feel_gate | G6 feel gate | 3 | validation_gates | — | candidate | test-pilot | tools/testing/feel.gd; tests/perf/ | — | Scripted movement run on the benchmark scene: tick cost, input-to-sim latency, determinism replay and prediction error under simulated latency headless; frame pacing, hitches and tick-locked visuals on the reference machine (ADR-0068) | The test drive with a stopwatch: the car is not done because it starts, it is done when it corners smoothly at the numbers on the sheet |
 
 ## Edges
 
@@ -144,3 +145,10 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | loom_doctor_gate | reads | loom_secrets_doctor | — | hard | The governance job runs the secrets scan |
 | harness_adapters | reads | game_infra_spec | — | hard | The adapters restate the spec's digest and point at it |
 | harness_adapters | reads | systems_atlas | — | hard | The ritual runs validate, which, checklist and impact |
+| g6_feel_gate | validates | locomotion | latency, determinism | hard | The gate measures input-to-sim ticks and replays a recorded walk |
+| g6_feel_gate | validates | third_person_rig | frame pacing | hard | The gate measures frame time and hitches during the camera soak |
+| g6_feel_gate | validates | interpolation_prediction | error under latency | hard | The gate measures prediction error and corrections under a simulated network |
+| g6_feel_gate | validates | render_interpolation | tick-locked visuals | hard | The gate fails a transform that only changes on ticks |
+| g6_feel_gate | reads | benchmark_scene | scene | hard | The gate runs on the benchmark scene |
+| g6_feel_gate | reads | frame_time_budget | budgets | hard | The gate asserts the budgets in docs/balance_ranges.md |
+| determinism_replay_tests | validates | pure_movement_step | replay | hard | Replay tests are the proof that the step is pure |

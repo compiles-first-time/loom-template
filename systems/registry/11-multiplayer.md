@@ -22,7 +22,7 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | state_snapshots_sync | State snapshots | 3 | replication | 4 | implied | orchestrator | core/net/replication/state.gd | §12 | Periodic state sync for actors and world | — |
 | spawn_replication | Spawn replication | 3 | replication | 4 | implied | orchestrator | core/net/replication/spawn.gd | §5 actor_spawned | Spawns and despawns mirrored on clients | — |
 | bandwidth_budget | Bandwidth budget | 3 | replication | 4 | implied | orchestrator | core/net/replication/ | — | Bytes per tick per client kept within a budget | — |
-| interpolation_prediction | Interpolation & prediction | 3 | replication | — | candidate | director | core/net/replication/ | — | Client prediction and smoothing; feel versus complexity | — |
+| interpolation_prediction | Interpolation & prediction | 3 | replication | — | candidate | director | core/net/replication/prediction.gd; core/net/replication/interpolation.gd | — | Client-side prediction of the local player with server reconciliation; snapshot interpolation of remote actors behind a two-tick buffer; nothing extrapolated by default (ADR-0068) | — |
 | interest_management | Interest management | 3 | replication | — | candidate | orchestrator | core/net/replication/ | — | Send only what is near; small at ten players | — |
 | sessions_players | Sessions & players | 2 | multiplayer | 4 | spec | orchestrator | core/net/session/ | §1 2 to 10 players | Join, leave, slots, reconnect, passwords, admin | The guest list and the bouncer |
 | matchmaking_service | Matchmaking service | 3 | sessions_players | — | non-goal | director | — | §1 non-goals | No matchmaking service; players join by address | — |
@@ -104,3 +104,7 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | client_server_roles | extends | local_authority_mode | — | hard | Phase 4 replaces the local authority with server roles |
 | content_version_handshake | reads | join_leave_flow | — | hard | The check runs during join |
 | content_version_handshake | reads | content_database_git | — | hard | The data/ version is what is compared |
+| interpolation_prediction | reads | pure_movement_step | re-simulation | hard | Prediction re-runs the same step the server runs |
+| interpolation_prediction | reads | tick_rate_sync | acknowledged tick | hard | Reconciliation restarts from the last tick the server acknowledged |
+| interpolation_prediction | reads | state_snapshots_sync | server snapshots | hard | Remote actors are interpolated between the snapshots the server sends |
+| interpolation_prediction | reads | command_ingest_server | input acknowledgement | soft | The server's acknowledgement of an intent tells the client which predicted ticks are confirmed |

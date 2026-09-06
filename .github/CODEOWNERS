@@ -11,7 +11,7 @@
 /.git @compiles-first-try
 # appearance_customization, art_pipeline, biome_palette_lighting, presentation
 /art/ @compiles-first-try
-# architecture_rules, deterministic_sim, foundation, gdscript_static_typing, sim_presentation_split, systems_content_split
+# architecture_rules, deterministic_sim, foundation, gdscript_static_typing, pure_movement_step, sim_presentation_split, systems_content_split
 /core/ @compiles-first-try
 # balance_anchoring, content_database_git, converter_gate_run, hotfix_data_only, id_convention, live_content_ops, mod_support, persistence, places, plain_text_formats, systems_content_split
 /data/ @compiles-first-try
@@ -111,7 +111,7 @@
 /scenes/env/ @compiles-first-try
 # buff_debuff_visuals, element_default_vfx, impact_effects, motion_reduction, projectile_visuals, screen_effects, telegraph_visuals, vfx_pooling_budget, vfx_spell_effects
 /scenes/vfx/ @compiles-first-try
-# perf_budget_tests
+# g6_feel_gate, perf_budget_tests
 /tests/perf/ @compiles-first-try
 # g1_unit_tests_gut
 /tests/unit/ @compiles-first-try
@@ -181,7 +181,7 @@
 /data/talents/ @compiles-first-try
 # npc_vendors_stores, trade_vendors
 /data/vendors/ @compiles-first-try
-# collision_layers, engine_platform, fixed_tick_sim, foundation, gamepad_support, hardware_scalability, input, input_map_actions, physics_collision, project_settings, repo_layout
+# collision_layers, engine_platform, fixed_tick_sim, foundation, gamepad_support, hardware_scalability, input, input_map_actions, physics_collision, project_settings, render_interpolation, repo_layout
 /project.godot @compiles-first-try
 # camera_cues, cinematics_in_engine, scripted_sequences
 /scenes/story/ @compiles-first-try
@@ -189,7 +189,7 @@
 /scenes/zones/ @compiles-first-try
 # server_rules_config
 /server/config @compiles-first-try
-# appearance_customization, character, character_identity, climbing, dodge_roll, player_controller, swimming
+# appearance_customization, character, character_identity, climbing, dodge_roll, player_controller, render_interpolation, swimming
 /actors/player/ @compiles-first-try
 # building, guild_halls, homes_strongholds, npc_settlers, player_cities, stronghold_walls_gates, structures
 /core/building/ @compiles-first-try
@@ -429,7 +429,7 @@
 /ui/screens/dialogue/ @compiles-first-try
 # rebinding, settings_screens
 /ui/screens/settings/ @compiles-first-try
-# camera, photo_mode, target_lock_camera, third_person_rig
+# camera, input_sampling, photo_mode, target_lock_camera, third_person_rig
 /actors/player/camera/ @compiles-first-try
 # perception
 /core/ai/perception.gd @compiles-first-try
@@ -453,7 +453,7 @@
 /core/loot/lockouts.gd @compiles-first-try
 # loot_rolls_on_death
 /core/loot/on_death.gd @compiles-first-try
-# bandwidth_budget, interest_management, interpolation_prediction, replication
+# bandwidth_budget, interest_management, replication
 /core/net/replication/ @compiles-first-try
 # shared_group_quests
 /core/quests/shared.gd @compiles-first-try
@@ -483,6 +483,8 @@
 /tools/bake_navmesh.gd @compiles-first-try
 # content_pipeline, json_to_tres_converter
 /tools/json_to_tres.gd @compiles-first-try
+# g6_feel_gate
+/tools/testing/feel.gd @compiles-first-try
 # subtitles
 /ui/hud/subtitles.tscn @compiles-first-try
 # equipment_character_sheet
@@ -495,7 +497,7 @@
 /core/building/decay.gd @compiles-first-try
 # base_defense_sieges
 /core/building/siege.gd @compiles-first-try
-# input, input_buffering, input_to_command_translation
+# input, input_buffering, input_sampling, input_to_command_translation
 /core/commands/input.gd @compiles-first-try
 # craft_time_queue
 /core/crafting/queue.gd @compiles-first-try
@@ -689,7 +691,7 @@
 /.github/workflows/build.yml @compiles-first-try
 # flaky_test_policy, g0_style_parse, g3_smoke_boot, pr_gates_workflow, validation_gates, write_scope_enforcement
 /.github/workflows/gates.yml @compiles-first-try
-# locomotion
+# locomotion, pure_movement_step
 /actors/player/locomotion.gd @compiles-first-try
 # icon_generation_prompts
 /art/_inbox/icon_requests.md @compiles-first-try
@@ -793,11 +795,15 @@
 /core/schemas/status_effect_def.gd @compiles-first-try
 # loot_economy_sim
 /tools/testing/balance/loot_sim.gd @compiles-first-try
+# interpolation_prediction
+/core/net/replication/prediction.gd @compiles-first-try
 # schema_building_piece_def
 /core/schemas/building_piece_def.gd @compiles-first-try
 # combat_sim_harness
 /tools/testing/balance/combat_sim.gd @compiles-first-try
 # loom_doctor_gate
 /.github/workflows/governance-gate.yml @compiles-first-try
+# interpolation_prediction
+/core/net/replication/interpolation.gd @compiles-first-try
 # telegraph_decals
 /core/encounters/mechanics/telegraph.gd @compiles-first-try

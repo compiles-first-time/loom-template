@@ -183,3 +183,4 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | revive_downed_state | reads | death_resolution | — | hard | Downed sits between zero health and death |
 | revive_downed_state | extends | respawn_rules | — | soft | Revive is an alternative to respawning |
 | equip_slots | reads | bag_slots | source and destination slot | soft | Equipping moves an item between a bag slot and an equipment slot; in Phase 1 the one weapon is pre-equipped, bags arrive in Phase 2 |
+| locomotion | reads | pure_movement_step | pure step | hard | Locomotion is written as the pure step so replay and prediction can re-run it |

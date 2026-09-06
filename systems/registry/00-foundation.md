@@ -109,6 +109,8 @@ Format: [`systems/README.md`](../README.md). Tool: `scripts/systems-map.sh`. Dec
 | locale_switch | Locale switch | 3 | localization | — | candidate | orchestrator | core/settings/ | — | Runtime locale change without restart | — |
 | repo_layout | Repository layout (§3) | 3 | engine_platform | 0 | spec | orchestrator/director | project.godot; .gdignore | §3, §13 item 2 | The §3 directory layout: res:// root with core/ data/ scenes/ actors/ ui/ art/ audio/ tests/ tools/ addons/; where the Godot root sits beside Loom's governance folders (.gdignore them, or move the game under game/) is an open DIRECTOR question | — |
 | local_authority_mode | Local authority mode | 3 | command_intents | 1 | implied | orchestrator | core/commands/authority.gd | §12 | Phases 1–3: the local game is its own authority and applies intents directly; the seam a Phase 4 server replaces | — |
+| render_interpolation | Render interpolation | 3 | time_and_tick | — | candidate | orchestrator | project.godot; actors/player/ | — | Physics interpolation on: visuals read transforms interpolated between 60 Hz ticks; jitter fix 0; a teleport resets interpolation (ADR-0068) | The film projector that draws the in-between frames so a 60-frame reel looks smooth at any speed |
+| pure_movement_step | Pure movement step (proposed R11) | 3 | architecture_rules | — | candidate | orchestrator | actors/player/locomotion.gd; core/ | — | Movement is a pure tick step (state, intent, tick) to state: no frame time, node paths or wall clock inside; re-runnable for replay and client prediction (ADR-0068) | A recipe that gives the same dish every time you follow it, so a second cook can redo a step and get the same result |
 
 ## Edges
 
@@ -284,3 +286,5 @@ Format: [`systems/README.md`](../README.md). Tool: `scripts/systems-map.sh`. Dec
 | repo_layout | reads | game_infra_spec | §3 | hard | §3 defines the layout |
 | systems_content_split | reads | repo_layout | — | hard | core/ versus data/ is the R1 boundary |
 | local_authority_mode | reads | intent_dispatch | — | hard | Intents dispatch locally until a server owns them |
+| render_interpolation | reads | project_settings | physics_interpolation, jitter fix | hard | Interpolation and the jitter fix are project settings |
+| render_interpolation | reads | fixed_tick_sim | tick transforms | hard | There is nothing to interpolate between without the fixed tick |

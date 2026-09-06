@@ -80,6 +80,7 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | rebinding | Rebinding | 3 | input | 1 | implied | orchestrator | ui/screens/settings/ | — | Remap actions in settings | — |
 | gamepad_support | Gamepad support | 3 | input | — | candidate | director | project.godot | — | Controller layout and glyphs | — |
 | input_buffering | Input buffering | 3 | input | — | candidate | orchestrator | core/commands/input.gd | — | Buffered presses for responsive combat | — |
+| input_sampling | Per-frame input sampling | 3 | input | — | candidate | orchestrator | core/commands/input.gd; actors/player/camera/ | — | Input read every render frame; presses latched into the next tick's intent so nothing is dropped between ticks; look input applied per frame, never quantized to ticks (ADR-0068) | A doorbell that remembers you pressed it even if nobody was listening at that exact instant |
 
 ## Edges
 
@@ -186,3 +187,7 @@ Format: [`systems/README.md`](../README.md). Decision: [ADR-0065](../../adr/0065
 | locomotion_blending | renders | steering_locomotion | — | hard | Enemy walk cycles follow the steering speed |
 | projectile_visuals | reads | element_default_vfx | — | soft | Trails follow the element default |
 | minimap_compass_hud | renders | objective_tracking | — | soft | Objective pins on the compass |
+| third_person_rig | reads | render_interpolation | interpolated target transform | hard | The camera follows the interpolated transform every frame, never the raw tick position |
+| locomotion_blending | reads | render_interpolation | frame-rate playback | soft | Blends play at frame rate over interpolated motion; tick-locked playback looks choppy |
+| input_to_command_translation | reads | input_sampling | latched presses | hard | Translation consumes the presses sampling latched since the last tick |
+| third_person_rig | reads | input_sampling | per-frame look | hard | Look input reaches the camera every frame without waiting for a tick |

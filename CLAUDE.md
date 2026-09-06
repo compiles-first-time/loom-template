@@ -51,7 +51,7 @@ Skills for the four game roles: `.claude/skills/<name>/SKILL.md` (materialize fr
 
 ## The systems atlas ([ADR-0065](./adr/0065-systems-atlas-and-impact-map.md), [ADR-0066](./adr/0066-agent-ready-change-discipline.md))
 
-[`systems/registry/*.md`](./systems/registry/) is the ledger: **715 systems in 16 domains** (tier 1 domain → 2 system → 3 parts), **1,171 wired edges**, each with how / via / strength / why. Status tells scope: `spec` · `implied` · **`candidate` = asked for but not in the spec → DIRECTOR decision + spec PR** · `non-goal`. [`systems/runbooks/`](./systems/runbooks/) holds **17 change runbooks**, each validated against the ledger: every system id exists and every hard downstream of the runbook's primary system is a step or an explained "not touched". Models: [`systems/llm/`](./systems/llm/) (grep, never load whole). People: [`systems/ATLAS.md`](./systems/ATLAS.md), [`systems/explorer.html`](./systems/explorer.html). Generated files are never hand-edited; `loom doctor` fails on a stale atlas.
+[`systems/registry/*.md`](./systems/registry/) is the ledger: **719 systems in 16 domains** (tier 1 domain → 2 system → 3 parts), **1,189 wired edges**, each with how / via / strength / why. Status tells scope: `spec` · `implied` · **`candidate` = asked for but not in the spec → DIRECTOR decision + spec PR** · `non-goal`. [`systems/runbooks/`](./systems/runbooks/) holds **18 change runbooks**, each validated against the ledger: every system id exists and every hard downstream of the runbook's primary system is a step or an explained "not touched". Models: [`systems/llm/`](./systems/llm/) (grep, never load whole). People: [`systems/ATLAS.md`](./systems/ATLAS.md), [`systems/explorer.html`](./systems/explorer.html). Generated files are never hand-edited; `loom doctor` fails on a stale atlas.
 
 ## Current focus
 
@@ -59,11 +59,12 @@ Skills for the four game roles: `.claude/skills/<name>/SKILL.md` (materialize fr
 
 ## Open questions (blocking — DIRECTOR)
 
-- **Repo layout:** the Godot project root (`res://`) and Loom's governance folders share this root. Add `.gdignore` to `adr/`, `layers/`, `scripts/`, `systems/` and the rest so Godot ignores them, or move the game under `game/`? Also §3 lists no `data/building`, `data/npcs`, `data/encounters`, `data/markers`, `data/dungeons`, `data/stations` or `server/`, which the atlas needs — amend §3.
-- **Phase 0 console:** `give`, `spawn`, `tp`, `time` need inventory (P2), spawning (P1), the actor registry (P1) and the clock (P3) — the 4 findings in `validate`. Stub them in P0, or move the console to Phase 2 (where §13's phase map puts it)?
+- **Repo layout:** `res://` and Loom's governance folders share this root: `.gdignore` the governance folders, or move the game under `game/`? Also §3 lacks `data/building`, `data/npcs`, `data/encounters`, `data/markers`, `data/dungeons`, `data/stations`, `server/` — amend §3.
+- **Phase 0 console:** `give`, `spawn`, `tp`, `time` need inventory (P2), spawning (P1), the actor registry (P1), the clock (P3) — 4 `validate` findings. Stub in P0, move to Phase 2, or ship the shell and let each system register its command?
 - **12 proposed signals** need §5 rows (R-EB1): 7 are required (spec/implied systems emit them), 5 are candidates — names in `systems/ATLAS.md` §EventBus and in `scripts/systems-map.sh validate`.
 - **Spec seams the atlas found:** §7.1 grants nobody `actors/**`, `audio/**`, `data/npcs/**`, `data/dungeons/**`, `data/markers/**`; §7.2 has content-smith write `art/_inbox/icon_requests.md`; §8 runs G4's gather/craft from Phase 1 while §13 lands them in Phase 3. Amend the spec, or reassign owners.
 - **230 candidate systems** — asked for, not in the spec; none is built until it is. Decide by domain in `systems/ATLAS.md` §DIRECTOR decisions.
+- **Movement feel ([ADR-0068](./adr/0068-movement-feel-contract.md)):** approve R11 + G6 (Appendix A), the netcode spike, the physics-engine pin; 5 `validate` scope-leak findings wait on it. Art scope: `docs/art_style_scope.md`.
 
 ## Loom governance (inherited — read L0 before any consequential action)
 
@@ -86,6 +87,7 @@ Skills for the four game roles: `.claude/skills/<name>/SKILL.md` (materialize fr
 - [ADR-0065](./adr/0065-systems-atlas-and-impact-map.md) — Systems atlas: validated registry + computed impact map. **Awaiting DIRECTOR review.**
 - [ADR-0066](./adr/0066-agent-ready-change-discipline.md) — Agent-ready change discipline: runbooks, checklist, mutation API, LLM pack, edit hook. **Awaiting DIRECTOR review.**
 - [ADR-0067](./adr/0067-declared-versus-observed.md) — Declared vs observed: code-derived dependencies, R2–R6 fitness checks, CODEOWNERS, one repository. **Awaiting DIRECTOR review.**
+- [ADR-0068](./adr/0068-movement-feel-contract.md) — Movement feel contract: fixed tick + interpolation, pure movement step, per-frame input and camera, G6 feel gate. **Awaiting DIRECTOR review.**
 - [ADR-0057](./adr/0057-research-scout-update-bus-intake.md) — Research Scout (inherited from Loom, proposal-only; the weekly trigger stays un-armed).
 
 Accepted ADRs inherited from Loom: 0003–0064 — index in [`adr/`](./adr/).
