@@ -8,7 +8,7 @@
 | Primary | locomotion |
 | Roles | orchestrator; test-pilot |
 | Director | Only when a locked setting changes — tick rate, physics interpolation, jitter fix, physics engine, netcode library — because those are §2 / §4 R11 contract changes (§14). |
-| Spec | §4 R4 R5 R11 (proposed, ADR-0068), §8 G4 G6, §12, §13 Phase 1 |
+| Spec | §4 R4 R5 R11 (proposed, ADR-0068), §8 G4, G6 (proposed, ADR-0068), §12, §13 Phase 1 |
 | Coverage | direct |
 | Not touched | mounts_travel: candidate — riding replaces walking once the DIRECTOR approves it and would then run this same runbook |
 

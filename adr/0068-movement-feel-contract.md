@@ -29,7 +29,7 @@ All five cures are structural. Retrofitting any of them into a controller writte
 
 **2. The architecture locks (the part that cannot be retrofitted).**
 
-- **Fixed tick at 60 Hz, interpolation on, jitter fix off.** `physics/common/physics_ticks_per_second = 60`; `physics/common/physics_interpolation = true`; `physics/common/physics_jitter_fix = 0`. The Godot manual states physics interpolation exists to remove visual stutter when the render rate and the tick rate differ, that game logic must move to `_physics_process` for it to work, and that `reset_physics_interpolation()` is required when an object teleports; the 4.4 release notes say 3D physics interpolation landed in 4.4 after 2D in 4.3 `[T1]`. The manual on input lag recommends raising the tick rate and choosing multiples of the display refresh rate `[T1]`. 60 Hz is the lowest tick that meets both the input budget below and the refresh-rate rule for 60 and 120 Hz displays; the server runs the same rate (§12: one clock).
+- **Fixed tick at 60 Hz, interpolation on, jitter fix off.** `physics/common/physics_ticks_per_second = 60`; `physics/common/physics_interpolation = true`; `physics/common/physics_jitter_fix = 0`. The Godot manual states physics interpolation exists to remove visual stutter when the render rate and the tick rate differ, that game logic must move to `_physics_process` for it to work, and that `reset_physics_interpolation()` is required when an object teleports; the 4.4 release notes say 3D physics interpolation landed in 4.4 after 2D in 4.3 `[T1]`. The manual's page on jitter, stutter and input lag recommends raising the tick rate to reduce input latency, ideally to a multiple of the display refresh rate `[T1]`; with interpolation on, smoothness no longer depends on that match, but input latency still does. 60 Hz is the lowest tick that meets the input budget below and matches the most common display rate exactly; a higher tick is justified only by a G6b measurement on the reference machine. The server runs the same rate (§12: one clock).
 - **Movement is a pure tick step (proposed R11).** Locomotion is a function `(state, intent, tick) → state` with no frame time, node path or wall clock inside it (R4, §12), callable any number of times per frame. This single property is what makes replay (determinism_replay_tests), server authority (§12) and client-side prediction (below) the same code path. It is the one new rule the constitution needs.
 - **Presentation reads interpolated transforms; the camera runs per frame.** The camera rig lives in `_process`, follows the target's interpolated transform (the manual's own camera example uses `get_global_transform_interpolated()` with automatic interpolation turned off on the camera) and applies mouse look every frame, never quantized to ticks `[T1]`. Animation state comes from the sim (`sim_driven_timing`, R5) and is played and blended at frame rate; root motion never writes position.
 - **Input is sampled every frame and latched into the next tick's intent.** A press shorter than a tick still registers; a held direction is read once per tick. Look input bypasses the tick. `Input.use_accumulated_input` is set to `false` for look when the G6 measurement shows a benefit (the manual documents it as more precise input for more CPU) `[T1]`.
@@ -57,6 +57,8 @@ G6a is blocking from Phase 1 for any PR that touches `actors/player/`, `core/com
 - **netfox (V2):** the repository README (MIT license, Godot 4.x, four addons, 1.1k stars) and its documentation for `RollbackSynchronizer`, `TickInterpolator` and `NetworkTime`, read from the repository on GitHub. Single-source: the project's own documentation; not independently corroborated. `[T1 for its own behavior][M]`
 - **Gap in the atlas (V3):** `scripts/systems-map.sh show interpolation_prediction` — `candidate`, no spec row, only two soft edges; `validation_gates` has no feel or latency check; `perf_budget_tests` and `benchmark_scene` are `candidate`. `[internal][H]`
 - **The decomposition table** is engineering reasoning from the cited mechanisms, not a measurement. It becomes measured when G6 runs. `[reasoning][M]`
+- **Critic review (V4):** the read-only Critic reviewed this ADR, the runbook and the art scope on 2026-09-06 and returned *reject* with two required text fixes — the §2 netfox row contradicted itself on when netfox may enter `addons/`, and the runbook listed G6 beside G4 as if it were a shipped gate — plus five optional suggestions; both fixes and four suggestions are applied in the follow-up commit. It judged the hard scope-leak edges correct as drafted. `[internal][H]`
+- **What would change this call:** a Godot release that changes physics-interpolation or tick semantics; a spike result showing netfox's tick loop cannot be pinned to the physics tick (Decision 4 then collapses to B); G6 measurements showing the 60 Hz budgets cannot be met on the reference machine (then the numbers move, not the mechanism). `[reasoning]`
 
 ## Cost model
 
@@ -71,10 +73,10 @@ G6a is blocking from Phase 1 for any PR that touches `actors/player/`, `core/com
 
 **Locks out:** movement code that reads frame time, node paths or the wall clock; a camera driven by the tick; animation that moves the body; lockstep or cross-machine determinism as goals; changing tick rate, interpolation or jitter-fix settings without a G6 run; a netcode library that enters `addons/` without the §2 row (R10).
 
-**Migration:** additive. Nothing exists yet; the first controller is written to the contract. If the Director rejects R11, the atlas nodes stay `candidate` and Phase 1 proceeds with the spec as written, with the risk stated in Context.
+**Migration:** additive. Nothing exists yet; the first controller is written to the contract. If the Director rejects R11, the atlas nodes stay `candidate`, the 18 edges are re-pointed soft with the rejection recorded in each edge's why so the gap stays visible without a finding, and Phase 1 proceeds with the spec as written, with the risk stated in Context.
 
 **Open for the DIRECTOR:**
-1. Approve, amend or reject the Appendix A text (R11, G6, §13 items, §12 additions, §2 row).
+1. Approve, amend or reject the Appendix A text (R11, G6, §13 items, §12 additions, §2 row, and the one-line §14 fix that adds §4 to the contract-change list).
 2. Netcode library: A adopt netfox now, B hand-roll, **C spike both in Phase 1** (recommended).
 3. Physics engine: pin Godot Physics for Phase 1 with a Jolt switch only on a shown defect (recommended), or start on Jolt.
 4. The reference machine: name the hardware that defines G6b, or defer until Phase 1.
@@ -120,7 +122,7 @@ On approval, Appendix A is pasted into GAME_INFRA_SPEC.md (§2, §4 R11, §8 G6,
 
 **§2 Tech stack, new row:**
 
-| Netcode (Phase 4) | netfox (MIT) — *evaluation approved for the Phase 1 spike; adopted or rejected by the end of Phase 1* | Prediction, reconciliation and tick interpolation exist and are maintained; the hand-written fallback is the most error-prone code in the project | R10: enters `addons/` only after this row says "adopted" |
+| Netcode (Phase 4) | netfox (MIT) — *this row's approval is itself the R10 PR for spike-only use: netfox may enter `addons/` on the Phase 1 spike branch to run the Decision 4 comparison; it ships in the mainline only if this row is updated to "adopted" by the end of Phase 1, and is removed from the repository if "rejected"* | Prediction, reconciliation and tick interpolation exist and are maintained; the hand-written fallback is the most error-prone code in the project | R10 satisfied for spike-only use by this row; a second edit to this row (adopted or rejected) gates shipping it |
 
 **§4, after R10:**
 
@@ -134,6 +136,8 @@ On approval, Appendix A is pasted into GAME_INFRA_SPEC.md (§2, §4 R11, §8 G6,
 
 - Locomotion is the pure step of R11(b); the server and the predicting client run the same function.
 - Snapshots carry the tick they describe; clients keep a two-tick interpolation buffer for remote actors.
+
+**§14, first bullet:** add `§4 architecture rules` to the enumerated contract changes (`§5 bus, §6 schemas, §7 roster, §8 gates, §2/§9 dependencies`), so an R-series change is covered by the letter of §14 and not only its spirit.
 
 **§13, Phase 1 checklist additions:**
 
