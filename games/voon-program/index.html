@@ -284,7 +284,7 @@
         <span class="kbd">A</span><span>Rotate the rocket <b style="color:var(--ink)">east</b> (toward the sunrise)</span>
         <span class="kbd">D</span><span>Rotate the rocket <b style="color:var(--ink)">west</b></span>
         <span class="kbd">SPACE</span><span>Stage — drop the spent stage, or deploy the parachute</span>
-        <span class="kbd">E</span><span>Run Science — you also auto-collect wherever you fly; <b style="color:var(--ink)">land safely to keep it</b></span>
+        <span class="kbd">E</span><span>Run Science — you auto-collect it too. How much depends on <b style="color:var(--ink)">how high</b> and <b style="color:var(--ink)">which region</b> you're over (orbit sweeps many regions). <b style="color:var(--ink)">Land safely to keep it</b></span>
         <span class="kbd">, / .</span><span>Time warp down / up (only while coasting)</span>
         <span class="kbd">scroll</span><span>Zoom the map in / out</span>
         <span class="kbd">ESC</span><span>Abort back to the hangar</span>
@@ -362,6 +362,31 @@ const SITU = {   // the higher / faster you go, the more science each situation 
   "Voon Space":        80,
   "Voon Surface":     140,
 };
+// WHERE you run the science matters too: the world is split into regions,
+// and each region pays a different bonus. Regional situations are the ones
+// near the home planet — sweeping across regions (best done in orbit) earns
+// separate science for each.
+const REGIONS = [
+  {name:"Kapla Base",     f:1.00},
+  {name:"Verdant Plains", f:1.15},
+  {name:"The Deep Ocean", f:1.30},
+  {name:"Ashfall Range",  f:1.45},
+  {name:"Frost Shelf",    f:1.60},
+];
+const REGIONAL = new Set(["Lower Atmosphere","Upper Atmosphere","Sub-orbital Space","Low Orbit"]);
+function regionInfo(r){
+  const deg=(Math.atan2(r.y,r.x)*180/Math.PI+360)%360;  // launch pad sits at 90°
+  return REGIONS[Math.floor(((deg-54+360)%360)/72)] || REGIONS[0];
+}
+// resolve the science key + value for the rocket's current spot
+function sciData(r){
+  const label=situation(r);
+  const regional=REGIONAL.has(label);
+  const reg=regional?regionInfo(r):null;
+  const base=SITU[label]||0;
+  return { label, key: regional?`${label} · ${reg.name}`:label,
+           value: regional?Math.round(base*reg.f):base };
+}
 
 // ---------- persistent save ----------
 const SAVE_KEY="voon_program_v1";
@@ -767,10 +792,10 @@ function doStage(){
 }
 function doScience(){
   if(!rocket||!rocket.alive) return;
-  const s=situation(rocket);
-  rocket.pending[s]=SITU[s];
-  const total=Object.values(rocket.pending).reduce((a,b)=>a+b,0);
-  toast(`⚗ ${total} science held · land safely to keep it`);
+  const sd=sciData(rocket);
+  rocket.pending[sd.key]=sd.value;
+  const total=Object.values(rocket.pending).reduce((a,b)=>a+b,0)*(rocket.sciCount||1);
+  toast(`⚗ ${total} held · ${sd.key}`);
 }
 function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); toastTimer=1.8; }
 
@@ -1092,7 +1117,8 @@ function updateHUD(o){
   const eng=activeStage(r);
   const fuelPct = eng? Math.round(eng.fuel/eng.fuelMax*100):0;
   const situ=situation(r);
-  if(r.alive) r.pending[situ]=SITU[situ];   // auto-collect science for wherever you are
+  const sd=sciData(r);
+  if(r.alive) r.pending[sd.key]=sd.value;   // auto-collect science for where AND how high you are
   const apo = o.apo===Infinity? "escape" : fmtKm(o.apo);
   const speedC = o.speed>0? "var(--ink)":"var(--muted)";
   const vs=o.vspeed;
@@ -1106,7 +1132,7 @@ function updateHUD(o){
     <div class="t"><span>Periapsis</span><span>${o.peri>-R?fmtKm(o.peri):'—'}</span></div>
     <div class="t"><span>Fuel (stg ${Math.min(r.active+1,r.stages.length)})</span><span style="color:${fuelPct>20?'var(--ink)':'var(--red)'}">${fuelPct}%</span></div>
     <div class="t"><span>Science held</span><span style="color:var(--cyan)">${pend}</span></div>
-    <div class="situ">${situ}</div>`;
+    <div class="situ">${sd.key}</div>`;
   $("#thrFill").style.height=(r.throttle*100)+"%";
   // science is auto-collecting while you're alive; show the running total
   $("#btnSci").classList.toggle("ready", r.alive && pend>0);
