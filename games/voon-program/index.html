@@ -234,6 +234,19 @@
     .warpbtns button{padding:8px 9px}
     #btnAbort{padding:9px 11px}
   }
+  /* cheat menu (Ctrl+Q) */
+  #cheatPanel{position:fixed; top:58px; left:12px; z-index:80}
+  .cheat-card{background:rgba(22,12,12,.97); border:1px solid #7a3b3b; border-radius:12px; padding:14px 16px;
+    width:220px; box-shadow:0 10px 34px rgba(0,0,0,.55); font-family:var(--mono); color:var(--ink); backdrop-filter:blur(4px)}
+  .cheat-card h3{font-family:var(--disp); font-size:14px; letter-spacing:.08em; color:#ff8a7a; margin:0 0 8px;
+    display:flex; justify-content:space-between; align-items:center}
+  .cheat-card h3 button{background:none; border:none; color:var(--dim); font-size:20px; cursor:pointer}
+  .cheat-card label{display:flex; align-items:center; gap:9px; font-size:13px; margin:9px 0; cursor:pointer}
+  .cheat-card input[type=checkbox]{width:18px; height:18px; accent-color:#ff5a5f}
+  .cheat-act{width:100%; margin-top:8px; padding:10px; border:1px solid #7a3b3b; background:rgba(255,90,80,.12);
+    color:#ffb0a5; border-radius:8px; font-family:var(--disp); letter-spacing:.06em; font-size:12px}
+  .cheat-act:hover{background:rgba(255,90,80,.22)}
+  .cheat-card .hint2{font-size:10px; color:var(--dim); margin:11px 0 0; letter-spacing:.04em}
   /* zoom buttons for the map (touch has no scroll-wheel) */
   #zoomctl{top:64px; right:12px; display:flex; flex-direction:column; gap:6px; pointer-events:auto}
   #zoomctl button{width:40px; height:40px; border:1px solid var(--line2); background:rgba(12,17,25,.8);
@@ -245,7 +258,7 @@
 <div id="app">
   <div class="topbar">
     <div class="logo">VOON<b>·</b>PROGRAM</div>
-    <span class="ver">v0.4</span>
+    <span class="ver">v0.4.5</span>
     <div class="tag" id="phaseTag">HANGAR // MISSION DESIGN</div>
     <div class="spacer"></div>
     <div class="stat-chip">SCIENCE <b id="sciBank">0</b></div>
@@ -338,6 +351,17 @@
 
   <div class="modal" id="resultModal" hidden>
     <div class="card" id="resultCard"></div>
+  </div>
+
+  <div id="cheatPanel" hidden>
+    <div class="cheat-card">
+      <h3>😈 CHEATS<button id="cheatClose" aria-label="Close">×</button></h3>
+      <label><input type="checkbox" id="cheatFuel"> Infinite fuel</label>
+      <label><input type="checkbox" id="cheatNoCrash"> No-crash landings</label>
+      <button class="cheat-act" id="cheatUnlock">UNLOCK EVERYTHING</button>
+      <button class="cheat-act" id="cheatSci">+1000 SCIENCE</button>
+      <p class="hint2">Toggle this menu with Ctrl + Q</p>
+    </div>
   </div>
 </div>
 
@@ -450,6 +474,9 @@ function freshDesign(){
 }
 function persist(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){} }
 let save = loadSave();
+
+// ---------- cheats (Ctrl+Q) ----------
+const cheats = { infFuel:false, noCrash:false };
 
 // ---------- current rocket design ----------
 let design = freshDesign();  // bottom-first stages
@@ -1003,11 +1030,12 @@ function physics(dt){
   if(r.chuteOpen && warp>1) setWarp(1);   // a deployed chute forces real-time
   const eng=activeStage(r);
   const boostersLive = r.boostersAttached && r.boosters && r.boosters.fuel>0;
-  let thrustingNow = r.thrusting && warp===1 && ((eng && eng.fuel>0) || boostersLive);
+  let thrustingNow = r.thrusting && warp===1 && (cheats.infFuel || (eng && eng.fuel>0) || boostersLive);
   r.throttle = thrustingNow?1:Math.max(0,r.throttle-dt*3);
   if(warp>1) r.thrusting=false;
 
   for(let s=0;s<substeps;s++){
+    if(cheats.infFuel){ if(eng) eng.fuel=eng.fuelMax; if(r.boosters) r.boosters.fuel=r.boosters.fuelMax; } // cheat: never empty
     const m=curMass(r);
     let ax=0, ay=0;
     const g=gravityAccel(r.x,r.y,moonAngle);
@@ -1082,7 +1110,7 @@ function landOrCrash(r, body){
   }
   r.vx=r.vy=0; r.thrusting=false; updateThrusterBtn();
   const limit = r.legs ? SAFE_LAND+LEGS_BONUS : SAFE_LAND;
-  const safe = impact<=limit;
+  const safe = cheats.noCrash ? true : impact<=limit;
   if(safe){
     r.landed=true;
     // if we landed on voon, also grant voon surface data automatically
@@ -1340,6 +1368,27 @@ function loop(now){
 $("#btnControls").addEventListener("click",()=>$("#controlsModal").hidden=false);
 document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>$("#controlsModal").hidden=true));
 $("#controlsModal").addEventListener("click",e=>{ if(e.target.id==="controlsModal") $("#controlsModal").hidden=true; });
+
+// ---------- cheats ----------
+addEventListener("keydown",e=>{
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="q"){ e.preventDefault(); $("#cheatPanel").hidden=!$("#cheatPanel").hidden; }
+});
+$("#cheatClose").addEventListener("click",()=>{ $("#cheatPanel").hidden=true; });
+$("#cheatFuel").addEventListener("change",e=>{ cheats.infFuel=e.target.checked; });
+$("#cheatNoCrash").addEventListener("change",e=>{ cheats.noCrash=e.target.checked; });
+$("#cheatUnlock").addEventListener("click",()=>{
+  TECH.forEach(t=>{ if(!save.unlocked.includes(t.id)) save.unlocked.push(t.id); });
+  if(!save.unlocked.includes("decoupler")) save.unlocked.push("decoupler");
+  persist();
+  if(!$("#hangar").hidden) renderHangar();
+  if(!$("#flight").hidden) toast("😈 Everything unlocked");
+});
+$("#cheatSci").addEventListener("click",()=>{
+  save.sci+=1000; persist();
+  $("#sciBank").textContent=Math.floor(save.sci);
+  if(!$("#hangar").hidden) renderHangar();
+  if(!$("#flight").hidden) toast("😈 +1000 science");
+});
 
 // ---------- boot ----------
 renderHangar();
