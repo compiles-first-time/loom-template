@@ -157,6 +157,8 @@
   .bigbtn.stage{border-color:var(--amber)} .bigbtn.stage:hover{background:rgba(255,180,84,.14)}
   .bigbtn.sci{border-color:var(--cyan-dim)} .bigbtn.sci:hover{background:rgba(79,227,193,.12)}
   .bigbtn.sci.ready{border-color:var(--cyan); box-shadow:0 0 16px rgba(79,227,193,.4); color:var(--cyan)}
+  .bigbtn.chute{border-color:var(--amber)} .bigbtn.chute:hover{background:rgba(255,180,84,.14)}
+  .bigbtn.chute.ready{box-shadow:0 0 16px rgba(255,180,84,.45); color:var(--amber)}
   .bigbtn:disabled{opacity:.4; cursor:not-allowed; box-shadow:none}
   .throttle-wrap{display:flex; flex-direction:column; align-items:center; gap:4px; font-family:var(--mono); font-size:10px; color:var(--dim)}
   .throttle{width:14px; height:56px; background:var(--panel2); border:1px solid var(--line2); border-radius:7px; position:relative; overflow:hidden}
@@ -222,6 +224,7 @@
       <h3 class="htitle">Vehicle Assembly</h3>
       <div id="stageList"></div>
       <button class="addstage" id="addStage">+ ADD STAGE (needs Decoupler)</button>
+      <div id="boosterBox" style="margin-top:12px"></div>
       <div style="margin-top:14px">
         <div class="row"><label>Parachute</label><button class="toggle" id="chuteToggle" disabled></button></div>
         <div class="row"><label>Nose cone</label><button class="toggle" id="noseToggle" disabled></button></div>
@@ -262,7 +265,8 @@
       </div>
       <button class="bigbtn thruster" id="btnThruster">THRUSTER<small>OFF · [W]</small></button>
       <div class="throttle-wrap">THR<div class="throttle"><i id="thrFill"></i></div></div>
-      <button class="bigbtn stage" id="btnStage">STAGE<small>[SPACE]</small></button>
+      <button class="bigbtn stage" id="btnStage">STAGE<small>DROP · [SPACE]</small></button>
+      <button class="bigbtn chute" id="btnChute">🪂 CHUTE<small>[P]</small></button>
       <button class="bigbtn sci" id="btnSci">SCIENCE<small>[E]</small></button>
       <div class="warpbtns">
         <button data-warp="1" class="on">1×</button>
@@ -283,7 +287,8 @@
         <span class="kbd">W</span><span>Thruster on/off — fires the active stage's engine</span>
         <span class="kbd">A</span><span>Rotate the rocket <b style="color:var(--ink)">east</b> (toward the sunrise)</span>
         <span class="kbd">D</span><span>Rotate the rocket <b style="color:var(--ink)">west</b></span>
-        <span class="kbd">SPACE</span><span>Stage — drop the spent stage, or deploy the parachute</span>
+        <span class="kbd">SPACE</span><span>Stage — drop the side boosters first, then each spent engine stage</span>
+        <span class="kbd">P</span><span>Deploy parachute — one press, any time (no staging needed)</span>
         <span class="kbd">E</span><span>Run Science — you auto-collect it too. How much depends on <b style="color:var(--ink)">how high</b> and <b style="color:var(--ink)">which region</b> you're over (orbit sweeps many regions). <b style="color:var(--ink)">Land safely to keep it</b></span>
         <span class="kbd">, / .</span><span>Time warp down / up (only while coasting)</span>
         <span class="kbd">scroll</span><span>Zoom the map in / out</span>
@@ -402,7 +407,8 @@ function loadSave(){
 }
 // the starter rocket: a 2-stage ship (uses the decoupler) with a parachute
 function freshDesign(){
-  return { stages:[ {tank:"small",count:2,engine:"basic"}, {tank:"small",count:1,engine:"basic"} ], parachute:true, nose:false, sci:1 };
+  return { stages:[ {tank:"small",count:2,engine:"basic"}, {tank:"small",count:1,engine:"basic"} ],
+           parachute:true, nose:false, sci:1, boosters:{n:0,engine:"basic",tank:"small",tanks:2} };
 }
 function persist(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){} }
 let save = loadSave();
@@ -424,13 +430,15 @@ function designStats(d){
   // total wet mass
   let totalDry=payload, totalFuel=0;
   st.forEach(s=>{ totalDry+=s.dry; totalFuel+=s.fuel; });
-  const wet = totalDry+totalFuel;
-  // Δv, staged bottom->top. mass "above" a stage = payload + all upper stages (wet)
-  let dv=0, above=payload;
-  // build cumulative from top so bottom sees everything above it
-  const upperWet = st.map(s=>s.dry+s.fuel);
-  for(let i=st.length-1;i>=0;i--){ /* accumulate later */ }
-  // simpler: iterate bottom(0)->top; carried = payload + sum of stages with index>i (wet)
+  // side boosters (fire with stage 1)
+  const bo=d.boosters||{n:0};
+  let boosterDry=0, boosterFuel=0, boosterThrust=0;
+  if(bo.n>0){ const be=ENGINES[bo.engine]||ENGINES.basic, bt=TANKS[bo.tank]||TANKS.small;
+    const dryEach=be.mass+(bo.tanks||1)*bt.dry, fuelEach=(bo.tanks||1)*bt.fuel;
+    boosterDry=bo.n*dryEach; boosterFuel=bo.n*fuelEach; boosterThrust=bo.n*be.thrust; }
+  const wet = totalDry+totalFuel+boosterDry+boosterFuel;
+  // Δv, staged bottom->top (core stages; boosters mainly add liftoff thrust)
+  let dv=0;
   for(let i=0;i<st.length;i++){
     let carried=payload;
     for(let j=i+1;j<st.length;j++) carried += st[j].dry+st[j].fuel;
@@ -438,8 +446,8 @@ function designStats(d){
     const mf = carried + st[i].dry;
     dv += st[i].isp*g0*Math.log(m0/mf);
   }
-  const twr = st[0] ? st[0].thrust/(wet*g0) : 0;
-  return {wet, totalFuel, dv, twr, payload, stages:st};
+  const twr = wet>0 ? ((st[0]?st[0].thrust:0)+boosterThrust)/(wet*g0) : 0;
+  return {wet, totalFuel:totalFuel+boosterFuel, dv, twr, payload, stages:st, boosters:bo.n||0};
 }
 
 // ============================================================
@@ -472,10 +480,11 @@ function renderHangar(){
         </div></div>`;
     stageListEl.appendChild(b);
   });
-  // add-stage button
+  // add-stage button (as many stages as you want, once the Decoupler is unlocked)
   const addBtn=$("#addStage");
-  addBtn.disabled = !has("decoupler") || design.stages.length>=2;
-  addBtn.textContent = has("decoupler") ? (design.stages.length>=2?"MAX 2 STAGES":"+ ADD STAGE") : "+ ADD STAGE (needs Decoupler)";
+  addBtn.disabled = !has("decoupler") || design.stages.length>=8;
+  addBtn.textContent = has("decoupler") ? (design.stages.length>=8?"MAX STAGES (8)":"+ ADD STAGE") : "+ ADD STAGE (needs Decoupler)";
+  renderBoosters();
   // parachute
   const ct=$("#chuteToggle");
   ct.disabled=!has("parachute");
@@ -492,6 +501,39 @@ function renderHangar(){
   renderTech();
   renderReadout();
   drawPreview();
+}
+
+// dropdown builders shared by stages and boosters
+function engSelectHTML(sel, attr){
+  return `<select class="mini-sel" ${attr}>`+Object.keys(ENGINES).map(k=>{ const u=partUnlocked(ENGINES[k].unlock);
+    return `<option value="${k}" ${sel===k?"selected":""} ${u?"":"disabled"}>${ENGINES[k].short}${u?"":" 🔒"}</option>`; }).join("")+`</select>`;
+}
+function tankSelectHTML(sel, attr){
+  return `<select class="mini-sel" ${attr}>`+Object.keys(TANKS).map(k=>{ const u=partUnlocked(TANKS[k].unlock);
+    return `<option value="${k}" ${sel===k?"selected":""} ${u?"":"disabled"}>${TANKS[k].short}${u?"":" 🔒"}</option>`; }).join("")+`</select>`;
+}
+// SIDE BOOSTERS block — radial engines that fire with stage 1, dropped first
+function renderBoosters(){
+  const bo=design.boosters||(design.boosters={n:0,engine:"basic",tank:"small",tanks:2});
+  let h=`<div class="stage-block"><h4>SIDE BOOSTERS${bo.n>0?" · fire first":""}</h4>
+    <div class="row"><label>Boosters ×</label><div class="stepper">
+      <button id="boDec">−</button><span class="val">${bo.n}</span><button id="boInc">+</button></div></div>`;
+  if(bo.n>0){
+    h+=`<div class="row"><label>Engine</label>${engSelectHTML(bo.engine,'id="boEng"')}</div>
+        <div class="row"><label>Tank</label>${tankSelectHTML(bo.tank,'id="boTank"')}</div>
+        <div class="row"><label>Tanks each ×</label><div class="stepper">
+          <button id="boTankDec">−</button><span class="val">${bo.tanks}</span><button id="boTankInc">+</button></div></div>`;
+  }
+  h+=`</div>`;
+  $("#boosterBox").innerHTML=h;
+  $("#boInc").onclick=()=>{ if(bo.n<6){ bo.n++; renderHangar(); } };
+  $("#boDec").onclick=()=>{ if(bo.n>0){ bo.n--; renderHangar(); } };
+  if(bo.n>0){
+    $("#boEng").onchange=e=>{ bo.engine=e.target.value; renderHangar(); };
+    $("#boTank").onchange=e=>{ bo.tank=e.target.value; renderHangar(); };
+    $("#boTankInc").onclick=()=>{ if(bo.tanks<4){ bo.tanks++; renderHangar(); } };
+    $("#boTankDec").onclick=()=>{ if(bo.tanks>1){ bo.tanks--; renderHangar(); } };
+  }
 }
 
 function renderTech(){
@@ -523,7 +565,7 @@ function renderReadout(){
     <div class="r"><span>Liftoff TWR</span><span style="color:${st.twr>=1.05?'var(--green)':'var(--red)'}">${st.twr.toFixed(2)}</span></div>
     <div class="r"><span>Total Δv</span><span style="color:var(--cyan)">${Math.round(st.dv)} m/s</span></div>
     <div class="r"><span>Science yield</span><span style="color:var(--cyan)">×${design.sci||1}</span></div>
-    <div class="r"><span>Stages</span><span>${design.stages.length}</span></div>
+    <div class="r"><span>Stages</span><span>${design.stages.length}${st.boosters?` + ${st.boosters} booster${st.boosters>1?"s":""}`:""}</span></div>
     <div class="verdict ${cls}">${msg}</div>`;
   $("#btnLaunch").disabled = st.twr<1.0;
 }
@@ -544,7 +586,7 @@ function stageIndexOf(node){ // find owning stage-block index
   return [...stageListEl.children].indexOf(block);
 }
 $("#addStage").addEventListener("click",()=>{
-  if(has("decoupler") && design.stages.length<2){
+  if(has("decoupler") && design.stages.length<8){
     design.stages.push({tank:"small",count:1,engine:has("eff")?"eff":"basic"});
     renderHangar();
   }
@@ -584,7 +626,7 @@ function drawPreview(){
   pvx.strokeStyle="rgba(79,227,193,.06)"; pvx.lineWidth=1;
   for(let x=0;x<w;x+=26){pvx.beginPath();pvx.moveTo(x,0);pvx.lineTo(x,h);pvx.stroke();}
   for(let y=0;y<h;y+=26){pvx.beginPath();pvx.moveTo(0,y);pvx.lineTo(w,y);pvx.stroke();}
-  drawRocketShape(pvx, w/2, h*0.5, 3.0, {chute:design.parachute, preview:true, sci:design.sci||1});
+  drawRocketShape(pvx, w/2, h*0.5, 3.0, {chute:design.parachute, preview:true, sci:design.sci||1, boosters:(design.boosters?design.boosters.n:0)});
 }
 
 /* Draws the rocket stack. cx,cy = nose-to-tail centre. px = pixels per "unit".
@@ -633,6 +675,29 @@ function drawRocketShape(ctx,cx,cy,px,opt){
     }
     y+=hh;
   });
+  // side boosters (radial), near the bottom of the stack
+  if(opt.boosters>0){
+    const bw2=bodyW*0.6, bh=totalU*px*0.42;
+    const by=cy + totalU*px/2 - bh - 4*px;
+    for(const sgn of [-1,1]){
+      const bx=cx + sgn*(bodyW*0.95);
+      if(opt.boosterFlame){
+        const fl=12+Math.random()*8;
+        const grd=ctx.createLinearGradient(0,by+bh,0,by+bh+fl);
+        grd.addColorStop(0,"#ffd27a"); grd.addColorStop(1,"rgba(255,90,40,0)");
+        ctx.fillStyle=grd; ctx.beginPath();
+        ctx.moveTo(bx-bw2*0.35,by+bh); ctx.lineTo(bx+bw2*0.35,by+bh); ctx.lineTo(bx,by+bh+fl); ctx.closePath(); ctx.fill();
+      }
+      ctx.lineWidth=1.2; ctx.fillStyle="#2b3240"; ctx.strokeStyle="#586274";
+      rrect(ctx,bx-bw2/2,by,bw2,bh,3); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(bx,by-4*px); ctx.lineTo(bx+bw2/2,by); ctx.lineTo(bx-bw2/2,by); ctx.closePath();
+      ctx.fillStyle="#39414f"; ctx.fill(); ctx.stroke();
+    }
+    if(opt.boosters>2 && opt.preview){
+      ctx.fillStyle=varc("--amber"); ctx.font="bold "+Math.round(px*2.2)+"px 'IBM Plex Mono'";
+      ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText("×"+opt.boosters, cx, by+bh+px*3.5);
+    }
+  }
   // parachute (packed, on the pod) in preview
   if(opt.chute && opt.preview){
     ctx.fillStyle=varc("--amber"); ctx.strokeStyle="#a5701d";
@@ -668,10 +733,16 @@ function buildFlightRocket(){
   });
   const sciCount = design.sci||1;
   const payload = POD.mass+sciCount*SCI.mass+(design.parachute?CHUTE.mass:0)+(design.nose?NOSE.mass:0)+(design.stages.length-1)*DECOUPLER.mass;
+  const bo=design.boosters||{n:0};
+  let boosters=null;
+  if(bo.n>0){ const be=ENGINES[bo.engine]||ENGINES.basic, bt=TANKS[bo.tank]||TANKS.small;
+    const dryEach=be.mass+(bo.tanks||1)*bt.dry, fuelEach=(bo.tanks||1)*bt.fuel;
+    boosters={ n:bo.n, tank:bo.tank, thrust:be.thrust, isp:be.isp, dryEach, fuel:bo.n*fuelEach, fuelMax:bo.n*fuelEach }; }
   return {
     x:0, y:R, vx:0, vy:0,
     ang:0,                    // 0 = pointing radially "up"
     stages:st, active:0,      // bottom stage index that fires
+    boosters, boostersAttached: !!boosters,   // radial boosters, fire with stage 1
     payload, sciCount,        // sciCount = science modules -> multiplies science earned
     nose: design.nose && has("nose"),
     throttle:0, thrusting:false,
@@ -683,6 +754,7 @@ function buildFlightRocket(){
 function curMass(r){
   let m=r.payload;
   for(let i=r.active;i<r.stages.length;i++) m+=r.stages[i].dry+r.stages[i].fuel;
+  if(r.boostersAttached && r.boosters) m+=r.boosters.n*r.boosters.dryEach + r.boosters.fuel;
   return m;
 }
 function activeStage(r){ return r.stages[r.active]; }
@@ -741,6 +813,7 @@ addEventListener("keydown",e=>{
   if(k==="w"){ toggleThruster(); e.preventDefault(); }
   else if(k==="a"||k==="d"){ keys[k]=true; }
   else if(k===" "){ doStage(); e.preventDefault(); }
+  else if(k==="p"){ deployChute(); }
   else if(k==="e"){ doScience(); }
   else if(k===","){ stepWarp(-1); }
   else if(k==="."){ stepWarp(1); }
@@ -756,6 +829,7 @@ function holdBtn(el,key){
 holdBtn($("#steerA"),"a"); holdBtn($("#steerD"),"d");
 $("#btnThruster").addEventListener("click",toggleThruster);
 $("#btnStage").addEventListener("click",doStage);
+$("#btnChute").addEventListener("click",deployChute);
 $("#btnSci").addEventListener("click",doScience);
 $("#btnAbort").addEventListener("click",abortFlight);
 document.querySelectorAll(".warpbtns button").forEach(b=>{
@@ -777,18 +851,29 @@ function updateThrusterBtn(){
 }
 function doStage(){
   if(!rocket||!rocket.alive) return;
-  if(rocket.active < rocket.stages.length){
-    // jettison the current bottom stage as debris
-    const s=rocket.stages[rocket.active];
-    spawnDebris(rocket, s);
-    rocket.active++;
-    toast(rocket.active<rocket.stages.length ? "STAGE SEPARATED · next engine ready" : "STAGE SEPARATED · engines depleted");
-    if(rocket.active>=rocket.stages.length){ rocket.thrusting=false; updateThrusterBtn(); }
-  } else if(rocket.chute && !rocket.chuteOpen){
-    rocket.chuteOpen=true; toast("🪂 PARACHUTE DEPLOYED");
-  } else {
-    toast("Nothing left to stage");
+  const r=rocket;
+  if(r.boostersAttached){                       // 1) drop the side boosters first
+    spawnDebris(r,{tank:(r.boosters&&r.boosters.tank)||"small"});
+    r.boostersAttached=false; toast("BOOSTERS JETTISONED"); return;
   }
+  if(r.active < r.stages.length){               // 2) drop the current core stage
+    spawnDebris(r, r.stages[r.active]);
+    r.active++;
+    const done=r.active>=r.stages.length;
+    toast(done ? "STAGE SEPARATED · engines depleted" : "STAGE SEPARATED · next engine ready");
+    if(done){ r.thrusting=false; updateThrusterBtn(); }
+    return;
+  }
+  // no engines left — STAGE also pops the chute as a convenience (or use the CHUTE button)
+  if(r.chute && !r.chuteOpen){ deployChute(); return; }
+  toast("Nothing left to stage");
+}
+// dedicated parachute deploy — one press, any time, no staging needed
+function deployChute(){
+  if(!rocket||!rocket.alive) return;
+  if(!rocket.chute){ toast("No parachute on this rocket"); return; }
+  if(rocket.chuteOpen){ toast("Parachute already open"); return; }
+  rocket.chuteOpen=true; toast("🪂 PARACHUTE DEPLOYED");
 }
 function doScience(){
   if(!rocket||!rocket.alive) return;
@@ -847,7 +932,8 @@ function physics(dt){
   const h=dt/substeps;
   if(r.chuteOpen && warp>1) setWarp(1);   // a deployed chute forces real-time
   const eng=activeStage(r);
-  let thrustingNow = r.thrusting && warp===1 && eng && eng.fuel>0;
+  const boostersLive = r.boostersAttached && r.boosters && r.boosters.fuel>0;
+  let thrustingNow = r.thrusting && warp===1 && ((eng && eng.fuel>0) || boostersLive);
   r.throttle = thrustingNow?1:Math.max(0,r.throttle-dt*3);
   if(warp>1) r.thrusting=false;
 
@@ -856,11 +942,16 @@ function physics(dt){
     let ax=0, ay=0;
     const g=gravityAccel(r.x,r.y,moonAngle);
     ax+=g.ax; ay+=g.ay;
-    // thrust
-    if(thrustingNow && eng.fuel>0){
-      const F=eng.thrust; ax+=F/m*dir.x; ay+=F/m*dir.y;
-      eng.fuel-=(eng.thrust/(eng.isp*g0))*h;
-      if(eng.fuel<=0){ eng.fuel=0; }
+    // thrust — core engine + any live side boosters (they burn together)
+    if(thrustingNow){
+      let F=0;
+      if(eng && eng.fuel>0){ F+=eng.thrust; eng.fuel-=(eng.thrust/(eng.isp*g0))*h; if(eng.fuel<0) eng.fuel=0; }
+      if(r.boostersAttached && r.boosters && r.boosters.fuel>0){
+        F+=r.boosters.n*r.boosters.thrust;
+        r.boosters.fuel-=r.boosters.n*(r.boosters.thrust/(r.boosters.isp*g0))*h;
+        if(r.boosters.fuel<0) r.boosters.fuel=0;
+      }
+      ax+=F/m*dir.x; ay+=F/m*dir.y;
     }
     // drag (planet atmosphere)
     const rad=Math.hypot(r.x,r.y); const alt=rad-R;
@@ -1100,7 +1191,9 @@ function drawFlightRocket(r){
     const bw=8*px/3;
     cx.moveTo(-bw/2, 10*px/3); cx.lineTo(bw/2,10*px/3); cx.lineTo(0,10*px/3+fl); cx.closePath(); cx.fill();
   }
-  drawRocketShape(cx,0,0,px,{activeStage:r.active, sci:r.sciCount||1});
+  drawRocketShape(cx,0,0,px,{activeStage:r.active, sci:r.sciCount||1,
+    boosters:(r.boostersAttached&&r.boosters?r.boosters.n:0),
+    boosterFlame:(r.thrusting && r.boostersAttached && r.boosters && r.boosters.fuel>0)});
   // open parachute
   if(r.chuteOpen){
     cx.fillStyle="rgba(255,180,84,.85)"; cx.strokeStyle="#a5701d"; cx.lineWidth=1;
@@ -1115,7 +1208,12 @@ function drawFlightRocket(r){
 function updateHUD(o){
   const r=rocket;
   const eng=activeStage(r);
-  const fuelPct = eng? Math.round(eng.fuel/eng.fuelMax*100):0;
+  const onBoost = r.boostersAttached && r.boosters;
+  const fuelPct = onBoost ? Math.round(r.boosters.fuel/r.boosters.fuelMax*100)
+                          : (eng? Math.round(eng.fuel/eng.fuelMax*100):0);
+  const fuelLabel = onBoost ? "Fuel (boosters)" : `Fuel (stg ${Math.min(r.active+1,r.stages.length)})`;
+  const nextStage = r.boostersAttached ? "Drop boosters"
+                  : (r.active<r.stages.length ? `Drop stage ${r.active+1}` : "—");
   const situ=situation(r);
   const sd=sciData(r);
   if(r.alive) r.pending[sd.key]=sd.value;   // auto-collect science for where AND how high you are
@@ -1130,7 +1228,8 @@ function updateHUD(o){
     <div class="t"><span>Vertical</span><span style="color:${vs>=0?'var(--green)':'var(--amber)'}">${vs>=0?'+':''}${Math.round(vs)} m/s</span></div>
     <div class="t"><span>Apoapsis</span><span>${apo}</span></div>
     <div class="t"><span>Periapsis</span><span>${o.peri>-R?fmtKm(o.peri):'—'}</span></div>
-    <div class="t"><span>Fuel (stg ${Math.min(r.active+1,r.stages.length)})</span><span style="color:${fuelPct>20?'var(--ink)':'var(--red)'}">${fuelPct}%</span></div>
+    <div class="t"><span>${fuelLabel}</span><span style="color:${fuelPct>20?'var(--ink)':'var(--red)'}">${fuelPct}%</span></div>
+    <div class="t"><span>Next stage</span><span style="color:var(--amber)">${nextStage}</span></div>
     <div class="t"><span>Science held</span><span style="color:var(--cyan)">${pend}</span></div>
     <div class="situ">${sd.key}</div>`;
   $("#thrFill").style.height=(r.throttle*100)+"%";
@@ -1141,6 +1240,9 @@ function updateHUD(o){
   if(sciSmall) sciSmall.textContent = pend>0 ? ("⚗ "+pend+" held") : "[E]";
   $("#btnStage").disabled=!r.alive;
   $("#btnThruster").disabled=!r.alive;
+  const chuteBtn=$("#btnChute");
+  chuteBtn.disabled = !r.alive || !r.chute || r.chuteOpen;
+  chuteBtn.classList.toggle("ready", r.alive && r.chute && !r.chuteOpen && (o.alt<ATMO) && o.vspeed<0);
   // toast fade
   if(toastTimer>0){ toastTimer-=1/60; if(toastTimer<=0) $("#toast").classList.remove("show"); }
 }
