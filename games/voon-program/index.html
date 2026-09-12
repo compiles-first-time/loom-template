@@ -75,6 +75,8 @@
   .toggle.on{background:var(--cyan-dim); border-color:var(--cyan)}
   .toggle.on::after{left:22px; background:var(--cyan)}
   .toggle:disabled{opacity:.4}
+  .hint{font-family:var(--mono); font-size:11px; color:var(--dim); line-height:1.4; margin:2px 2px 0}
+  .stepper button:disabled{opacity:.35; cursor:not-allowed}
   .addstage{width:100%; padding:9px; border:1px dashed var(--line2); background:transparent; color:var(--muted);
     border-radius:10px; font-size:12px; letter-spacing:.08em}
   .addstage:hover{border-color:var(--cyan-dim); color:var(--ink)}
@@ -215,6 +217,12 @@
       <button class="addstage" id="addStage">+ ADD STAGE (needs Decoupler)</button>
       <div style="margin-top:14px">
         <div class="row"><label>Parachute</label><button class="toggle" id="chuteToggle" disabled></button></div>
+        <div class="row"><label>Science modules</label>
+          <div class="stepper">
+            <button id="sciDec" type="button">−</button><span class="val" id="sciVal">1</span><button id="sciInc" type="button">+</button>
+          </div>
+        </div>
+        <div class="hint" id="sciHint">Each extra module costs <b style="color:var(--cyan)">3 science</b> · more modules = more science every safe landing.</div>
       </div>
     </div>
 
@@ -351,7 +359,7 @@ function loadSave(){
 }
 // the starter rocket: a 2-stage ship (uses the decoupler) with a parachute
 function freshDesign(){
-  return { stages:[ {tank:"small",count:2,engine:"basic"}, {tank:"small",count:1,engine:"basic"} ], parachute:true };
+  return { stages:[ {tank:"small",count:2,engine:"basic"}, {tank:"small",count:1,engine:"basic"} ], parachute:true, sci:1 };
 }
 function persist(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){} }
 let save = loadSave();
@@ -368,7 +376,7 @@ function stageMass(s){
   return { dry:e.mass + s.count*t.dry, fuel:s.count*t.fuel, thrust:e.thrust, isp:e.isp };
 }
 function designStats(d){
-  let payload = POD.mass + SCI.mass + (d.parachute?CHUTE.mass:0) + (d.stages.length-1)*DECOUPLER.mass;
+  let payload = POD.mass + (d.sci||1)*SCI.mass + (d.parachute?CHUTE.mass:0) + (d.stages.length-1)*DECOUPLER.mass;
   const st = d.stages.map(stageMass);
   // total wet mass
   let totalDry=payload, totalFuel=0;
@@ -427,6 +435,11 @@ function renderHangar(){
   const ct=$("#chuteToggle");
   ct.disabled=!has("parachute");
   ct.classList.toggle("on", design.parachute && has("parachute"));
+  // science modules
+  if(!design.sci) design.sci=1;
+  $("#sciVal").textContent=design.sci;
+  $("#sciInc").disabled = !(save.sci>=3 && design.sci<5);
+  $("#sciDec").disabled = design.sci<=1;
 
   renderTech();
   renderReadout();
@@ -461,6 +474,7 @@ function renderReadout(){
     <div class="r"><span>Fuel</span><span>${(st.totalFuel/1000).toFixed(2)} t</span></div>
     <div class="r"><span>Liftoff TWR</span><span style="color:${st.twr>=1.05?'var(--green)':'var(--red)'}">${st.twr.toFixed(2)}</span></div>
     <div class="r"><span>Total Δv</span><span style="color:var(--cyan)">${Math.round(st.dv)} m/s</span></div>
+    <div class="r"><span>Science yield</span><span style="color:var(--cyan)">×${design.sci||1}</span></div>
     <div class="r"><span>Stages</span><span>${design.stages.length}</span></div>
     <div class="verdict ${cls}">${msg}</div>`;
   $("#btnLaunch").disabled = st.twr<1.0;
@@ -488,6 +502,8 @@ $("#addStage").addEventListener("click",()=>{
   }
 });
 $("#chuteToggle").addEventListener("click",()=>{ if(has("parachute")){ design.parachute=!design.parachute; renderHangar(); }});
+$("#sciInc").addEventListener("click",()=>{ if(save.sci>=3 && design.sci<5){ save.sci-=3; design.sci++; persist(); renderHangar(); }});
+$("#sciDec").addEventListener("click",()=>{ if(design.sci>1){ design.sci--; save.sci+=3; persist(); renderHangar(); }}); // remove = refund 3
 techEl.addEventListener("click",e=>{
   const id=e.target.dataset.tech; if(!id) return;
   const t=TECH.find(x=>x.id===id);
@@ -514,7 +530,7 @@ function drawPreview(){
   pvx.strokeStyle="rgba(79,227,193,.06)"; pvx.lineWidth=1;
   for(let x=0;x<w;x+=26){pvx.beginPath();pvx.moveTo(x,0);pvx.lineTo(x,h);pvx.stroke();}
   for(let y=0;y<h;y+=26){pvx.beginPath();pvx.moveTo(0,y);pvx.lineTo(w,y);pvx.stroke();}
-  drawRocketShape(pvx, w/2, h*0.5, 3.0, {chute:design.parachute, preview:true});
+  drawRocketShape(pvx, w/2, h*0.5, 3.0, {chute:design.parachute, preview:true, sci:design.sci||1});
 }
 
 /* Draws the rocket stack. cx,cy = nose-to-tail centre. px = pixels per "unit".
@@ -522,7 +538,8 @@ function drawPreview(){
 function drawRocketShape(ctx,cx,cy,px,opt){
   opt=opt||{};
   // build part list top->bottom with unit heights
-  const parts=[{t:"pod",u:9},{t:"sci",u:5}];
+  const parts=[{t:"pod",u:9}];
+  for(let i=0;i<(opt.sci||1);i++) parts.push({t:"sci",u:5});
   const stages = opt.stages || design.stages;
   stages.forEach((s,i)=>{
     for(let k=0;k<s.count;k++) parts.push({t:"tank",u:7,tank:s.tank});
@@ -595,12 +612,13 @@ function buildFlightRocket(){
     const m=stageMass(s);
     return {dry:m.dry, fuelMax:m.fuel, fuel:m.fuel, thrust:m.thrust, isp:m.isp};
   });
-  const payload = POD.mass+SCI.mass+(design.parachute?CHUTE.mass:0)+(design.stages.length-1)*DECOUPLER.mass;
+  const sciCount = design.sci||1;
+  const payload = POD.mass+sciCount*SCI.mass+(design.parachute?CHUTE.mass:0)+(design.stages.length-1)*DECOUPLER.mass;
   return {
     x:0, y:R, vx:0, vy:0,
     ang:0,                    // 0 = pointing radially "up"
     stages:st, active:0,      // bottom stage index that fires
-    payload,
+    payload, sciCount,        // sciCount = science modules -> multiplies science earned
     throttle:0, thrusting:false,
     chute:design.parachute, chuteOpen:false,
     launched:false, hasFlown:false, alive:true, landed:false,
@@ -861,9 +879,11 @@ function explode(r){
 }
 
 function endMission(safe, impact, body){
-  // tally science
-  let total=0; const rows=[];
-  for(const k in rocket.pending){ total+=rocket.pending[k]; rows.push([k,rocket.pending[k]]); }
+  // tally science (base per situation, then multiplied by science modules)
+  let base=0; const rows=[];
+  for(const k in rocket.pending){ base+=rocket.pending[k]; rows.push([k,rocket.pending[k]]); }
+  const mult=rocket.sciCount||1;
+  const total=base*mult;
   const card=$("#resultCard");
   if(safe && total>0){ save.sci+=total; persist(); }
   const where = body==="voon"?"on Voon":"back home";
@@ -873,7 +893,8 @@ function endMission(safe, impact, body){
         : `Impact at <b style="color:var(--red)">${impact.toFixed(1)} m/s</b> — the ${SAFE_LAND} m/s limit was exceeded. Everything aboard was lost.`}</p>`;
   if(rows.length){
     html+=`<div class="results-sci">`;
-    rows.forEach(([k,v])=>{ html+=`<div class="rr"><span>${k}</span><span>${safe?'+':'✕ '}${v}</span></div>`; });
+    rows.forEach(([k,v])=>{ html+=`<div class="rr"><span>${k}</span><span>${v}</span></div>`; });
+    if(mult>1) html+=`<div class="rr"><span>× ${mult} science modules</span><span style="color:var(--cyan)">×${mult}</span></div>`;
     html+=`<div class="rr total"><span>${safe?'SCIENCE RECOVERED':'SCIENCE LOST'}</span><span>${safe?'+'+total:'−'+total}</span></div></div>`;
   } else {
     html+=`<p style="font-family:var(--mono);font-size:12px;color:var(--dim)">No science was run this flight. Press SCIENCE (E) in new situations next time.</p>`;
@@ -1021,7 +1042,7 @@ function drawFlightRocket(r){
     const bw=8*px/3;
     cx.moveTo(-bw/2, 10*px/3); cx.lineTo(bw/2,10*px/3); cx.lineTo(0,10*px/3+fl); cx.closePath(); cx.fill();
   }
-  drawRocketShape(cx,0,0,px,{activeStage:r.active});
+  drawRocketShape(cx,0,0,px,{activeStage:r.active, sci:r.sciCount||1});
   // open parachute
   if(r.chuteOpen){
     cx.fillStyle="rgba(255,180,84,.85)"; cx.strokeStyle="#a5701d"; cx.lineWidth=1;
@@ -1043,7 +1064,7 @@ function updateHUD(o){
   const speedC = o.speed>0? "var(--ink)":"var(--muted)";
   const vs=o.vspeed;
   const landColor = r.alive? (Math.hypot(r.vx,r.vy)<=SAFE_LAND?"var(--green)":"var(--red)"):"var(--muted)";
-  const pend=Object.values(r.pending).reduce((a,b)=>a+b,0);
+  const pend=Object.values(r.pending).reduce((a,b)=>a+b,0)*(r.sciCount||1);
   $("#tele").innerHTML=`
     <div class="t"><span>Altitude</span><span>${fmtKm(o.alt)}</span></div>
     <div class="t"><span>Speed</span><span style="color:${speedC}">${Math.round(o.speed)} m/s</span></div>
