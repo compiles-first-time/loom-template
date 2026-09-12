@@ -210,7 +210,7 @@
 <div id="app">
   <div class="topbar">
     <div class="logo">VOON<b>·</b>PROGRAM</div>
-    <span class="ver">v0.1</span>
+    <span class="ver">v0.2</span>
     <div class="tag" id="phaseTag">HANGAR // MISSION DESIGN</div>
     <div class="spacer"></div>
     <div class="stat-chip">SCIENCE <b id="sciBank">0</b></div>
@@ -1208,10 +1208,11 @@ function drawFlightRocket(r){
 function updateHUD(o){
   const r=rocket;
   const eng=activeStage(r);
-  const onBoost = r.boostersAttached && r.boosters;
-  const fuelPct = onBoost ? Math.round(r.boosters.fuel/r.boosters.fuelMax*100)
-                          : (eng? Math.round(eng.fuel/eng.fuelMax*100):0);
-  const fuelLabel = onBoost ? "Fuel (boosters)" : `Fuel (stg ${Math.min(r.active+1,r.stages.length)})`;
+  // boosters and core stages each have their OWN fuel — show both
+  const coreFuelPct = eng ? Math.round(eng.fuel/eng.fuelMax*100) : 0;
+  const coreLabel = `Fuel (stg ${Math.min(r.active+1,r.stages.length)})`;
+  const boostFuelPct = (r.boostersAttached && r.boosters && r.boosters.fuelMax>0)
+                       ? Math.round(r.boosters.fuel/r.boosters.fuelMax*100) : null;
   const nextStage = r.boostersAttached ? "Drop boosters"
                   : (r.active<r.stages.length ? `Drop stage ${r.active+1}` : "—");
   const situ=situation(r);
@@ -1228,7 +1229,8 @@ function updateHUD(o){
     <div class="t"><span>Vertical</span><span style="color:${vs>=0?'var(--green)':'var(--amber)'}">${vs>=0?'+':''}${Math.round(vs)} m/s</span></div>
     <div class="t"><span>Apoapsis</span><span>${apo}</span></div>
     <div class="t"><span>Periapsis</span><span>${o.peri>-R?fmtKm(o.peri):'—'}</span></div>
-    <div class="t"><span>${fuelLabel}</span><span style="color:${fuelPct>20?'var(--ink)':'var(--red)'}">${fuelPct}%</span></div>
+    ${boostFuelPct!==null?`<div class="t"><span>Fuel (boosters)</span><span style="color:${boostFuelPct>20?'var(--amber)':'var(--red)'}">${boostFuelPct}%</span></div>`:""}
+    <div class="t"><span>${coreLabel}</span><span style="color:${coreFuelPct>20?'var(--ink)':'var(--red)'}">${coreFuelPct}%</span></div>
     <div class="t"><span>Next stage</span><span style="color:var(--amber)">${nextStage}</span></div>
     <div class="t"><span>Science held</span><span style="color:var(--cyan)">${pend}</span></div>
     <div class="situ">${sd.key}</div>`;
