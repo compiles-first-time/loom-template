@@ -31,6 +31,12 @@
   }
   .logo{font-family:var(--disp); font-weight:800; letter-spacing:.14em; font-size:15px; color:var(--ink)}
   .logo b{color:var(--cyan)}
+  .ver{font-family:var(--mono); font-size:11px; color:var(--amber); border:1px solid var(--line2);
+    border-radius:12px; padding:2px 8px; letter-spacing:.06em}
+  .mini-sel{font-family:var(--mono); font-size:12px; background:var(--panel2); color:var(--ink);
+    border:1px solid var(--line2); border-radius:7px; padding:5px 8px; min-width:96px}
+  .mini-sel:hover{border-color:var(--cyan-dim)}
+  .mini-sel option:disabled{color:var(--dim)}
   .tag{font-family:var(--mono); font-size:11px; color:var(--dim); letter-spacing:.08em}
   .spacer{flex:1}
   .stat-chip{
@@ -202,6 +208,7 @@
 <div id="app">
   <div class="topbar">
     <div class="logo">VOON<b>·</b>PROGRAM</div>
+    <span class="ver">v0.1</span>
     <div class="tag" id="phaseTag">HANGAR // MISSION DESIGN</div>
     <div class="spacer"></div>
     <div class="stat-chip">SCIENCE <b id="sciBank">0</b></div>
@@ -217,6 +224,7 @@
       <button class="addstage" id="addStage">+ ADD STAGE (needs Decoupler)</button>
       <div style="margin-top:14px">
         <div class="row"><label>Parachute</label><button class="toggle" id="chuteToggle" disabled></button></div>
+        <div class="row"><label>Nose cone</label><button class="toggle" id="noseToggle" disabled></button></div>
         <div class="row"><label>Science modules</label>
           <div class="stepper">
             <button id="sciDec" type="button">−</button><span class="val" id="sciVal">1</span><button id="sciInc" type="button">+</button>
@@ -316,33 +324,43 @@ const MOON_SOI    = MOON_R*Math.pow(MOON_GM/GM,0.4);
 const MOON_OMEGA  = Math.sqrt(GM/Math.pow(MOON_R,3)); // orbital rate
 
 // ---------- parts catalogue ----------
-const POD={mass:480}, SCI={mass:180}, CHUTE={mass:70}, DECOUPLER={mass:45};
+const POD={mass:480}, SCI={mass:180}, CHUTE={mass:70}, DECOUPLER={mass:45}, NOSE={mass:60};
 const TANKS = {
-  small:{dry:150, fuel:900,  label:"Small tank", fuelLabel:"0.9 t"},
-  big:  {dry:320, fuel:2600, label:"Jumbo tank", fuelLabel:"2.6 t"},
+  small:{dry:150, fuel:900,  short:"Small", unlock:null},
+  big:  {dry:320, fuel:2600, short:"Jumbo", unlock:"big"},
+  mega: {dry:700, fuel:6500, short:"Mega",  unlock:"mega"},
 };
 const ENGINES = {
-  basic:{mass:220, thrust:52000, isp:250, label:"Kap-1 engine"},
-  eff:  {mass:300, thrust:70000, isp:315, label:"Kap-2 vac engine"},
+  basic:{mass:220, thrust:52000,  isp:250, short:"Kap-1", unlock:null},
+  eff:  {mass:300, thrust:70000,  isp:315, short:"Kap-2", unlock:"eff"},
+  kap3: {mass:480, thrust:110000, isp:340, short:"Kap-3", unlock:"kap3"},
+  kap4: {mass:720, thrust:180000, isp:360, short:"Kap-4", unlock:"kap4"},
 };
+function partUnlocked(u){ return u==null || has(u); }
 
 const TECH = [
-  {id:"parachute", icon:"🪂", name:"Parachute",    desc:"Slows descent for a soft landing", cost:8},
-  {id:"big",       icon:"🛢️", name:"Jumbo Tank",   desc:"2.6 t fuel — far more Δv",         cost:14},
-  {id:"eff",       icon:"🔥", name:"Kap-2 Engine",  desc:"More thrust, better efficiency",   cost:30},
-  {id:"decoupler", icon:"🔗", name:"Decoupler",     desc:"Enables a 2nd stage",              cost:45},
-  {id:"fins",      icon:"🪶", name:"Reaction Wheel",desc:"Doubles your turn rate",           cost:22},
+  {id:"parachute", icon:"🪂", name:"Parachute",     desc:"Soft landings in atmosphere",     cost:8},
+  {id:"big",       icon:"🛢️", name:"Jumbo Tank",    desc:"2.6 t fuel — far more Δv",        cost:14},
+  {id:"fins",      icon:"🪶", name:"Reaction Wheel", desc:"Faster, steadier steering",       cost:22},
+  {id:"eff",       icon:"🔥", name:"Kap-2 Engine",   desc:"70 kN vacuum engine",             cost:30},
+  {id:"nose",      icon:"🔺", name:"Nose Cone",      desc:"Cuts air drag on the climb",      cost:40},
+  {id:"decoupler", icon:"🔗", name:"Decoupler",      desc:"Enables a 2nd stage",             cost:45},
+  {id:"avionics",  icon:"🧭", name:"Avionics Pod",   desc:"Even faster, crisper turning",    cost:70},
+  {id:"kap3",      icon:"🔥", name:"Kap-3 Engine",   desc:"Big 110 kN engine",               cost:90},
+  {id:"mega",      icon:"🛢️", name:"Mega Tank",     desc:"6.5 t fuel — heavy lifter",       cost:120},
+  {id:"kap4",      icon:"🚀", name:"Kap-4 Engine",   desc:"Monster 180 kN engine",           cost:220},
 ];
 
 // ---------- science situations ----------
-const SITU = {
-  "Launch Pad":         2,
-  "Lower Atmosphere":   5,
-  "Upper Atmosphere":   9,
-  "Sub-orbital Space": 14,
-  "Low Orbit":         24,
-  "Voon Space":        40,
-  "Voon Surface":      75,
+const SITU = {   // the higher / faster you go, the more science each situation is worth
+  "Launch Pad":         1,
+  "Lower Atmosphere":   3,
+  "Upper Atmosphere":   8,
+  "Sub-orbital Space": 18,
+  "Low Orbit":         35,
+  "High Orbit":        55,
+  "Voon Space":        80,
+  "Voon Surface":     140,
 };
 
 // ---------- persistent save ----------
@@ -359,7 +377,7 @@ function loadSave(){
 }
 // the starter rocket: a 2-stage ship (uses the decoupler) with a parachute
 function freshDesign(){
-  return { stages:[ {tank:"small",count:2,engine:"basic"}, {tank:"small",count:1,engine:"basic"} ], parachute:true, sci:1 };
+  return { stages:[ {tank:"small",count:2,engine:"basic"}, {tank:"small",count:1,engine:"basic"} ], parachute:true, nose:false, sci:1 };
 }
 function persist(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){} }
 let save = loadSave();
@@ -376,7 +394,7 @@ function stageMass(s){
   return { dry:e.mass + s.count*t.dry, fuel:s.count*t.fuel, thrust:e.thrust, isp:e.isp };
 }
 function designStats(d){
-  let payload = POD.mass + (d.sci||1)*SCI.mass + (d.parachute?CHUTE.mass:0) + (d.stages.length-1)*DECOUPLER.mass;
+  let payload = POD.mass + (d.sci||1)*SCI.mass + (d.parachute?CHUTE.mass:0) + (d.nose?NOSE.mass:0) + (d.stages.length-1)*DECOUPLER.mass;
   const st = d.stages.map(stageMass);
   // total wet mass
   let totalDry=payload, totalFuel=0;
@@ -411,12 +429,14 @@ function renderHangar(){
   stageListEl.innerHTML="";
   design.stages.forEach((s,i)=>{
     const b=document.createElement("div"); b.className="stage-block";
-    const engOpts = `<div class="seg">
-        <button data-eng="basic" class="${s.engine==="basic"?"on":""}">Kap-1</button>
-        <button data-eng="eff" class="${s.engine==="eff"?"on":""}" ${has("eff")?"":"disabled"}>Kap-2</button></div>`;
-    const tankOpts = `<div class="seg">
-        <button data-tank="small" class="${s.tank==="small"?"on":""}">Small</button>
-        <button data-tank="big" class="${s.tank==="big"?"on":""}" ${has("big")?"":"disabled"}>Jumbo</button></div>`;
+    const engOpts = `<select class="mini-sel" data-engsel="${i}">`+
+      Object.keys(ENGINES).map(k=>{ const u=partUnlocked(ENGINES[k].unlock);
+        return `<option value="${k}" ${s.engine===k?"selected":""} ${u?"":"disabled"}>${ENGINES[k].short}${u?"":" 🔒"}</option>`; }).join("")+
+      `</select>`;
+    const tankOpts = `<select class="mini-sel" data-tanksel="${i}">`+
+      Object.keys(TANKS).map(k=>{ const u=partUnlocked(TANKS[k].unlock);
+        return `<option value="${k}" ${s.tank===k?"selected":""} ${u?"":"disabled"}>${TANKS[k].short}${u?"":" 🔒"}</option>`; }).join("")+
+      `</select>`;
     b.innerHTML = `<h4>STAGE ${i+1} ${i===0?"· fires first":""}
         ${design.stages.length>1?`<button class="unlock" data-del="${i}" style="float:right;border-color:var(--line2);color:var(--red)">remove</button>`:""}</h4>
       <div class="row"><label>Engine</label>${engOpts}</div>
@@ -435,10 +455,13 @@ function renderHangar(){
   const ct=$("#chuteToggle");
   ct.disabled=!has("parachute");
   ct.classList.toggle("on", design.parachute && has("parachute"));
-  // science modules
+  const nt=$("#noseToggle");
+  nt.disabled=!has("nose");
+  nt.classList.toggle("on", design.nose && has("nose"));
+  // science modules (max 3)
   if(!design.sci) design.sci=1;
   $("#sciVal").textContent=design.sci;
-  $("#sciInc").disabled = !(save.sci>=3 && design.sci<5);
+  $("#sciInc").disabled = !(save.sci>=3 && design.sci<3);
   $("#sciDec").disabled = design.sci<=1;
 
   renderTech();
@@ -462,13 +485,13 @@ function renderTech(){
 function renderReadout(){
   const st=designStats(design);
   // rough estimate: ~2200 m/s to reach low orbit incl. losses
-  let cls="bad", msg="Not enough thrust — TWR below 1, it won't leave the pad.";
-  if(st.twr>=1.05){
-    if(st.dv<1500){ cls="warn"; msg="Enough to fly high & gather atmosphere science — but not to orbit."; }
-    else if(st.dv<2600){ cls="warn"; msg="Marginal for orbit. Fly a gravity turn and don't waste fuel."; }
-    else if(st.dv<4200){ cls="ok"; msg="Solid orbital rocket. Low orbit is well within reach."; }
-    else { cls="ok"; msg="Heavy hauler — enough Δv to reach for Voon."; }
-  }
+  let cls, msg;
+  if(st.twr<1.0){ cls="bad"; msg="Not enough thrust — TWR is below 1.0, it won't leave the pad."; }
+  else if(st.twr<1.15){ cls="warn"; msg="Thrust is marginal (low TWR) — it'll crawl off the pad. Add engine power or drop mass."; }
+  else if(st.dv<1500){ cls="warn"; msg="Enough to fly high & gather atmosphere science — but not to orbit."; }
+  else if(st.dv<2600){ cls="warn"; msg="Marginal for orbit. Fly a clean gravity turn and don't waste fuel."; }
+  else if(st.dv<4200){ cls="ok"; msg="Solid orbital rocket. Low orbit is well within reach."; }
+  else { cls="ok"; msg="Heavy hauler — enough Δv to reach for Voon."; }
   readoutEl.innerHTML=`
     <div class="r"><span>Total mass</span><span>${(st.wet/1000).toFixed(2)} t</span></div>
     <div class="r"><span>Fuel</span><span>${(st.totalFuel/1000).toFixed(2)} t</span></div>
@@ -502,7 +525,13 @@ $("#addStage").addEventListener("click",()=>{
   }
 });
 $("#chuteToggle").addEventListener("click",()=>{ if(has("parachute")){ design.parachute=!design.parachute; renderHangar(); }});
-$("#sciInc").addEventListener("click",()=>{ if(save.sci>=3 && design.sci<5){ save.sci-=3; design.sci++; persist(); renderHangar(); }});
+$("#noseToggle").addEventListener("click",()=>{ if(has("nose")){ design.nose=!design.nose; renderHangar(); }});
+stageListEl.addEventListener("change",e=>{
+  const t=e.target;
+  if(t.dataset.engsel!==undefined){ design.stages[+t.dataset.engsel].engine=t.value; renderHangar(); }
+  else if(t.dataset.tanksel!==undefined){ design.stages[+t.dataset.tanksel].tank=t.value; renderHangar(); }
+});
+$("#sciInc").addEventListener("click",()=>{ if(save.sci>=3 && design.sci<3){ save.sci-=3; design.sci++; persist(); renderHangar(); }});
 $("#sciDec").addEventListener("click",()=>{ if(design.sci>1){ design.sci--; save.sci+=3; persist(); renderHangar(); }}); // remove = refund 3
 techEl.addEventListener("click",e=>{
   const id=e.target.dataset.tech; if(!id) return;
@@ -571,7 +600,7 @@ function drawRocketShape(ctx,cx,cy,px,opt){
       ctx.fillStyle="#3a2c14"; ctx.strokeStyle="#7a5a20";
       rrect(ctx,cx-bodyW*0.55,y,bodyW*1.1,hh,1); ctx.fill(); ctx.stroke();
     } else if(p.t==="eng"){
-      const eff=p.engine==="eff";
+      const eff=p.engine!=="basic";
       ctx.fillStyle=eff?"#3a2030":"#2a2226"; ctx.strokeStyle=eff?"#c96":"#98a";
       ctx.beginPath(); ctx.moveTo(cx-bodyW*0.4,y); ctx.lineTo(cx+bodyW*0.4,y);
       ctx.lineTo(cx+bodyW*0.6,y+hh); ctx.lineTo(cx-bodyW*0.6,y+hh); ctx.closePath();
@@ -613,12 +642,13 @@ function buildFlightRocket(){
     return {dry:m.dry, fuelMax:m.fuel, fuel:m.fuel, thrust:m.thrust, isp:m.isp};
   });
   const sciCount = design.sci||1;
-  const payload = POD.mass+sciCount*SCI.mass+(design.parachute?CHUTE.mass:0)+(design.stages.length-1)*DECOUPLER.mass;
+  const payload = POD.mass+sciCount*SCI.mass+(design.parachute?CHUTE.mass:0)+(design.nose?NOSE.mass:0)+(design.stages.length-1)*DECOUPLER.mass;
   return {
     x:0, y:R, vx:0, vy:0,
     ang:0,                    // 0 = pointing radially "up"
     stages:st, active:0,      // bottom stage index that fires
     payload, sciCount,        // sciCount = science modules -> multiplies science earned
+    nose: design.nose && has("nose"),
     throttle:0, thrusting:false,
     chute:design.parachute, chuteOpen:false,
     launched:false, hasFlown:false, alive:true, landed:false,
@@ -631,7 +661,7 @@ function curMass(r){
   return m;
 }
 function activeStage(r){ return r.stages[r.active]; }
-function turnRate(){ return has("fins")?2.4:1.2; } // rad/s
+function turnRate(){ return has("avionics")?3.6 : has("fins")?2.4 : 1.2; } // rad/s
 
 function startFlight(){
   rocket=buildFlightRocket();
@@ -671,7 +701,10 @@ function situation(r){
   if(!r.launched && o.alt<50) return "Launch Pad";
   if(distMoon(r) < MOON_RADIUS+400 && r.landed) return "Voon Surface";
   if(distMoon(r) < MOON_SOI) return "Voon Space";
-  if(o.alt>=SPACE){ return (o.energy<0 && o.peri>ATMO) ? "Low Orbit" : "Sub-orbital Space"; }
+  if(o.alt>=SPACE){
+    if(o.energy<0 && o.peri>ATMO) return (o.apo>=250000) ? "High Orbit" : "Low Orbit";
+    return "Sub-orbital Space";
+  }
   if(o.alt>=18000) return "Upper Atmosphere";
   return "Lower Atmosphere";
 }
@@ -809,7 +842,7 @@ function physics(dt){
     if(alt<ATMO){
       const rho=RHO0*Math.exp(-Math.max(0,alt)/H_SCALE);
       const spd=Math.hypot(r.vx,r.vy);
-      let CdA = r.chuteOpen ? 110 : 1.4;   // parachute = huge drag area
+      let CdA = r.chuteOpen ? 110 : (r.nose ? 0.7 : 1.4);   // parachute = huge drag; nose cone = less drag
       const k=0.5*rho*CdA/m;
       ax-=k*spd*r.vx; ay-=k*spd*r.vy;
     }
