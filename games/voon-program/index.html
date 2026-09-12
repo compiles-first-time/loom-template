@@ -268,7 +268,7 @@
         <span class="kbd">A</span><span>Rotate the rocket <b style="color:var(--ink)">east</b> (toward the sunrise)</span>
         <span class="kbd">D</span><span>Rotate the rocket <b style="color:var(--ink)">west</b></span>
         <span class="kbd">SPACE</span><span>Stage — drop the spent stage, or deploy the parachute</span>
-        <span class="kbd">E</span><span>Run Science — banks data for your current situation</span>
+        <span class="kbd">E</span><span>Run Science — you also auto-collect wherever you fly; <b style="color:var(--ink)">land safely to keep it</b></span>
         <span class="kbd">, / .</span><span>Time warp down / up (only while coasting)</span>
         <span class="kbd">scroll</span><span>Zoom the map in / out</span>
         <span class="kbd">ESC</span><span>Abort back to the hangar</span>
@@ -339,18 +339,25 @@ const SITU = {
 
 // ---------- persistent save ----------
 const SAVE_KEY="voon_program_v1";
+const STARTER_UNLOCKS=["parachute","decoupler"];   // every player begins owning these
+function ensureStarters(s){
+  s.unlocked = s.unlocked || [];
+  for(const u of STARTER_UNLOCKS) if(!s.unlocked.includes(u)) s.unlocked.push(u);
+  return s;
+}
 function loadSave(){
-  try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s&&s.unlocked) return s; }catch(e){}
-  return {sci:0, unlocked:[], done:[]};
+  try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s&&s.unlocked) return ensureStarters(s); }catch(e){}
+  return ensureStarters({sci:0, unlocked:[], done:[]});
+}
+// the starter rocket: a 2-stage ship (uses the decoupler) with a parachute
+function freshDesign(){
+  return { stages:[ {tank:"small",count:2,engine:"basic"}, {tank:"small",count:1,engine:"basic"} ], parachute:true };
 }
 function persist(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){} }
 let save = loadSave();
 
 // ---------- current rocket design ----------
-let design = {
-  stages:[ {tank:"small", count:1, engine:"basic"} ],  // bottom-first
-  parachute:false,
-};
+let design = freshDesign();  // bottom-first stages
 function has(id){ return save.unlocked.includes(id); }
 
 // ============================================================
@@ -493,8 +500,8 @@ techEl.addEventListener("click",e=>{
 $("#btnLaunch").addEventListener("click",startFlight);
 $("#btnReset").addEventListener("click",()=>{
   if(confirm("Reset ALL progress — science, unlocked parts, everything?")){
-    save={sci:0,unlocked:[],done:[]}; persist();
-    design={stages:[{tank:"small",count:1,engine:"basic"}],parachute:false};
+    save=ensureStarters({sci:0,unlocked:[],done:[]}); persist();
+    design=freshDesign();
     renderHangar();
   }
 });
@@ -710,13 +717,13 @@ function doStage(){
 function doScience(){
   if(!rocket||!rocket.alive) return;
   const s=situation(rocket);
-  if(rocket.pending[s]!==undefined){ toast("Already have "+s+" data"); return; }
   rocket.pending[s]=SITU[s];
-  toast(`⚗ +${SITU[s]} science · ${s}`);
+  const total=Object.values(rocket.pending).reduce((a,b)=>a+b,0);
+  toast(`⚗ ${total} science held · land safely to keep it`);
 }
 function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); toastTimer=1.8; }
 
-function setWarp(w){ warp=w; setWarpUI(w); }
+function setWarp(w){ if(rocket&&rocket.chuteOpen) w=1; warp=w; setWarpUI(w); } // no warp under a chute
 function setWarpUI(w){
   $("#warpVal").textContent=w+"×";
   document.querySelectorAll(".warpbtns button").forEach(b=>b.classList.toggle("on",+b.dataset.warp===w));
@@ -762,6 +769,7 @@ function physics(dt){
 
   const substeps = warp>1 ? 8 : 4;
   const h=dt/substeps;
+  if(r.chuteOpen && warp>1) setWarp(1);   // a deployed chute forces real-time
   const eng=activeStage(r);
   let thrustingNow = r.thrusting && warp===1 && eng && eng.fuel>0;
   r.throttle = thrustingNow?1:Math.max(0,r.throttle-dt*3);
@@ -1030,6 +1038,7 @@ function updateHUD(o){
   const eng=activeStage(r);
   const fuelPct = eng? Math.round(eng.fuel/eng.fuelMax*100):0;
   const situ=situation(r);
+  if(r.alive) r.pending[situ]=SITU[situ];   // auto-collect science for wherever you are
   const apo = o.apo===Infinity? "escape" : fmtKm(o.apo);
   const speedC = o.speed>0? "var(--ink)":"var(--muted)";
   const vs=o.vspeed;
@@ -1045,10 +1054,11 @@ function updateHUD(o){
     <div class="t"><span>Science held</span><span style="color:var(--cyan)">${pend}</span></div>
     <div class="situ">${situ}</div>`;
   $("#thrFill").style.height=(r.throttle*100)+"%";
-  // science button "ready" glow when new data available
-  const sciReady = r.alive && r.pending[situ]===undefined;
-  $("#btnSci").classList.toggle("ready",sciReady);
+  // science is auto-collecting while you're alive; show the running total
+  $("#btnSci").classList.toggle("ready", r.alive && pend>0);
   $("#btnSci").disabled=!r.alive;
+  const sciSmall=$("#btnSci").querySelector("small");
+  if(sciSmall) sciSmall.textContent = pend>0 ? ("⚗ "+pend+" held") : "[E]";
   $("#btnStage").disabled=!r.alive;
   $("#btnThruster").disabled=!r.alive;
   // toast fade
