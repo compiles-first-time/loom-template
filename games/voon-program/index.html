@@ -260,8 +260,8 @@
 
     <div id="dock">
       <div class="cluster">
-        <button class="steer" id="steerA" title="Rotate east (A)">A<small>EAST</small></button>
-        <button class="steer" id="steerD" title="Rotate west (D)">D<small>WEST</small></button>
+        <button class="steer" id="steerA" title="Rotate left (A)">A<small>◀ LEFT</small></button>
+        <button class="steer" id="steerD" title="Rotate right (D)">D<small>RIGHT ▶</small></button>
       </div>
       <button class="bigbtn thruster" id="btnThruster">THRUSTER<small>OFF · [W]</small></button>
       <div class="throttle-wrap">THR<div class="throttle"><i id="thrFill"></i></div></div>
@@ -285,8 +285,8 @@
       <p>You are the pilot <em>and</em> the flight director. Voon orbits eastward across the sky — chase it or slingshot around it.</p>
       <div class="kbd-grid">
         <span class="kbd">W</span><span>Thruster on/off — fires the active stage's engine</span>
-        <span class="kbd">A</span><span>Rotate the rocket <b style="color:var(--ink)">east</b> (toward the sunrise)</span>
-        <span class="kbd">D</span><span>Rotate the rocket <b style="color:var(--ink)">west</b></span>
+        <span class="kbd">A</span><span>Rotate the rocket <b style="color:var(--ink)">left</b></span>
+        <span class="kbd">D</span><span>Rotate the rocket <b style="color:var(--ink)">right</b></span>
         <span class="kbd">SPACE</span><span>Stage — drop the side boosters first, then each spent engine stage</span>
         <span class="kbd">P</span><span>Deploy parachute — one press, any time (no staging needed)</span>
         <span class="kbd">E</span><span>Run Science — you auto-collect it too. How much depends on <b style="color:var(--ink)">how high</b> and <b style="color:var(--ink)">which region</b> you're over (orbit sweeps many regions). <b style="color:var(--ink)">Land safely to keep it</b></span>
@@ -922,8 +922,8 @@ function physics(dt){
   const r=rocket; if(!r.alive) return;
   // steering (only meaningful in real time; ignore under warp)
   if(warp===1){
-    if(keys.a) r.ang -= turnRate()*dt;   // rotate east
-    if(keys.d) r.ang += turnRate()*dt;   // rotate west
+    if(keys.a) r.ang += turnRate()*dt;   // A = rotate left
+    if(keys.d) r.ang -= turnRate()*dt;   // D = rotate right
   }
   // thrust direction from ang (0 -> +Y "up")
   const dir={x:-Math.sin(r.ang), y:Math.cos(r.ang)};
