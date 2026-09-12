@@ -17,6 +17,8 @@
   body{
     margin:0; background:var(--space); color:var(--ink); font-family:var(--body);
     overflow:hidden; -webkit-font-smoothing:antialiased; user-select:none;
+    overscroll-behavior:none; -webkit-user-select:none; -webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
   }
   button{font-family:var(--disp); cursor:pointer}
   .disp{font-family:var(--disp)}
@@ -127,7 +129,7 @@
 
   /* ---------- flight ---------- */
   #flight{background:#03060c}
-  #game{display:block; width:100%; height:100%}
+  #game{display:block; width:100%; height:100%; touch-action:none}
   .hud{position:absolute; pointer-events:none; font-family:var(--mono)}
   #tele{top:12px; left:12px; background:rgba(8,11,18,.72); border:1px solid var(--line);
     border-radius:10px; padding:12px 14px; min-width:210px; backdrop-filter:blur(3px)}
@@ -203,14 +205,47 @@
     .hpanel{border-right:none; border-bottom:1px solid var(--line)}
     .hpanel.right{border-left:none; border-top:1px solid var(--line)}
     #preview{min-height:240px}
-    .bigbtn{min-width:88px}
   }
+  /* bigger, thumb-friendly controls on touch devices */
+  @media (pointer:coarse){
+    .stepper button{width:34px; height:34px; font-size:18px}
+    .mini-sel{min-height:40px; padding:8px 10px}
+    .toggle{width:52px; height:30px}
+    .toggle::after{width:24px; height:24px}
+    .toggle.on::after{left:24px}
+    .part .unlock{padding:9px 12px}
+  }
+  /* phone layout: compact top bar + a tidy, wrapping control dock */
+  @media (max-width:600px){
+    .topbar{gap:8px; padding:8px 10px; flex-wrap:wrap}
+    .logo{font-size:13px} .ver{font-size:10px; padding:1px 6px}
+    #phaseTag{display:none}
+    .stat-chip{font-size:12px; padding:4px 10px} .ghost{padding:6px 10px; font-size:11px}
+    #tele{top:8px; left:8px; padding:9px 11px; min-width:0; font-size:11px}
+    #tele .t{gap:10px; padding:1.5px 0}
+    #warpline{top:8px; right:8px; padding:6px 9px; font-size:11px}
+    #dock{padding:9px 8px calc(9px + env(safe-area-inset-bottom)); gap:8px}
+    .cluster{padding:7px; gap:6px}
+    .steer{width:60px; height:60px; font-size:22px}
+    .bigbtn{min-width:70px; padding:10px 10px; font-size:12px}
+    .bigbtn small{font-size:9px}
+    .throttle-wrap{display:none}
+    .warpbtns{flex-direction:row}
+    .warpbtns button{padding:8px 9px}
+    #btnAbort{padding:9px 11px}
+  }
+  /* zoom buttons for the map (touch has no scroll-wheel) */
+  #zoomctl{top:64px; right:12px; display:flex; flex-direction:column; gap:6px; pointer-events:auto}
+  #zoomctl button{width:40px; height:40px; border:1px solid var(--line2); background:rgba(12,17,25,.8);
+    color:var(--ink); border-radius:9px; font-size:22px; line-height:1; display:grid; place-items:center; touch-action:none}
+  #zoomctl button:active{border-color:var(--cyan); color:var(--cyan)}
+  @media (max-width:600px){ #zoomctl{top:auto; bottom:118px; right:8px} }
 </style>
 
 <div id="app">
   <div class="topbar">
     <div class="logo">VOON<b>·</b>PROGRAM</div>
-    <span class="ver">v0.3</span>
+    <span class="ver">v0.4</span>
     <div class="tag" id="phaseTag">HANGAR // MISSION DESIGN</div>
     <div class="spacer"></div>
     <div class="stat-chip">SCIENCE <b id="sciBank">0</b></div>
@@ -257,6 +292,7 @@
     <canvas id="game"></canvas>
     <div class="hud" id="tele"></div>
     <div class="hud" id="warpline">WARP <b id="warpVal">1×</b></div>
+    <div class="hud" id="zoomctl"><button id="zoomIn" aria-label="Zoom in">+</button><button id="zoomOut" aria-label="Zoom out">−</button></div>
     <div class="toast" id="toast"></div>
 
     <div id="dock">
@@ -737,6 +773,7 @@ function resize(){
   cv.width=W*DPR; cv.height=Hh*DPR; cx.setTransform(DPR,0,0,DPR,0,0);
 }
 window.addEventListener("resize",()=>{ if(!$("#flight").hidden) resize(); });
+window.addEventListener("orientationchange",()=>{ setTimeout(()=>{ if(!$("#flight").hidden) resize(); },200); });
 
 // stars (fixed field in a big space)
 const STARS=[]; for(let i=0;i<420;i++) STARS.push({x:(Math.random()-.5)*4e6,y:(Math.random()-.5)*4e6,b:Math.random()});
@@ -857,6 +894,19 @@ document.querySelectorAll(".warpbtns button").forEach(b=>{
 });
 cv.addEventListener("wheel",e=>{ e.preventDefault(); userZoom*= (e.deltaY>0?0.88:1.14); userZoom=Math.max(0.15,Math.min(6,userZoom)); },{passive:false});
 let userZoom=1;
+function zoomBy(f){ userZoom=Math.max(0.15,Math.min(6,userZoom*f)); }
+$("#zoomIn").addEventListener("click",()=>zoomBy(1.25));
+$("#zoomOut").addEventListener("click",()=>zoomBy(0.8));
+// pinch-to-zoom (touch has no scroll wheel)
+let pinchD=0;
+cv.addEventListener("touchstart",e=>{ if(e.touches.length===2){ pinchD=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); } },{passive:false});
+cv.addEventListener("touchmove",e=>{
+  if(e.touches.length===2){ e.preventDefault();
+    const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+    if(pinchD>0) zoomBy(d/pinchD); pinchD=d;
+  }
+},{passive:false});
+cv.addEventListener("touchend",()=>{ pinchD=0; });
 
 function toggleThruster(){
   if(!rocket||!rocket.alive) return;
