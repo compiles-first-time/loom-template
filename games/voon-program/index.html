@@ -258,7 +258,7 @@
 <div id="app">
   <div class="topbar">
     <div class="logo">VOON<b>·</b>PROGRAM</div>
-    <span class="ver">v0.4.5</span>
+    <span class="ver">v0.5</span>
     <div class="tag" id="phaseTag">HANGAR // MISSION DESIGN</div>
     <div class="spacer"></div>
     <div class="stat-chip">SCIENCE <b id="sciBank">0</b></div>
@@ -341,7 +341,8 @@
         <span class="kbd">P</span><span>Deploy parachute — one press, any time (no staging needed)</span>
         <span class="kbd">E</span><span>Run Science — you auto-collect it too. How much depends on <b style="color:var(--ink)">how high</b> and <b style="color:var(--ink)">which region</b> you're over (orbit sweeps many regions). <b style="color:var(--ink)">Land safely to keep it</b></span>
         <span class="kbd">, / .</span><span>Time warp down / up (only while coasting)</span>
-        <span class="kbd">scroll</span><span>Zoom the map in / out</span>
+        <span class="kbd">M</span><span>Map view — zoom out to see the whole Planet + Voon system and your trajectory</span>
+        <span class="kbd">scroll / pinch</span><span>Zoom in / out (or the on-screen + / − buttons)</span>
         <span class="kbd">ESC</span><span>Abort back to the hangar</span>
       </div>
       <p style="font-size:13px"><b style="color:var(--amber)">Landing rule:</b> touch down slower than <b style="color:var(--ink)">25 m/s</b> (or <b style="color:var(--ink)">40 m/s</b> with Landing Legs) or the rocket explodes and its stored science is lost. In atmosphere, the parachute does the braking. <b style="color:var(--ink)">Voon 🌙</b> has gravity but no air — burn your engine to slow down, and bring legs.</p>
@@ -898,6 +899,7 @@ addEventListener("keydown",e=>{
   else if(k==="a"||k==="d"){ keys[k]=true; }
   else if(k===" "){ doStage(); e.preventDefault(); }
   else if(k==="p"){ deployChute(); }
+  else if(k==="m"){ toggleMap(); }
   else if(k==="e"){ doScience(); }
   else if(k===","){ stepWarp(-1); }
   else if(k==="."){ stepWarp(1); }
@@ -921,6 +923,11 @@ document.querySelectorAll(".warpbtns button").forEach(b=>{
 });
 cv.addEventListener("wheel",e=>{ e.preventDefault(); userZoom*= (e.deltaY>0?0.88:1.14); userZoom=Math.max(0.15,Math.min(6,userZoom)); },{passive:false});
 let userZoom=1;
+let mapMode=false, prevZoom=1, encounterInfo=null;
+function toggleMap(){
+  if(!mapMode){ prevZoom=userZoom; userZoom=1; mapMode=true; }
+  else { mapMode=false; userZoom=prevZoom; }
+}
 function zoomBy(f){ userZoom=Math.max(0.15,Math.min(6,userZoom*f)); }
 $("#zoomIn").addEventListener("click",()=>zoomBy(1.25));
 $("#zoomOut").addEventListener("click",()=>zoomBy(0.8));
@@ -1173,18 +1180,24 @@ function worldToScreen(wx,wy){ return {x:W/2+(wx-camx)*scale, y:Hh/2-(wy-camy)*s
 
 function computeScale(alt){
   // choose view height in metres from altitude; smooth toward it
-  let viewM = 1400 + Math.max(0,alt)*3.2;
-  if(distMoon(rocket)<MOON_SOI*1.4) viewM=Math.max(viewM, MOON_SOI*1.6);
-  viewM=Math.min(viewM, MOON_R*2.8);
-  viewM/=userZoom;
+  let viewM;
+  if(mapMode){                       // map view: fit the whole planet + Voon system
+    viewM = (MOON_R*2.7)/Math.max(0.2,userZoom);
+  } else {
+    viewM = 1400 + Math.max(0,alt)*3.2;
+    if(distMoon(rocket)<MOON_SOI*1.4) viewM=Math.max(viewM, MOON_SOI*1.6);
+    viewM=Math.min(viewM, MOON_R*2.8);
+    viewM/=userZoom;
+  }
   const target=Hh/viewM;
-  scale = scale? scale+(target-scale)*0.08 : target;
+  scale = scale? scale+(target-scale)*0.12 : target;
 }
 
 function render(){
   const r=rocket; const o=orbit(r);
   computeScale(o.alt);
-  camx += (r.x-camx)*0.14; camy += (r.y-camy)*0.14;
+  const camTX = mapMode?0:r.x, camTY = mapMode?0:r.y;   // map view centres on the planet
+  camx += (camTX-camx)*0.14; camy += (camTY-camy)*0.14;
 
   cx.clearRect(0,0,W,Hh);
   // space background
@@ -1218,6 +1231,11 @@ function render(){
     cx.beginPath(); cx.arc(ms.x-MOON_RADIUS*scale*0.2,ms.y+MOON_RADIUS*scale*0.1,MOON_RADIUS*scale*0.18,0,7); cx.fill(); }
   if(MOON_RADIUS*scale>10){ cx.fillStyle="rgba(201,198,214,.7)"; cx.font="11px 'IBM Plex Mono'"; cx.textAlign="center";
     cx.fillText("VOON", ms.x, ms.y-MOON_RADIUS*scale-8); }
+  // Voon sphere of influence — show it on an encounter or in map view
+  if(mapMode || encounterInfo){
+    cx.strokeStyle="rgba(255,180,84,.28)"; cx.lineWidth=1; cx.setLineDash([4,7]);
+    cx.beginPath(); cx.arc(ms.x,ms.y,MOON_SOI*scale,0,7); cx.stroke(); cx.setLineDash([]);
+  }
 
   // particles (exhaust / explosion)
   for(const p of particles){ const s=worldToScreen(p.x,p.y); const a=Math.max(0,p.life);
@@ -1240,6 +1258,10 @@ function render(){
     cx.beginPath(); cx.moveTo(px-9,py); cx.lineTo(px-6,py); cx.moveTo(px+6,py); cx.lineTo(px+9,py); cx.moveTo(px,py-9); cx.lineTo(px,py-6); cx.stroke();
   }
 
+  if(mapMode){
+    cx.fillStyle="rgba(79,227,193,.85)"; cx.font="600 13px 'Oxanium'"; cx.textAlign="center";
+    cx.fillText("MAP VIEW — press M to exit", W/2, 26);
+  }
   updateHUD(o);
 }
 
@@ -1256,30 +1278,56 @@ function drawStars(){
 }
 
 function drawTrajectory(r){
+  encounterInfo=null;
   if(!r.alive) return;
-  cx.save(); cx.strokeStyle="rgba(79,227,193,.5)"; cx.lineWidth=1.2; cx.setLineDash([5,6]); cx.beginPath();
   let x=r.x,y=r.y,vx=r.vx,vy=r.vy, ma=moonAngle;
   const alt=Math.hypot(x,y)-R;
   const dt=Math.min(6, 1+alt/12000);   // bigger steps when higher
-  let moved=false;
-  for(let i=0;i<1400;i++){
+  const pts=[]; let entry=null, minDist=Infinity, impact=false;
+  for(let i=0;i<2000;i++){
     const g=gravityAccel(x,y,ma); vx+=g.ax*dt; vy+=g.ay*dt; x+=vx*dt; y+=vy*dt; ma+=MOON_OMEGA*dt;
     if(Math.hypot(x,y)<=R) break;
-    const mp=moonPos(ma); if(Math.hypot(x-mp.x,y-mp.y)<=MOON_RADIUS) break;
+    const mp=moonPos(ma); const dm=Math.hypot(x-mp.x,y-mp.y);
+    const inSOI = dm<MOON_SOI;
+    if(inSOI){ if(!entry) entry={x,y}; if(dm<minDist) minDist=dm; }
     const s=worldToScreen(x,y);
-    if(!moved){ cx.moveTo(s.x,s.y); moved=true; } else cx.lineTo(s.x,s.y);
+    pts.push({x:s.x,y:s.y,inSOI});
+    if(dm<=MOON_RADIUS){ impact=true; break; }
   }
-  cx.stroke(); cx.setLineDash([]); cx.restore();
+  if(pts.length<2) return;
+  cx.save(); cx.lineWidth=1.4; cx.setLineDash([5,6]);
+  // pass 1 — full path in cyan
+  cx.strokeStyle="rgba(79,227,193,.5)"; cx.beginPath();
+  pts.forEach((p,k)=> k? cx.lineTo(p.x,p.y):cx.moveTo(p.x,p.y)); cx.stroke();
+  // pass 2 — the encounter portion (inside Voon's influence) in amber, over the top
+  cx.strokeStyle="rgba(255,180,84,.95)";
+  let k=0;
+  while(k<pts.length){
+    if(pts[k].inSOI){
+      const start=Math.max(0,k-1); cx.beginPath(); cx.moveTo(pts[start].x,pts[start].y);
+      let m=k; for(; m<pts.length && pts[m].inSOI; m++) cx.lineTo(pts[m].x,pts[m].y);
+      cx.stroke(); k=m;
+    } else k++;
+  }
+  cx.setLineDash([]);
+  // mark where the encounter begins
+  if(entry){
+    const es=worldToScreen(entry.x,entry.y);
+    cx.strokeStyle="rgba(255,180,84,.95)"; cx.lineWidth=1.6;
+    cx.beginPath(); cx.arc(es.x,es.y,7,0,7); cx.stroke();
+    cx.fillStyle=varc("--amber"); cx.font="600 11px 'IBM Plex Mono'"; cx.textAlign="left";
+    cx.fillText(impact?"VOON IMPACT":"VOON ENCOUNTER", es.x+11, es.y+4);
+  }
+  cx.restore();
+  if(entry) encounterInfo={ closest:Math.max(0,minDist-MOON_RADIUS), impact };
 }
 
 function drawFlightRocket(r){
   const s=worldToScreen(r.x,r.y);
-  const px = Math.max(1.6, Math.min(4.2, scale*0.9)); // pixels per unit, clamped
-  // if too tiny, draw a glowing dot
-  if(scale<0.0016){
-    cx.fillStyle=varc("--cyan"); cx.beginPath(); cx.arc(s.x,s.y,3,0,7); cx.fill();
-    cx.strokeStyle="rgba(79,227,193,.4)"; cx.beginPath(); cx.arc(s.x,s.y,7,0,7); cx.stroke(); return;
-  }
+  // rocket icon: BIGGER when zoomed out, SMALLER when zoomed in (KSP-style map marker),
+  // so it stays visible from far away instead of shrinking to a dot.
+  const targetH = Math.max(14, Math.min(150, 62/userZoom));
+  const px = targetH/46;                              // ~pixels per rocket "unit"
   cx.save(); cx.translate(s.x,s.y); cx.rotate(-r.ang); // match world thrust direction on the flipped-Y screen
   // flame
   const eng=activeStage(r);
@@ -1333,6 +1381,7 @@ function updateHUD(o){
     <div class="t"><span>${coreLabel}</span><span style="color:${coreFuelPct>20?'var(--ink)':'var(--red)'}">${coreFuelPct}%</span></div>
     <div class="t"><span>Next stage</span><span style="color:var(--amber)">${nextStage}</span></div>
     <div class="t"><span>Science held</span><span style="color:var(--cyan)">${pend}</span></div>
+    ${encounterInfo?`<div class="t"><span>Voon ${encounterInfo.impact?"impact ⚠":"flyby"}</span><span style="color:var(--amber)">${encounterInfo.impact?"collision":fmtKm(encounterInfo.closest)}</span></div>`:""}
     <div class="situ">${sd.key}</div>`;
   $("#thrFill").style.height=(r.throttle*100)+"%";
   // science is auto-collecting while you're alive; show the running total
