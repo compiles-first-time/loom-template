@@ -1,0 +1,1444 @@
+<title>Voon Program</title>
+<meta name="description" content="A rocket-company sim: build from scarce parts, launch under real gravity and orbital mechanics, gather Science, and land without exploding.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+  :root{
+    --space:#080b12; --space2:#0c1119; --panel:#111925; --panel2:#161f2d;
+    --line:#233246; --line2:#31465f; --ink:#e6eef7; --muted:#8ea0b6; --dim:#5f7288;
+    --cyan:#4fe3c1; --cyan-dim:#2b8f7d; --amber:#ffb454; --red:#ff5a5f; --green:#8fe36b; --blue:#5aa8ff;
+    --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+    --disp:'Oxanium',system-ui,sans-serif;
+    --body:'IBM Plex Sans',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--space); color:var(--ink); font-family:var(--body);
+    overflow:hidden; -webkit-font-smoothing:antialiased; user-select:none;
+    overscroll-behavior:none; -webkit-user-select:none; -webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
+  }
+  button{font-family:var(--disp); cursor:pointer}
+  .disp{font-family:var(--disp)}
+  .mono{font-family:var(--mono)}
+  #app{position:fixed; inset:0; display:flex; flex-direction:column}
+
+  /* ---------- shared chrome ---------- */
+  .topbar{
+    display:flex; align-items:center; gap:14px; padding:10px 16px; z-index:20;
+    background:linear-gradient(180deg,rgba(12,17,25,.96),rgba(12,17,25,.82));
+    border-bottom:1px solid var(--line); backdrop-filter:blur(4px);
+  }
+  .logo{font-family:var(--disp); font-weight:800; letter-spacing:.14em; font-size:15px; color:var(--ink)}
+  .logo b{color:var(--cyan)}
+  .ver{font-family:var(--mono); font-size:11px; color:var(--amber); border:1px solid var(--line2);
+    border-radius:12px; padding:2px 8px; letter-spacing:.06em}
+  .mini-sel{font-family:var(--mono); font-size:12px; background:var(--panel2); color:var(--ink);
+    border:1px solid var(--line2); border-radius:7px; padding:5px 8px; min-width:96px}
+  .mini-sel:hover{border-color:var(--cyan-dim)}
+  .mini-sel option:disabled{color:var(--dim)}
+  .tag{font-family:var(--mono); font-size:11px; color:var(--dim); letter-spacing:.08em}
+  .spacer{flex:1}
+  .stat-chip{
+    font-family:var(--mono); font-size:13px; padding:5px 12px; border:1px solid var(--line2);
+    border-radius:20px; background:var(--panel); display:flex; gap:8px; align-items:center;
+  }
+  .stat-chip b{color:var(--cyan); font-weight:600}
+  .stat-chip.bump{animation:sciBump .55s ease}
+  @keyframes sciBump{0%{transform:scale(1)}30%{transform:scale(1.2); border-color:var(--cyan)}100%{transform:scale(1)}}
+  @media (prefers-reduced-motion:reduce){ .stat-chip.bump{animation:none} }
+  .ghost{
+    background:transparent; border:1px solid var(--line2); color:var(--muted);
+    padding:7px 13px; border-radius:8px; font-size:12px; letter-spacing:.06em; font-weight:600;
+  }
+  .ghost:hover{border-color:var(--cyan-dim); color:var(--ink)}
+
+  .screen{flex:1; position:relative; overflow:hidden}
+  [hidden]{display:none!important}
+
+  /* ---------- hangar ---------- */
+  #hangar{display:grid; grid-template-columns:340px 1fr 320px; height:100%; background:
+    radial-gradient(1200px 700px at 30% -10%, rgba(79,227,193,.06), transparent 60%), var(--space);}
+  .hpanel{border-right:1px solid var(--line); overflow-y:auto; padding:18px}
+  .hpanel.right{border-right:none; border-left:1px solid var(--line)}
+  .htitle{font-family:var(--disp); font-weight:700; letter-spacing:.1em; font-size:12px;
+    color:var(--muted); text-transform:uppercase; margin:0 0 12px}
+  .stage-block{border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:12px; background:var(--panel)}
+  .stage-block h4{margin:0 0 10px; font-family:var(--disp); font-size:13px; letter-spacing:.08em; color:var(--cyan)}
+  .row{display:flex; align-items:center; justify-content:space-between; gap:8px; margin:7px 0; font-size:13px}
+  .row label{color:var(--muted); font-family:var(--mono); font-size:12px}
+  .stepper{display:flex; align-items:center; gap:2px}
+  .stepper button{width:26px; height:26px; border:1px solid var(--line2); background:var(--panel2);
+    color:var(--ink); border-radius:6px; font-size:15px; line-height:1; display:grid; place-items:center}
+  .stepper button:hover{border-color:var(--cyan-dim)}
+  .stepper .val{min-width:34px; text-align:center; font-family:var(--mono); font-size:13px}
+  .seg{display:flex; border:1px solid var(--line2); border-radius:7px; overflow:hidden}
+  .seg button{background:var(--panel2); color:var(--muted); border:none; padding:5px 10px; font-size:11px; letter-spacing:.05em}
+  .seg button.on{background:var(--cyan); color:#04120e}
+  .seg button:disabled{opacity:.35; cursor:not-allowed}
+  .toggle{width:44px; height:24px; border-radius:20px; border:1px solid var(--line2); background:var(--panel2); position:relative}
+  .toggle::after{content:""; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:var(--dim); transition:.15s}
+  .toggle.on{background:var(--cyan-dim); border-color:var(--cyan)}
+  .toggle.on::after{left:22px; background:var(--cyan)}
+  .toggle:disabled{opacity:.4}
+  .hint{font-family:var(--mono); font-size:11px; color:var(--dim); line-height:1.4; margin:2px 2px 0}
+  .stepper button:disabled{opacity:.35; cursor:not-allowed}
+  .addstage{width:100%; padding:9px; border:1px dashed var(--line2); background:transparent; color:var(--muted);
+    border-radius:10px; font-size:12px; letter-spacing:.08em}
+  .addstage:hover{border-color:var(--cyan-dim); color:var(--ink)}
+  .addstage:disabled{opacity:.4; cursor:not-allowed}
+
+  /* rocket preview */
+  #preview{display:flex; align-items:center; justify-content:center; position:relative}
+  #previewCanvas{max-width:100%; max-height:100%}
+  .pad-note{position:absolute; bottom:16px; left:50%; transform:translateX(-50%);
+    font-family:var(--mono); font-size:11px; color:var(--dim); letter-spacing:.1em}
+
+  /* tech tree / stats */
+  .readout{border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:14px; background:var(--panel);
+    font-family:var(--mono)}
+  .readout .r{display:flex; justify-content:space-between; padding:4px 0; font-size:13px; border-bottom:1px dotted var(--line)}
+  .readout .r:last-child{border-bottom:none}
+  .readout .r span:first-child{color:var(--muted)}
+  .readout .r span:last-child{font-weight:600}
+  .verdict{margin-top:8px; font-size:12px; padding:8px 10px; border-radius:8px; font-family:var(--body)}
+  .verdict.ok{background:rgba(143,227,107,.1); color:var(--green); border:1px solid rgba(143,227,107,.3)}
+  .verdict.warn{background:rgba(255,180,84,.1); color:var(--amber); border:1px solid rgba(255,180,84,.3)}
+  .verdict.bad{background:rgba(255,90,95,.1); color:var(--red); border:1px solid rgba(255,90,95,.3)}
+
+  .part{display:flex; align-items:center; gap:10px; padding:9px 10px; border:1px solid var(--line);
+    border-radius:9px; margin-bottom:8px; background:var(--panel)}
+  .part.locked{opacity:.9}
+  .part .pi{font-size:18px; width:24px; text-align:center}
+  .part .pn{flex:1; font-size:13px}
+  .part .pn small{display:block; color:var(--dim); font-size:11px; font-family:var(--mono)}
+  .part .unlock{font-family:var(--disp); font-size:11px; padding:5px 9px; border-radius:7px; border:1px solid var(--cyan-dim);
+    background:transparent; color:var(--cyan); letter-spacing:.04em; white-space:nowrap}
+  .part .unlock:disabled{border-color:var(--line2); color:var(--dim); cursor:not-allowed}
+  .part .owned{font-family:var(--mono); font-size:11px; color:var(--green); letter-spacing:.05em}
+
+  .launch{
+    width:100%; margin-top:6px; padding:14px; border:none; border-radius:12px;
+    background:linear-gradient(180deg,var(--cyan),var(--cyan-dim)); color:#03130f;
+    font-family:var(--disp); font-weight:800; letter-spacing:.16em; font-size:15px;
+  }
+  .launch:hover{filter:brightness(1.08)}
+  .launch:disabled{background:var(--panel2); color:var(--dim); cursor:not-allowed}
+
+  /* ---------- flight ---------- */
+  #flight{background:#03060c}
+  #game{display:block; width:100%; height:100%; touch-action:none}
+  .hud{position:absolute; pointer-events:none; font-family:var(--mono)}
+  #tele{top:12px; left:12px; background:rgba(8,11,18,.72); border:1px solid var(--line);
+    border-radius:10px; padding:12px 14px; min-width:210px; backdrop-filter:blur(3px)}
+  #tele .t{display:flex; justify-content:space-between; gap:18px; font-size:12.5px; padding:2.5px 0}
+  #tele .t span:first-child{color:var(--muted)}
+  #tele .t span:last-child{font-weight:600; font-variant-numeric:tabular-nums}
+  #tele .situ{margin-top:6px; padding-top:8px; border-top:1px solid var(--line); font-size:13px; color:var(--cyan);
+    letter-spacing:.06em; text-transform:uppercase}
+  #warpline{top:12px; right:12px; background:rgba(8,11,18,.72); border:1px solid var(--line); border-radius:10px;
+    padding:8px 12px; font-size:12px; color:var(--muted)}
+  #warpline b{color:var(--amber)}
+
+  #dock{position:absolute; left:0; right:0; bottom:0; padding:14px 16px calc(14px + env(safe-area-inset-bottom));
+    display:flex; align-items:flex-end; gap:12px; justify-content:center; flex-wrap:wrap;
+    background:linear-gradient(0deg,rgba(6,9,15,.9),transparent); pointer-events:none}
+  #dock > *{pointer-events:auto}
+  .cluster{display:flex; gap:8px; align-items:center; background:rgba(12,17,25,.8); border:1px solid var(--line);
+    border-radius:14px; padding:9px}
+  .steer{width:52px; height:56px; border:1px solid var(--line2); background:var(--panel2); color:var(--ink);
+    border-radius:10px; font-size:22px; display:grid; place-items:center; touch-action:none}
+  .steer:active{background:var(--cyan-dim); border-color:var(--cyan)}
+  .steer small{display:block; font-family:var(--mono); font-size:9px; color:var(--dim); letter-spacing:.1em}
+  .bigbtn{border:1px solid var(--line2); border-radius:12px; padding:11px 16px; min-width:104px; text-align:center;
+    background:var(--panel2); color:var(--ink); font-family:var(--disp); font-weight:700; letter-spacing:.06em; font-size:13px}
+  .bigbtn small{display:block; font-family:var(--mono); font-weight:400; font-size:10px; color:var(--dim); margin-top:3px; letter-spacing:.08em}
+  .bigbtn.thruster.on{background:linear-gradient(180deg,#ff7a3d,#d94b1a); border-color:#ff9a5d; color:#160600; box-shadow:0 0 22px rgba(255,120,60,.4)}
+  .bigbtn.stage{border-color:var(--amber)} .bigbtn.stage:hover{background:rgba(255,180,84,.14)}
+  .bigbtn.sci{border-color:var(--cyan-dim)} .bigbtn.sci:hover{background:rgba(79,227,193,.12)}
+  .bigbtn.sci.ready{border-color:var(--cyan); box-shadow:0 0 16px rgba(79,227,193,.4); color:var(--cyan)}
+  .bigbtn.chute{border-color:var(--amber)} .bigbtn.chute:hover{background:rgba(255,180,84,.14)}
+  .bigbtn.chute.ready{box-shadow:0 0 16px rgba(255,180,84,.45); color:var(--amber)}
+  .bigbtn:disabled{opacity:.4; cursor:not-allowed; box-shadow:none}
+  .throttle-wrap{display:flex; flex-direction:column; align-items:center; gap:4px; font-family:var(--mono); font-size:10px; color:var(--dim)}
+  .throttle{width:14px; height:56px; background:var(--panel2); border:1px solid var(--line2); border-radius:7px; position:relative; overflow:hidden}
+  .throttle i{position:absolute; left:0; right:0; bottom:0; background:linear-gradient(0deg,#ff7a3d,#ffb454); transition:height .08s}
+  .warpbtns{display:flex; flex-direction:column; gap:5px}
+  .warpbtns button{font-family:var(--mono); font-size:11px; padding:4px 8px; border:1px solid var(--line2);
+    background:var(--panel2); color:var(--muted); border-radius:6px}
+  .warpbtns button.on{border-color:var(--amber); color:var(--amber)}
+
+  /* ---------- modals ---------- */
+  .modal{position:absolute; inset:0; z-index:60; display:grid; place-items:center;
+    background:rgba(4,7,12,.72); backdrop-filter:blur(4px); padding:20px}
+  .card{background:var(--panel); border:1px solid var(--line2); border-radius:16px; padding:26px;
+    max-width:520px; width:100%; max-height:88vh; overflow-y:auto}
+  .card h2{font-family:var(--disp); font-weight:800; letter-spacing:.06em; margin:0 0 4px; font-size:24px}
+  .card h2.ok{color:var(--green)} .card h2.bad{color:var(--red)}
+  .card p{color:var(--muted); line-height:1.55; font-size:14px; margin:8px 0}
+  .kbd-grid{display:grid; grid-template-columns:auto 1fr; gap:10px 16px; margin:16px 0; font-size:13px; align-items:center}
+  .kbd{font-family:var(--mono); background:var(--panel2); border:1px solid var(--line2); border-bottom-width:2px;
+    border-radius:6px; padding:4px 9px; text-align:center; color:var(--ink); font-size:12px; white-space:nowrap}
+  .kbd-grid span{color:var(--muted)}
+  .results-sci{font-family:var(--mono); font-size:14px; margin:14px 0; border:1px solid var(--line); border-radius:10px; overflow:hidden}
+  .results-sci .rr{display:flex; justify-content:space-between; padding:8px 14px; border-bottom:1px solid var(--line)}
+  .results-sci .rr:last-child{border-bottom:none}
+  .results-sci .rr.total{background:var(--panel2); color:var(--cyan); font-weight:600}
+  .modal-actions{display:flex; gap:10px; margin-top:18px}
+  .modal-actions button{flex:1; padding:12px; border-radius:10px; font-family:var(--disp); font-weight:700; letter-spacing:.08em; font-size:13px}
+  .btn-primary{background:var(--cyan); color:#03130f; border:none}
+  .btn-primary:hover{filter:brightness(1.08)}
+  .btn-sec{background:transparent; border:1px solid var(--line2); color:var(--muted)}
+  .btn-sec:hover{color:var(--ink); border-color:var(--cyan-dim)}
+  .close-x{position:absolute; top:14px; right:16px; background:none; border:none; color:var(--dim); font-size:22px}
+
+  .toast{position:absolute; top:70px; left:50%; transform:translateX(-50%); z-index:40;
+    font-family:var(--mono); font-size:13px; padding:9px 16px; border-radius:20px;
+    background:rgba(12,17,25,.94); border:1px solid var(--cyan-dim); color:var(--cyan);
+    opacity:0; transition:opacity .25s, transform .25s; pointer-events:none}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(4px)}
+
+  @media (max-width:820px){
+    #hangar{grid-template-columns:1fr; grid-template-rows:auto auto auto; overflow-y:auto}
+    .hpanel{border-right:none; border-bottom:1px solid var(--line)}
+    .hpanel.right{border-left:none; border-top:1px solid var(--line)}
+    #preview{min-height:240px}
+  }
+  /* bigger, thumb-friendly controls on touch devices */
+  @media (pointer:coarse){
+    .stepper button{width:34px; height:34px; font-size:18px}
+    .mini-sel{min-height:40px; padding:8px 10px}
+    .toggle{width:52px; height:30px}
+    .toggle::after{width:24px; height:24px}
+    .toggle.on::after{left:24px}
+    .part .unlock{padding:9px 12px}
+  }
+  /* phone layout: compact top bar + a tidy, wrapping control dock */
+  @media (max-width:600px){
+    .topbar{gap:8px; padding:8px 10px; flex-wrap:wrap}
+    .logo{font-size:13px} .ver{font-size:10px; padding:1px 6px}
+    #phaseTag{display:none}
+    .stat-chip{font-size:12px; padding:4px 10px} .ghost{padding:6px 10px; font-size:11px}
+    #tele{top:8px; left:8px; padding:9px 11px; min-width:0; font-size:11px}
+    #tele .t{gap:10px; padding:1.5px 0}
+    #warpline{top:8px; right:8px; padding:6px 9px; font-size:11px}
+    #dock{padding:9px 8px calc(9px + env(safe-area-inset-bottom)); gap:8px}
+    .cluster{padding:7px; gap:6px}
+    .steer{width:60px; height:60px; font-size:22px}
+    .bigbtn{min-width:70px; padding:10px 10px; font-size:12px}
+    .bigbtn small{font-size:9px}
+    .throttle-wrap{display:none}
+    .warpbtns{flex-direction:row}
+    .warpbtns button{padding:8px 9px}
+    #btnAbort{padding:9px 11px}
+  }
+  /* cheat menu (Ctrl+Q) */
+  #cheatPanel{position:fixed; top:58px; left:12px; z-index:80}
+  .cheat-card{background:rgba(22,12,12,.97); border:1px solid #7a3b3b; border-radius:12px; padding:14px 16px;
+    width:220px; box-shadow:0 10px 34px rgba(0,0,0,.55); font-family:var(--mono); color:var(--ink); backdrop-filter:blur(4px)}
+  .cheat-card h3{font-family:var(--disp); font-size:14px; letter-spacing:.08em; color:#ff8a7a; margin:0 0 8px;
+    display:flex; justify-content:space-between; align-items:center}
+  .cheat-card h3 button{background:none; border:none; color:var(--dim); font-size:20px; cursor:pointer}
+  .cheat-card label{display:flex; align-items:center; gap:9px; font-size:13px; margin:9px 0; cursor:pointer}
+  .cheat-card input[type=checkbox]{width:18px; height:18px; accent-color:#ff5a5f}
+  .cheat-act{width:100%; margin-top:8px; padding:10px; border:1px solid #7a3b3b; background:rgba(255,90,80,.12);
+    color:#ffb0a5; border-radius:8px; font-family:var(--disp); letter-spacing:.06em; font-size:12px}
+  .cheat-act:hover{background:rgba(255,90,80,.22)}
+  .cheat-card .hint2{font-size:10px; color:var(--dim); margin:11px 0 0; letter-spacing:.04em}
+  /* zoom buttons for the map (touch has no scroll-wheel) */
+  #zoomctl{top:64px; right:12px; display:flex; flex-direction:column; gap:6px; pointer-events:auto}
+  #zoomctl button{width:40px; height:40px; border:1px solid var(--line2); background:rgba(12,17,25,.8);
+    color:var(--ink); border-radius:9px; font-size:22px; line-height:1; display:grid; place-items:center; touch-action:none}
+  #zoomctl button:active{border-color:var(--cyan); color:var(--cyan)}
+  @media (max-width:600px){ #zoomctl{top:auto; bottom:118px; right:8px} }
+</style>
+
+<div id="app">
+  <div class="topbar">
+    <div class="logo">VOON<b>·</b>PROGRAM</div>
+    <span class="ver">v0.5</span>
+    <div class="tag" id="phaseTag">HANGAR // MISSION DESIGN</div>
+    <div class="spacer"></div>
+    <div class="stat-chip">SCIENCE <b id="sciBank">0</b></div>
+    <button class="ghost" id="btnControls">CONTROLS</button>
+    <button class="ghost" id="btnReset" title="Reset all progress">RESET</button>
+  </div>
+
+  <!-- ================= HANGAR ================= -->
+  <div class="screen" id="hangar">
+    <div class="hpanel left">
+      <h3 class="htitle">Vehicle Assembly</h3>
+      <div id="stageList"></div>
+      <button class="addstage" id="addStage">+ ADD STAGE (needs Decoupler)</button>
+      <div id="boosterBox" style="margin-top:12px"></div>
+      <div style="margin-top:14px">
+        <div class="row"><label>Parachute</label><button class="toggle" id="chuteToggle" disabled></button></div>
+        <div class="row"><label>Nose cone</label><button class="toggle" id="noseToggle" disabled></button></div>
+        <div class="row"><label>Landing legs</label><button class="toggle" id="legsToggle" disabled></button></div>
+        <div class="row"><label>Science modules</label>
+          <div class="stepper">
+            <button id="sciDec" type="button">−</button><span class="val" id="sciVal">1</span><button id="sciInc" type="button">+</button>
+          </div>
+        </div>
+        <div class="hint" id="sciHint">Each extra module costs <b style="color:var(--cyan)">3 science</b> · more modules = more science every safe landing.</div>
+      </div>
+    </div>
+
+    <div class="hpanel" id="preview" style="border-right:1px solid var(--line)">
+      <canvas id="previewCanvas" width="320" height="520"></canvas>
+      <div class="pad-note">LAUNCH PAD 01 · KAPLA BASE</div>
+    </div>
+
+    <div class="hpanel right">
+      <h3 class="htitle">Flight Readout</h3>
+      <div class="readout" id="readout"></div>
+      <h3 class="htitle">Tech Tree</h3>
+      <div id="techTree"></div>
+      <button class="launch" id="btnLaunch">LAUNCH ▲</button>
+    </div>
+  </div>
+
+  <!-- ================= FLIGHT ================= -->
+  <div class="screen" id="flight" hidden>
+    <canvas id="game"></canvas>
+    <div class="hud" id="tele"></div>
+    <div class="hud" id="warpline">WARP <b id="warpVal">1×</b></div>
+    <div class="hud" id="zoomctl"><button id="zoomIn" aria-label="Zoom in">+</button><button id="zoomOut" aria-label="Zoom out">−</button></div>
+    <div class="toast" id="toast"></div>
+
+    <div id="dock">
+      <div class="cluster">
+        <button class="steer" id="steerA" title="Rotate left (A)">A<small>◀ LEFT</small></button>
+        <button class="steer" id="steerD" title="Rotate right (D)">D<small>RIGHT ▶</small></button>
+      </div>
+      <button class="bigbtn thruster" id="btnThruster">THRUSTER<small>OFF · [W]</small></button>
+      <div class="throttle-wrap">THR<div class="throttle"><i id="thrFill"></i></div></div>
+      <button class="bigbtn stage" id="btnStage">STAGE<small>DROP · [SPACE]</small></button>
+      <button class="bigbtn chute" id="btnChute">🪂 CHUTE<small>[P]</small></button>
+      <button class="bigbtn sci" id="btnSci">SCIENCE<small>[E]</small></button>
+      <div class="warpbtns">
+        <button data-warp="1" class="on">1×</button>
+        <button data-warp="5">5×</button>
+        <button data-warp="50">50×</button>
+      </div>
+      <button class="ghost" id="btnAbort" style="align-self:center">ABORT ⟲</button>
+    </div>
+  </div>
+
+  <!-- ================= MODALS ================= -->
+  <div class="modal" id="controlsModal" hidden>
+    <div class="card" style="position:relative">
+      <button class="close-x" data-close>×</button>
+      <h2 class="disp">FLIGHT CONTROLS</h2>
+      <p>You are the pilot <em>and</em> the flight director. Voon orbits eastward across the sky — chase it or slingshot around it.</p>
+      <div class="kbd-grid">
+        <span class="kbd">W</span><span>Thruster on/off — fires the active stage's engine</span>
+        <span class="kbd">A</span><span>Rotate the rocket <b style="color:var(--ink)">left</b></span>
+        <span class="kbd">D</span><span>Rotate the rocket <b style="color:var(--ink)">right</b></span>
+        <span class="kbd">SPACE</span><span>Stage — drop the side boosters first, then each spent engine stage</span>
+        <span class="kbd">P</span><span>Deploy parachute — one press, any time (no staging needed)</span>
+        <span class="kbd">E</span><span>Run Science — you auto-collect it too. How much depends on <b style="color:var(--ink)">how high</b> and <b style="color:var(--ink)">which region</b> you're over (orbit sweeps many regions). <b style="color:var(--ink)">Land safely to keep it</b></span>
+        <span class="kbd">, / .</span><span>Time warp down / up (only while coasting)</span>
+        <span class="kbd">M</span><span>Map view — zoom out to see the whole Planet + Voon system and your trajectory</span>
+        <span class="kbd">scroll / pinch</span><span>Zoom in / out (or the on-screen + / − buttons)</span>
+        <span class="kbd">ESC</span><span>Abort back to the hangar</span>
+      </div>
+      <p style="font-size:13px"><b style="color:var(--amber)">Landing rule:</b> touch down slower than <b style="color:var(--ink)">25 m/s</b> (or <b style="color:var(--ink)">40 m/s</b> with Landing Legs) or the rocket explodes and its stored science is lost. In atmosphere, the parachute does the braking. <b style="color:var(--ink)">Voon 🌙</b> has gravity but no air — burn your engine to slow down, and bring legs.</p>
+      <div class="modal-actions"><button class="btn-primary" data-close>GOT IT</button></div>
+    </div>
+  </div>
+
+  <div class="modal" id="resultModal" hidden>
+    <div class="card" id="resultCard"></div>
+  </div>
+
+  <div id="cheatPanel" hidden>
+    <div class="cheat-card">
+      <h3>😈 CHEATS<button id="cheatClose" aria-label="Close">×</button></h3>
+      <label><input type="checkbox" id="cheatFuel"> Infinite fuel</label>
+      <label><input type="checkbox" id="cheatNoCrash"> No-crash landings</label>
+      <button class="cheat-act" id="cheatUnlock">UNLOCK EVERYTHING</button>
+      <button class="cheat-act" id="cheatSci">+1000 SCIENCE</button>
+      <p class="hint2">Toggle this menu with Ctrl + Q</p>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   VOON PROGRAM — a tiny rocket-company physics sim
+   Coordinate system: planet centre at world (0,0). +Y is "up"
+   away from the surface at the launch site. Screen flips Y.
+============================================================ */
+
+// ---------- world constants (SI-ish, tuned for play) ----------
+const R        = 200000;      // planet radius (m)  -> 200 km
+const GM       = 3.92e11;     // planet GM -> surface g ~9.8 m/s^2
+const g0       = GM/(R*R);
+const ATMO     = 34000;       // atmosphere top (m)
+const SPACE    = 46000;       // "space" begins (m)
+const RHO0     = 1.0;         // sea-level air density factor
+const H_SCALE  = 6500;        // atmospheric scale height
+const SAFE_LAND= 25;          // max safe landing speed (m/s)
+
+const MOON_R      = 900000;   // Voon orbit radius (m)
+const MOON_RADIUS = 62000;    // Voon body radius (m)
+const MOON_GM     = 5.9e9;    // Voon GM -> surface g ~1.5
+const MOON_SOI    = MOON_R*Math.pow(MOON_GM/GM,0.4);
+const MOON_OMEGA  = Math.sqrt(GM/Math.pow(MOON_R,3)); // orbital rate
+
+// ---------- parts catalogue ----------
+const POD={mass:480}, SCI={mass:180}, CHUTE={mass:70}, DECOUPLER={mass:45}, NOSE={mass:60}, LEGS={mass:90};
+const LEGS_BONUS = 15;   // landing legs raise the safe touchdown speed by this much
+const TANKS = {
+  small:{dry:150, fuel:900,  short:"Small", unlock:null},
+  big:  {dry:320, fuel:2600, short:"Jumbo", unlock:"big"},
+  mega: {dry:700, fuel:6500, short:"Mega",  unlock:"mega"},
+};
+const ENGINES = {
+  basic:{mass:220, thrust:52000,  isp:250, short:"Kap-1", unlock:null},
+  eff:  {mass:300, thrust:70000,  isp:315, short:"Kap-2", unlock:"eff"},
+  kap3: {mass:480, thrust:110000, isp:340, short:"Kap-3", unlock:"kap3"},
+  kap4: {mass:720, thrust:180000, isp:360, short:"Kap-4", unlock:"kap4"},
+};
+function partUnlocked(u){ return u==null || has(u); }
+
+const TECH = [
+  {id:"parachute", icon:"🪂", name:"Parachute",     desc:"Soft landings in atmosphere",       cost:8},
+  {id:"legs",      icon:"🦿", name:"Landing Legs",   desc:"Survive faster touchdowns (+15 m/s)",cost:12},
+  {id:"big",       icon:"🛢️", name:"Jumbo Tank",    desc:"2.6 t fuel — far more Δv",          cost:20},
+  {id:"fins",      icon:"🪶", name:"Reaction Wheel", desc:"Faster, steadier steering",         cost:30},
+  {id:"eff",       icon:"🔥", name:"Kap-2 Engine",   desc:"70 kN vacuum engine",               cost:45},
+  {id:"nose",      icon:"🔺", name:"Nose Cone",      desc:"Cuts air drag on the climb",        cost:65},
+  {id:"avionics",  icon:"🧭", name:"Avionics Pod",   desc:"Even faster, crisper turning",      cost:100},
+  {id:"kap3",      icon:"🔥", name:"Kap-3 Engine",   desc:"Big 110 kN engine",                 cost:160},
+  {id:"mega",      icon:"🛢️", name:"Mega Tank",     desc:"6.5 t fuel — heavy lifter",         cost:240},
+  {id:"kap4",      icon:"🚀", name:"Kap-4 Engine",   desc:"Monster 180 kN engine",             cost:360},
+];
+
+// ---------- science situations ----------
+const SITU = {   // the higher / faster you go, the more science each situation is worth
+  "Launch Pad":         1,
+  "Lower Atmosphere":   1,
+  "Upper Atmosphere":   2,
+  "Sub-orbital Space":  3,
+  "Low Orbit":          5,
+  "High Orbit":         8,
+  "Voon Space":        12,
+  "Voon Surface":      20,
+};
+// WHERE you run the science matters too: the world is split into regions,
+// and each region pays a different bonus. Regional situations are the ones
+// near the home planet — sweeping across regions (best done in orbit) earns
+// separate science for each.
+const REGIONS = [
+  {name:"Kapla Base",     f:1.00},
+  {name:"Verdant Plains", f:1.05},
+  {name:"The Deep Ocean", f:1.10},
+  {name:"Ashfall Range",  f:1.15},
+  {name:"Frost Shelf",    f:1.20},
+];
+const REGIONAL = new Set(["Lower Atmosphere","Upper Atmosphere","Sub-orbital Space","Low Orbit"]);
+function regionInfo(r){
+  const deg=(Math.atan2(r.y,r.x)*180/Math.PI+360)%360;  // launch pad sits at 90°
+  return REGIONS[Math.floor(((deg-54+360)%360)/72)] || REGIONS[0];
+}
+// resolve the science key + value for the rocket's current spot
+function sciData(r){
+  const label=situation(r);
+  const regional=REGIONAL.has(label);
+  const reg=regional?regionInfo(r):null;
+  const base=SITU[label]||0;
+  return { label, key: regional?`${label} · ${reg.name}`:label,
+           value: regional?Math.round(base*reg.f):base };
+}
+
+// ---------- persistent save ----------
+const SAVE_KEY="voon_program_v1";
+const STARTER_UNLOCKS=["parachute","decoupler"];   // every player begins owning these
+function ensureStarters(s){
+  s.unlocked = s.unlocked || [];
+  for(const u of STARTER_UNLOCKS) if(!s.unlocked.includes(u)) s.unlocked.push(u);
+  return s;
+}
+function loadSave(){
+  try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s&&s.unlocked) return ensureStarters(s); }catch(e){}
+  return ensureStarters({sci:0, unlocked:[], done:[]});
+}
+// the starter rocket: a 2-stage ship (uses the decoupler) with a parachute
+function freshDesign(){
+  return { stages:[ {tank:"small",count:2,engine:"basic"}, {tank:"small",count:1,engine:"basic"} ],
+           parachute:true, nose:false, legs:false, sci:1, boosters:{n:0,engine:"basic",tank:"small",tanks:2} };
+}
+function persist(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){} }
+let save = loadSave();
+
+// ---------- cheats (Ctrl+Q) ----------
+const cheats = { infFuel:false, noCrash:false };
+
+// ---------- current rocket design ----------
+let design = freshDesign();  // bottom-first stages
+function has(id){ return save.unlocked.includes(id); }
+
+// ============================================================
+//  DESIGN MATH  (Δv, TWR, mass) — the numbers shown in hangar
+// ============================================================
+function stageMass(s){
+  const t=TANKS[s.tank], e=ENGINES[s.engine];
+  return { dry:e.mass + s.count*t.dry, fuel:s.count*t.fuel, thrust:e.thrust, isp:e.isp };
+}
+function designStats(d){
+  let payload = POD.mass + (d.sci||1)*SCI.mass + (d.parachute?CHUTE.mass:0) + (d.nose?NOSE.mass:0) + (d.legs?LEGS.mass:0) + (d.stages.length-1)*DECOUPLER.mass;
+  const st = d.stages.map(stageMass);
+  // total wet mass
+  let totalDry=payload, totalFuel=0;
+  st.forEach(s=>{ totalDry+=s.dry; totalFuel+=s.fuel; });
+  // side boosters (fire with stage 1)
+  const bo=d.boosters||{n:0};
+  let boosterDry=0, boosterFuel=0, boosterThrust=0;
+  if(bo.n>0){ const be=ENGINES[bo.engine]||ENGINES.basic, bt=TANKS[bo.tank]||TANKS.small;
+    const dryEach=be.mass+(bo.tanks||1)*bt.dry, fuelEach=(bo.tanks||1)*bt.fuel;
+    boosterDry=bo.n*dryEach; boosterFuel=bo.n*fuelEach; boosterThrust=bo.n*be.thrust; }
+  const wet = totalDry+totalFuel+boosterDry+boosterFuel;
+  // Δv, staged bottom->top (core stages; boosters mainly add liftoff thrust)
+  let dv=0;
+  for(let i=0;i<st.length;i++){
+    let carried=payload;
+    for(let j=i+1;j<st.length;j++) carried += st[j].dry+st[j].fuel;
+    const m0 = carried + st[i].dry + st[i].fuel;
+    const mf = carried + st[i].dry;
+    dv += st[i].isp*g0*Math.log(m0/mf);
+  }
+  const twr = wet>0 ? ((st[0]?st[0].thrust:0)+boosterThrust)/(wet*g0) : 0;
+  return {wet, totalFuel:totalFuel+boosterFuel, dv, twr, payload, stages:st, boosters:bo.n||0};
+}
+
+// ============================================================
+//  HANGAR  UI
+// ============================================================
+const $=s=>document.querySelector(s);
+const stageListEl=$("#stageList"), techEl=$("#techTree"), readoutEl=$("#readout");
+
+function renderHangar(){
+  $("#sciBank").textContent = Math.floor(save.sci);
+  // ---- stages ----
+  stageListEl.innerHTML="";
+  design.stages.forEach((s,i)=>{
+    const b=document.createElement("div"); b.className="stage-block";
+    const engOpts = `<select class="mini-sel" data-engsel="${i}">`+
+      Object.keys(ENGINES).map(k=>{ const u=partUnlocked(ENGINES[k].unlock);
+        return `<option value="${k}" ${s.engine===k?"selected":""} ${u?"":"disabled"}>${ENGINES[k].short}${u?"":" 🔒"}</option>`; }).join("")+
+      `</select>`;
+    const tankOpts = `<select class="mini-sel" data-tanksel="${i}">`+
+      Object.keys(TANKS).map(k=>{ const u=partUnlocked(TANKS[k].unlock);
+        return `<option value="${k}" ${s.tank===k?"selected":""} ${u?"":"disabled"}>${TANKS[k].short}${u?"":" 🔒"}</option>`; }).join("")+
+      `</select>`;
+    b.innerHTML = `<h4>STAGE ${i+1} ${i===0?"· fires first":""}
+        ${design.stages.length>1?`<button class="unlock" data-del="${i}" style="float:right;border-color:var(--line2);color:var(--red)">remove</button>`:""}</h4>
+      <div class="row"><label>Engine</label>${engOpts}</div>
+      <div class="row"><label>Tank</label>${tankOpts}</div>
+      <div class="row"><label>Tanks ×</label>
+        <div class="stepper">
+          <button data-dec="${i}">−</button><span class="val">${s.count}</span><button data-inc="${i}">+</button>
+        </div></div>`;
+    stageListEl.appendChild(b);
+  });
+  // add-stage button (as many stages as you want, once the Decoupler is unlocked)
+  const addBtn=$("#addStage");
+  addBtn.disabled = !has("decoupler") || design.stages.length>=8;
+  addBtn.textContent = has("decoupler") ? (design.stages.length>=8?"MAX STAGES (8)":"+ ADD STAGE") : "+ ADD STAGE (needs Decoupler)";
+  renderBoosters();
+  // parachute
+  const ct=$("#chuteToggle");
+  ct.disabled=!has("parachute");
+  ct.classList.toggle("on", design.parachute && has("parachute"));
+  const nt=$("#noseToggle");
+  nt.disabled=!has("nose");
+  nt.classList.toggle("on", design.nose && has("nose"));
+  const lt=$("#legsToggle");
+  lt.disabled=!has("legs");
+  lt.classList.toggle("on", design.legs && has("legs"));
+  // science modules (max 3)
+  if(!design.sci) design.sci=1;
+  $("#sciVal").textContent=design.sci;
+  $("#sciInc").disabled = !(save.sci>=3 && design.sci<3);
+  $("#sciDec").disabled = design.sci<=1;
+
+  renderTech();
+  renderReadout();
+  drawPreview();
+}
+
+// dropdown builders shared by stages and boosters
+function engSelectHTML(sel, attr){
+  return `<select class="mini-sel" ${attr}>`+Object.keys(ENGINES).map(k=>{ const u=partUnlocked(ENGINES[k].unlock);
+    return `<option value="${k}" ${sel===k?"selected":""} ${u?"":"disabled"}>${ENGINES[k].short}${u?"":" 🔒"}</option>`; }).join("")+`</select>`;
+}
+function tankSelectHTML(sel, attr){
+  return `<select class="mini-sel" ${attr}>`+Object.keys(TANKS).map(k=>{ const u=partUnlocked(TANKS[k].unlock);
+    return `<option value="${k}" ${sel===k?"selected":""} ${u?"":"disabled"}>${TANKS[k].short}${u?"":" 🔒"}</option>`; }).join("")+`</select>`;
+}
+// SIDE BOOSTERS block — radial engines that fire with stage 1, dropped first
+function renderBoosters(){
+  const bo=design.boosters||(design.boosters={n:0,engine:"basic",tank:"small",tanks:2});
+  let h=`<div class="stage-block"><h4>SIDE BOOSTERS${bo.n>0?" · fire first":""}</h4>
+    <div class="row"><label>Boosters ×</label><div class="stepper">
+      <button id="boDec">−</button><span class="val">${bo.n}</span><button id="boInc">+</button></div></div>`;
+  if(bo.n>0){
+    h+=`<div class="row"><label>Engine</label>${engSelectHTML(bo.engine,'id="boEng"')}</div>
+        <div class="row"><label>Tank</label>${tankSelectHTML(bo.tank,'id="boTank"')}</div>
+        <div class="row"><label>Tanks each ×</label><div class="stepper">
+          <button id="boTankDec">−</button><span class="val">${bo.tanks}</span><button id="boTankInc">+</button></div></div>`;
+  }
+  h+=`</div>`;
+  $("#boosterBox").innerHTML=h;
+  $("#boInc").onclick=()=>{ if(bo.n<6){ bo.n++; renderHangar(); } };
+  $("#boDec").onclick=()=>{ if(bo.n>0){ bo.n--; renderHangar(); } };
+  if(bo.n>0){
+    $("#boEng").onchange=e=>{ bo.engine=e.target.value; renderHangar(); };
+    $("#boTank").onchange=e=>{ bo.tank=e.target.value; renderHangar(); };
+    $("#boTankInc").onclick=()=>{ if(bo.tanks<4){ bo.tanks++; renderHangar(); } };
+    $("#boTankDec").onclick=()=>{ if(bo.tanks>1){ bo.tanks--; renderHangar(); } };
+  }
+}
+
+function renderTech(){
+  techEl.innerHTML="";
+  TECH.forEach(t=>{
+    const owned=has(t.id);
+    const el=document.createElement("div"); el.className="part"+(owned?"":" locked");
+    el.innerHTML=`<div class="pi">${t.icon}</div>
+      <div class="pn">${t.name}<small>${t.desc}</small></div>
+      ${owned?`<span class="owned">✓ OWNED</span>`
+             :`<button class="unlock" data-tech="${t.id}" ${save.sci>=t.cost?"":"disabled"}>${t.cost} SCI</button>`}`;
+    techEl.appendChild(el);
+  });
+}
+
+function renderReadout(){
+  const st=designStats(design);
+  // rough estimate: ~2200 m/s to reach low orbit incl. losses
+  let cls, msg;
+  if(st.twr<1.0){ cls="bad"; msg="Not enough thrust — TWR is below 1.0, it won't leave the pad."; }
+  else if(st.twr<1.15){ cls="warn"; msg="Thrust is marginal (low TWR) — it'll crawl off the pad. Add engine power or drop mass."; }
+  else if(st.dv<1500){ cls="warn"; msg="Enough to fly high & gather atmosphere science — but not to orbit."; }
+  else if(st.dv<2600){ cls="warn"; msg="Marginal for orbit. Fly a clean gravity turn and don't waste fuel."; }
+  else if(st.dv<4200){ cls="ok"; msg="Solid orbital rocket. Low orbit is well within reach."; }
+  else { cls="ok"; msg="Heavy hauler — enough Δv to reach for Voon."; }
+  readoutEl.innerHTML=`
+    <div class="r"><span>Total mass</span><span>${(st.wet/1000).toFixed(2)} t</span></div>
+    <div class="r"><span>Fuel</span><span>${(st.totalFuel/1000).toFixed(2)} t</span></div>
+    <div class="r"><span>Liftoff TWR</span><span style="color:${st.twr>=1.05?'var(--green)':'var(--red)'}">${st.twr.toFixed(2)}</span></div>
+    <div class="r"><span>Total Δv</span><span style="color:var(--cyan)">${Math.round(st.dv)} m/s</span></div>
+    <div class="r"><span>Science yield</span><span style="color:var(--cyan)">×${design.sci||1}</span></div>
+    <div class="r"><span>Stages</span><span>${design.stages.length}${st.boosters?` + ${st.boosters} booster${st.boosters>1?"s":""}`:""}</span></div>
+    <div class="verdict ${cls}">${msg}</div>`;
+  $("#btnLaunch").disabled = st.twr<1.0;
+}
+
+// hangar events
+stageListEl.addEventListener("click",e=>{
+  const t=e.target;
+  if(t.dataset.eng){ design.stages[stageIndexOf(t)].engine=t.dataset.eng; }
+  else if(t.dataset.tank){ design.stages[stageIndexOf(t)].tank=t.dataset.tank; }
+  else if(t.dataset.inc!==undefined){ const s=design.stages[+t.dataset.inc]; s.count=Math.min(4,s.count+1); }
+  else if(t.dataset.dec!==undefined){ const s=design.stages[+t.dataset.dec]; s.count=Math.max(1,s.count-1); }
+  else if(t.dataset.del!==undefined){ design.stages.splice(+t.dataset.del,1); }
+  else return;
+  renderHangar();
+});
+function stageIndexOf(node){ // find owning stage-block index
+  const block=node.closest(".stage-block");
+  return [...stageListEl.children].indexOf(block);
+}
+$("#addStage").addEventListener("click",()=>{
+  if(has("decoupler") && design.stages.length<8){
+    design.stages.push({tank:"small",count:1,engine:has("eff")?"eff":"basic"});
+    renderHangar();
+  }
+});
+$("#chuteToggle").addEventListener("click",()=>{ if(has("parachute")){ design.parachute=!design.parachute; renderHangar(); }});
+$("#noseToggle").addEventListener("click",()=>{ if(has("nose")){ design.nose=!design.nose; renderHangar(); }});
+$("#legsToggle").addEventListener("click",()=>{ if(has("legs")){ design.legs=!design.legs; renderHangar(); }});
+stageListEl.addEventListener("change",e=>{
+  const t=e.target;
+  if(t.dataset.engsel!==undefined){ design.stages[+t.dataset.engsel].engine=t.value; renderHangar(); }
+  else if(t.dataset.tanksel!==undefined){ design.stages[+t.dataset.tanksel].tank=t.value; renderHangar(); }
+});
+$("#sciInc").addEventListener("click",()=>{ if(save.sci>=3 && design.sci<3){ save.sci-=3; design.sci++; persist(); renderHangar(); }});
+$("#sciDec").addEventListener("click",()=>{ if(design.sci>1){ design.sci--; save.sci+=3; persist(); renderHangar(); }}); // remove = refund 3
+techEl.addEventListener("click",e=>{
+  const id=e.target.dataset.tech; if(!id) return;
+  const t=TECH.find(x=>x.id===id);
+  if(save.sci>=t.cost && !has(id)){
+    save.sci-=t.cost; save.unlocked.push(id); persist();
+    if(id==="parachute") design.parachute=true;
+    renderHangar();
+  }
+});
+$("#btnLaunch").addEventListener("click",startFlight);
+$("#btnReset").addEventListener("click",()=>{
+  if(confirm("Reset ALL progress — science, unlocked parts, everything?")){
+    save=ensureStarters({sci:0,unlocked:[],done:[]}); persist();
+    design=freshDesign();
+    renderHangar();
+  }
+});
+
+// ---------- rocket preview drawing ----------
+const pvc=$("#previewCanvas"), pvx=pvc.getContext("2d");
+function drawPreview(){
+  const w=pvc.width,h=pvc.height; pvx.clearRect(0,0,w,h);
+  // blueprint grid
+  pvx.strokeStyle="rgba(79,227,193,.06)"; pvx.lineWidth=1;
+  for(let x=0;x<w;x+=26){pvx.beginPath();pvx.moveTo(x,0);pvx.lineTo(x,h);pvx.stroke();}
+  for(let y=0;y<h;y+=26){pvx.beginPath();pvx.moveTo(0,y);pvx.lineTo(w,y);pvx.stroke();}
+  drawRocketShape(pvx, w/2, h*0.5, 3.0, {chute:design.parachute, preview:true, sci:design.sci||1, legs:design.legs, boosters:(design.boosters?design.boosters.n:0)});
+}
+
+/* Draws the rocket stack. cx,cy = nose-to-tail centre. px = pixels per "unit".
+   Units: pod 9 tall, science 5, each tank 7, engine 6, decoupler 2. */
+function drawRocketShape(ctx,cx,cy,px,opt){
+  opt=opt||{};
+  // build part list top->bottom with unit heights
+  const parts=[{t:"pod",u:9}];
+  for(let i=0;i<(opt.sci||1);i++) parts.push({t:"sci",u:5});
+  const stages = opt.stages || design.stages;
+  stages.forEach((s,i)=>{
+    for(let k=0;k<s.count;k++) parts.push({t:"tank",u:7,tank:s.tank});
+    parts.push({t:"eng",u:6,engine:s.engine, active:(opt.activeStage===i)});
+    if(i<stages.length-1) parts.push({t:"dec",u:2});
+  });
+  const totalU=parts.reduce((a,p)=>a+p.u,0);
+  const bodyW=14*px/3;
+  let y=cy - totalU*px/2;
+  ctx.lineWidth=1.4;
+  parts.forEach(p=>{
+    const hh=p.u*px;
+    if(p.t==="pod"){
+      ctx.fillStyle="#cdd8e6"; ctx.strokeStyle="#8ea0b6";
+      ctx.beginPath(); ctx.moveTo(cx,y); ctx.lineTo(cx+bodyW/2,y+hh); ctx.lineTo(cx-bodyW/2,y+hh); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+    } else if(p.t==="sci"){
+      ctx.fillStyle="#12303a"; ctx.strokeStyle=varc("--cyan");
+      rrect(ctx,cx-bodyW*0.42,y,bodyW*0.84,hh,3); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=varc("--cyan"); ctx.font="bold "+Math.round(px*2)+"px 'IBM Plex Mono'";
+      ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText("⚗",cx,y+hh/2);
+    } else if(p.t==="tank"){
+      const big=p.tank==="big"; const ww=bodyW*(big?1.12:1);
+      ctx.fillStyle=big?"#243447":"#1c2836"; ctx.strokeStyle="#3a506b";
+      rrect(ctx,cx-ww/2,y,ww,hh,2); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle="rgba(255,255,255,.05)";
+      for(let ly=y+3;ly<y+hh-2;ly+=4){ctx.beginPath();ctx.moveTo(cx-ww/2+2,ly);ctx.lineTo(cx+ww/2-2,ly);ctx.stroke();}
+    } else if(p.t==="dec"){
+      ctx.fillStyle="#3a2c14"; ctx.strokeStyle="#7a5a20";
+      rrect(ctx,cx-bodyW*0.55,y,bodyW*1.1,hh,1); ctx.fill(); ctx.stroke();
+    } else if(p.t==="eng"){
+      const eff=p.engine!=="basic";
+      ctx.fillStyle=eff?"#3a2030":"#2a2226"; ctx.strokeStyle=eff?"#c96":"#98a";
+      ctx.beginPath(); ctx.moveTo(cx-bodyW*0.4,y); ctx.lineTo(cx+bodyW*0.4,y);
+      ctx.lineTo(cx+bodyW*0.6,y+hh); ctx.lineTo(cx-bodyW*0.6,y+hh); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+    }
+    y+=hh;
+  });
+  // side boosters (radial), near the bottom of the stack
+  if(opt.boosters>0){
+    const bw2=bodyW*0.6, bh=totalU*px*0.42;
+    const by=cy + totalU*px/2 - bh - 4*px;
+    for(const sgn of [-1,1]){
+      const bx=cx + sgn*(bodyW*0.95);
+      if(opt.boosterFlame){
+        const fl=12+Math.random()*8;
+        const grd=ctx.createLinearGradient(0,by+bh,0,by+bh+fl);
+        grd.addColorStop(0,"#ffd27a"); grd.addColorStop(1,"rgba(255,90,40,0)");
+        ctx.fillStyle=grd; ctx.beginPath();
+        ctx.moveTo(bx-bw2*0.35,by+bh); ctx.lineTo(bx+bw2*0.35,by+bh); ctx.lineTo(bx,by+bh+fl); ctx.closePath(); ctx.fill();
+      }
+      ctx.lineWidth=1.2; ctx.fillStyle="#2b3240"; ctx.strokeStyle="#586274";
+      rrect(ctx,bx-bw2/2,by,bw2,bh,3); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(bx,by-4*px); ctx.lineTo(bx+bw2/2,by); ctx.lineTo(bx-bw2/2,by); ctx.closePath();
+      ctx.fillStyle="#39414f"; ctx.fill(); ctx.stroke();
+    }
+    if(opt.boosters>2 && opt.preview){
+      ctx.fillStyle=varc("--amber"); ctx.font="bold "+Math.round(px*2.2)+"px 'IBM Plex Mono'";
+      ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText("×"+opt.boosters, cx, by+bh+px*3.5);
+    }
+  }
+  // landing legs at the base
+  if(opt.legs){
+    const by=cy + totalU*px/2;
+    ctx.strokeStyle="#9aa7b8"; ctx.lineWidth=Math.max(1.5,px*0.55); ctx.lineCap="round";
+    for(const sgn of [-1,1]){
+      ctx.beginPath();
+      ctx.moveTo(sgn*bodyW*0.28, by-4*px);
+      ctx.lineTo(sgn*bodyW*0.9,  by+2*px);
+      ctx.lineTo(sgn*bodyW*1.1,  by+2*px);   // foot pad
+      ctx.stroke();
+    }
+    ctx.lineCap="butt";
+  }
+  // parachute (packed, on the pod) in preview
+  if(opt.chute && opt.preview){
+    ctx.fillStyle=varc("--amber"); ctx.strokeStyle="#a5701d";
+    rrect(ctx,cx-bodyW*0.3,cy-totalU*px/2+px*1.2,bodyW*0.6,px*2,2); ctx.fill(); ctx.stroke();
+  }
+}
+function rrect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function varc(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+
+// ============================================================
+//  FLIGHT
+// ============================================================
+const cv=$("#game"), cx=cv.getContext("2d");
+let W=0,Hh=0,DPR=1;
+function resize(){
+  DPR=Math.min(2,window.devicePixelRatio||1);
+  W=cv.clientWidth; Hh=cv.clientHeight;
+  cv.width=W*DPR; cv.height=Hh*DPR; cx.setTransform(DPR,0,0,DPR,0,0);
+}
+window.addEventListener("resize",()=>{ if(!$("#flight").hidden) resize(); });
+window.addEventListener("orientationchange",()=>{ setTimeout(()=>{ if(!$("#flight").hidden) resize(); },200); });
+
+// stars (fixed field in a big space)
+const STARS=[]; for(let i=0;i<420;i++) STARS.push({x:(Math.random()-.5)*4e6,y:(Math.random()-.5)*4e6,b:Math.random()});
+
+let rocket=null, moonAngle=0, warp=1, running=false, particles=[], debris=[], resultTimer=null;
+let scale=0, camx=0, camy=0, lastT=0, toastTimer=0;
+const keys={};
+
+function buildFlightRocket(){
+  const st=design.stages.map(s=>{
+    const m=stageMass(s);
+    return {dry:m.dry, fuelMax:m.fuel, fuel:m.fuel, thrust:m.thrust, isp:m.isp};
+  });
+  const sciCount = design.sci||1;
+  const payload = POD.mass+sciCount*SCI.mass+(design.parachute?CHUTE.mass:0)+(design.nose?NOSE.mass:0)+(design.legs?LEGS.mass:0)+(design.stages.length-1)*DECOUPLER.mass;
+  const bo=design.boosters||{n:0};
+  let boosters=null;
+  if(bo.n>0){ const be=ENGINES[bo.engine]||ENGINES.basic, bt=TANKS[bo.tank]||TANKS.small;
+    const dryEach=be.mass+(bo.tanks||1)*bt.dry, fuelEach=(bo.tanks||1)*bt.fuel;
+    boosters={ n:bo.n, tank:bo.tank, thrust:be.thrust, isp:be.isp, dryEach, fuel:bo.n*fuelEach, fuelMax:bo.n*fuelEach }; }
+  return {
+    x:0, y:R, vx:0, vy:0,
+    ang:0,                    // 0 = pointing radially "up"
+    stages:st, active:0,      // bottom stage index that fires
+    boosters, boostersAttached: !!boosters,   // radial boosters, fire with stage 1
+    payload, sciCount,        // sciCount = science modules -> multiplies science earned
+    nose: design.nose && has("nose"),
+    legs: design.legs && has("legs"),
+    throttle:0, thrusting:false,
+    chute:design.parachute, chuteOpen:false,
+    launched:false, hasFlown:false, alive:true, landed:false,
+    pending:{}, // situation -> value banked this flight
+  };
+}
+function curMass(r){
+  let m=r.payload;
+  for(let i=r.active;i<r.stages.length;i++) m+=r.stages[i].dry+r.stages[i].fuel;
+  if(r.boostersAttached && r.boosters) m+=r.boosters.n*r.boosters.dryEach + r.boosters.fuel;
+  return m;
+}
+function activeStage(r){ return r.stages[r.active]; }
+function turnRate(){ return has("avionics")?3.6 : has("fins")?2.4 : 1.2; } // rad/s
+
+function startFlight(){
+  rocket=buildFlightRocket();
+  clearTimeout(resultTimer);
+  moonAngle=0; warp=1; particles=[]; debris=[]; toastTimer=0;
+  $("#hangar").hidden=true; $("#flight").hidden=false;
+  $("#phaseTag").textContent="FLIGHT // TELEMETRY LIVE";
+  setWarpUI(1);
+  resize();
+  running=true; lastT=performance.now();
+  requestAnimationFrame(loop);
+}
+function abortFlight(){
+  running=false;
+  $("#flight").hidden=true; $("#hangar").hidden=false;
+  $("#phaseTag").textContent="HANGAR // MISSION DESIGN";
+  renderHangar();
+}
+
+// ---------- situation & orbit ----------
+function orbit(r){
+  const rad=Math.hypot(r.x,r.y);
+  const v2=r.vx*r.vx+r.vy*r.vy;
+  const energy=v2/2 - GM/rad;
+  const a=-GM/(2*energy);
+  const h=r.x*r.vy - r.y*r.vx;
+  const e=Math.sqrt(Math.max(0,1+(2*energy*h*h)/(GM*GM)));
+  return {rad, alt:rad-R, speed:Math.sqrt(v2), energy,
+          peri:a*(1-e)-R, apo:(energy<0? a*(1+e)-R : Infinity),
+          vspeed:(r.x*r.vx+r.y*r.vy)/rad};
+}
+function moonPos(t){ return {x:Math.cos(t)*MOON_R, y:Math.sin(t)*MOON_R}; }
+function distMoon(r){ const m=moonPos(moonAngle); return Math.hypot(r.x-m.x,r.y-m.y); }
+
+function situation(r){
+  const o=orbit(r);
+  if(!r.launched && o.alt<50) return "Launch Pad";
+  if(distMoon(r) < MOON_RADIUS+400 && r.landed) return "Voon Surface";
+  if(distMoon(r) < MOON_SOI) return "Voon Space";
+  if(o.alt>=SPACE){
+    if(o.energy<0 && o.peri>ATMO) return (o.apo>=250000) ? "High Orbit" : "Low Orbit";
+    return "Sub-orbital Space";
+  }
+  if(o.alt>=18000) return "Upper Atmosphere";
+  return "Lower Atmosphere";
+}
+
+// ---------- input ----------
+addEventListener("keydown",e=>{
+  if($("#flight").hidden) return;
+  const k=e.key.toLowerCase();
+  if(k==="w"){ toggleThruster(); e.preventDefault(); }
+  else if(k==="a"||k==="d"){ keys[k]=true; }
+  else if(k===" "){ doStage(); e.preventDefault(); }
+  else if(k==="p"){ deployChute(); }
+  else if(k==="m"){ toggleMap(); }
+  else if(k==="e"){ doScience(); }
+  else if(k===","){ stepWarp(-1); }
+  else if(k==="."){ stepWarp(1); }
+  else if(k==="escape"){ abortFlight(); }
+});
+addEventListener("keyup",e=>{ const k=e.key.toLowerCase(); if(k==="a"||k==="d") keys[k]=false; });
+
+function holdBtn(el,key){
+  const on=e=>{e.preventDefault();keys[key]=true;}, off=e=>{e.preventDefault();keys[key]=false;};
+  el.addEventListener("pointerdown",on); el.addEventListener("pointerup",off);
+  el.addEventListener("pointerleave",off); el.addEventListener("pointercancel",off);
+}
+holdBtn($("#steerA"),"a"); holdBtn($("#steerD"),"d");
+$("#btnThruster").addEventListener("click",toggleThruster);
+$("#btnStage").addEventListener("click",doStage);
+$("#btnChute").addEventListener("click",deployChute);
+$("#btnSci").addEventListener("click",doScience);
+$("#btnAbort").addEventListener("click",abortFlight);
+document.querySelectorAll(".warpbtns button").forEach(b=>{
+  b.addEventListener("click",()=>setWarp(+b.dataset.warp));
+});
+cv.addEventListener("wheel",e=>{ e.preventDefault(); userZoom*= (e.deltaY>0?0.88:1.14); userZoom=Math.max(0.15,Math.min(6,userZoom)); },{passive:false});
+let userZoom=1;
+let mapMode=false, prevZoom=1, encounterInfo=null;
+function toggleMap(){
+  if(!mapMode){ prevZoom=userZoom; userZoom=1; mapMode=true; }
+  else { mapMode=false; userZoom=prevZoom; }
+}
+function zoomBy(f){ userZoom=Math.max(0.15,Math.min(6,userZoom*f)); }
+$("#zoomIn").addEventListener("click",()=>zoomBy(1.25));
+$("#zoomOut").addEventListener("click",()=>zoomBy(0.8));
+// pinch-to-zoom (touch has no scroll wheel)
+let pinchD=0;
+cv.addEventListener("touchstart",e=>{ if(e.touches.length===2){ pinchD=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); } },{passive:false});
+cv.addEventListener("touchmove",e=>{
+  if(e.touches.length===2){ e.preventDefault();
+    const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+    if(pinchD>0) zoomBy(d/pinchD); pinchD=d;
+  }
+},{passive:false});
+cv.addEventListener("touchend",()=>{ pinchD=0; });
+
+function toggleThruster(){
+  if(!rocket||!rocket.alive) return;
+  rocket.thrusting=!rocket.thrusting;
+  if(rocket.thrusting){ rocket.launched=true; setWarp(1); }
+  updateThrusterBtn();
+}
+function updateThrusterBtn(){
+  const b=$("#btnThruster");
+  b.classList.toggle("on",rocket&&rocket.thrusting);
+  b.innerHTML=`THRUSTER<small>${rocket&&rocket.thrusting?"● FIRING":"OFF · [W]"}</small>`;
+}
+function doStage(){
+  if(!rocket||!rocket.alive) return;
+  const r=rocket;
+  if(r.boostersAttached){                       // 1) drop the side boosters first
+    spawnDebris(r,{tank:(r.boosters&&r.boosters.tank)||"small"});
+    r.boostersAttached=false; toast("BOOSTERS JETTISONED"); return;
+  }
+  if(r.active < r.stages.length){               // 2) drop the current core stage
+    spawnDebris(r, r.stages[r.active]);
+    r.active++;
+    const done=r.active>=r.stages.length;
+    toast(done ? "STAGE SEPARATED · engines depleted" : "STAGE SEPARATED · next engine ready");
+    if(done){ r.thrusting=false; updateThrusterBtn(); }
+    return;
+  }
+  // no engines left — STAGE also pops the chute as a convenience (or use the CHUTE button)
+  if(r.chute && !r.chuteOpen){ deployChute(); return; }
+  toast("Nothing left to stage");
+}
+// dedicated parachute deploy — one press, any time, no staging needed
+function deployChute(){
+  if(!rocket||!rocket.alive) return;
+  if(!rocket.chute){ toast("No parachute on this rocket"); return; }
+  if(rocket.chuteOpen){ toast("Parachute already open"); return; }
+  rocket.chuteOpen=true; toast("🪂 PARACHUTE DEPLOYED");
+}
+function doScience(){
+  if(!rocket||!rocket.alive) return;
+  const sd=sciData(rocket);
+  rocket.pending[sd.key]=sd.value;
+  const total=Object.values(rocket.pending).reduce((a,b)=>a+b,0)*(rocket.sciCount||1);
+  toast(`⚗ ${total} held · ${sd.key}`);
+}
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); toastTimer=1.8; }
+
+function setWarp(w){ if(rocket&&rocket.chuteOpen) w=1; warp=w; setWarpUI(w); } // no warp under a chute
+function setWarpUI(w){
+  $("#warpVal").textContent=w+"×";
+  document.querySelectorAll(".warpbtns button").forEach(b=>b.classList.toggle("on",+b.dataset.warp===w));
+}
+function stepWarp(d){ const opts=[1,5,50]; let i=opts.indexOf(warp); i=Math.max(0,Math.min(2,i+d)); setWarp(opts[i]); }
+
+// ---------- debris & particles ----------
+function spawnDebris(r,s){
+  debris.push({x:r.x,y:r.y,vx:r.vx,vy:r.vy,ang:r.ang,life:60,
+    stage:{tank:s.tank||"small"}, w:16});
+}
+function spawnExhaust(r,dir,pw){
+  const m=curMass(r);
+  const bx=r.x-dir.x*22, by=r.y-dir.y*22;
+  for(let i=0;i<2;i++){
+    const spread=0.5;
+    const a=Math.atan2(-dir.y,-dir.x)+(Math.random()-.5)*spread;
+    const sp=180+Math.random()*220;
+    particles.push({x:bx,y:by,vx:r.vx+Math.cos(a)*sp,vy:r.vy+Math.sin(a)*sp,life:0.5+Math.random()*0.4,mx:0.5});
+  }
+}
+
+// ============================================================
+//  PHYSICS STEP
+// ============================================================
+function gravityAccel(x,y,mAngle){
+  const r=Math.hypot(x,y); const inv=GM/(r*r*r);
+  let ax=-x*inv, ay=-y*inv;
+  const m=moonPos(mAngle); const dx=x-m.x, dy=y-m.y; const rd=Math.hypot(dx,dy);
+  if(rd>1){ const im=MOON_GM/(rd*rd*rd); ax-=dx*im; ay-=dy*im; }
+  return {ax,ay};
+}
+
+function physics(dt){
+  const r=rocket; if(!r.alive) return;
+  // steering (only meaningful in real time; ignore under warp)
+  if(warp===1){
+    if(keys.a) r.ang += turnRate()*dt;   // A = rotate left
+    if(keys.d) r.ang -= turnRate()*dt;   // D = rotate right
+  }
+  // thrust direction from ang (0 -> +Y "up")
+  const dir={x:-Math.sin(r.ang), y:Math.cos(r.ang)};
+
+  const substeps = warp>1 ? 8 : 4;
+  const h=dt/substeps;
+  if(r.chuteOpen && warp>1) setWarp(1);   // a deployed chute forces real-time
+  const eng=activeStage(r);
+  const boostersLive = r.boostersAttached && r.boosters && r.boosters.fuel>0;
+  let thrustingNow = r.thrusting && warp===1 && (cheats.infFuel || (eng && eng.fuel>0) || boostersLive);
+  r.throttle = thrustingNow?1:Math.max(0,r.throttle-dt*3);
+  if(warp>1) r.thrusting=false;
+
+  for(let s=0;s<substeps;s++){
+    if(cheats.infFuel){ if(eng) eng.fuel=eng.fuelMax; if(r.boosters) r.boosters.fuel=r.boosters.fuelMax; } // cheat: never empty
+    const m=curMass(r);
+    let ax=0, ay=0;
+    const g=gravityAccel(r.x,r.y,moonAngle);
+    ax+=g.ax; ay+=g.ay;
+    // thrust — core engine + any live side boosters (they burn together)
+    if(thrustingNow){
+      let F=0;
+      if(eng && eng.fuel>0){ F+=eng.thrust; eng.fuel-=(eng.thrust/(eng.isp*g0))*h; if(eng.fuel<0) eng.fuel=0; }
+      if(r.boostersAttached && r.boosters && r.boosters.fuel>0){
+        F+=r.boosters.n*r.boosters.thrust;
+        r.boosters.fuel-=r.boosters.n*(r.boosters.thrust/(r.boosters.isp*g0))*h;
+        if(r.boosters.fuel<0) r.boosters.fuel=0;
+      }
+      ax+=F/m*dir.x; ay+=F/m*dir.y;
+    }
+    // drag (planet atmosphere)
+    const rad=Math.hypot(r.x,r.y); const alt=rad-R;
+    if(alt<ATMO){
+      const rho=RHO0*Math.exp(-Math.max(0,alt)/H_SCALE);
+      const spd=Math.hypot(r.vx,r.vy);
+      let CdA = r.chuteOpen ? 110 : (r.nose ? 0.7 : 1.4);   // parachute = huge drag; nose cone = less drag
+      const k=0.5*rho*CdA/m;
+      ax-=k*spd*r.vx; ay-=k*spd*r.vy;
+    }
+    r.vx+=ax*h; r.vy+=ay*h;
+    r.x+=r.vx*h; r.y+=r.vy*h;
+
+    // has the rocket actually left the pad yet?
+    const altNow=Math.hypot(r.x,r.y)-R;
+    if(altNow>150) r.hasFlown=true;
+
+    // collisions
+    const nr=Math.hypot(r.x,r.y);
+    if(nr<=R){
+      if(!r.hasFlown){
+        // resting on / sitting against the pad: the ground holds it up
+        const d=nr||1, ux=r.x/d, uy=r.y/d;
+        r.x=ux*R; r.y=uy*R;
+        const vr=r.vx*ux+r.vy*uy;        // outward-positive radial speed
+        if(vr<0){ r.vx-=vr*ux; r.vy-=vr*uy; } // cancel any sinking
+      } else { landOrCrash(r,"planet"); return; }
+    }
+    const dm=distMoon(r);
+    if(dm<=MOON_RADIUS && r.hasFlown){ landOrCrash(r,"voon"); return; }
+  }
+  if(thrustingNow) spawnExhaust(r,dir);
+
+  // moon + particles + debris advance
+  moonAngle+=MOON_OMEGA*dt;
+  for(const p of particles){ p.x+=p.vx*dt; p.y+=p.vy*dt; p.life-=dt; }
+  particles=particles.filter(p=>p.life>0).slice(-160);
+  for(const d of debris){
+    const g=gravityAccel(d.x,d.y,moonAngle); d.vx+=g.ax*dt; d.vy+=g.ay*dt;
+    d.x+=d.vx*dt; d.y+=d.vy*dt; d.life-=dt; d.ang+=0.6*dt;
+  }
+  debris=debris.filter(d=>d.life>0 && Math.hypot(d.x,d.y)>R);
+}
+
+function landOrCrash(r, body){
+  r.alive=false; running=true; // keep drawing
+  let impact;
+  if(body==="voon"){
+    const m=moonPos(moonAngle);
+    const mvx=-Math.sin(moonAngle)*MOON_OMEGA*MOON_R, mvy=Math.cos(moonAngle)*MOON_OMEGA*MOON_R;
+    impact=Math.hypot(r.vx-mvx,r.vy-mvy);
+    // pin to surface
+    const dx=r.x-m.x,dy=r.y-m.y,d=Math.hypot(dx,dy);
+    r.x=m.x+dx/d*MOON_RADIUS; r.y=m.y+dy/d*MOON_RADIUS;
+  } else {
+    impact=Math.hypot(r.vx,r.vy);
+    const d=Math.hypot(r.x,r.y); r.x=r.x/d*R; r.y=r.y/d*R;
+  }
+  r.vx=r.vy=0; r.thrusting=false; updateThrusterBtn();
+  const limit = r.legs ? SAFE_LAND+LEGS_BONUS : SAFE_LAND;
+  const safe = cheats.noCrash ? true : impact<=limit;
+  if(safe){
+    r.landed=true;
+    // if we landed on voon, also grant voon surface data automatically
+    if(body==="voon" && r.pending["Voon Surface"]===undefined) r.pending["Voon Surface"]=SITU["Voon Surface"];
+    endMission(true, impact, body);
+  } else {
+    explode(r);
+    endMission(false, impact, body);
+  }
+}
+function explode(r){
+  for(let i=0;i<80;i++){ const a=Math.random()*7, sp=100+Math.random()*400;
+    particles.push({x:r.x,y:r.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:0.6+Math.random(),mx:1.6}); }
+}
+
+function endMission(safe, impact, body){
+  // tally science (base per situation, then multiplied by science modules)
+  let base=0; const rows=[];
+  for(const k in rocket.pending){ base+=rocket.pending[k]; rows.push([k,rocket.pending[k]]); }
+  const mult=rocket.sciCount||1;
+  const total=base*mult;
+  const card=$("#resultCard");
+  if(safe && total>0){ save.sci+=total; persist(); }
+  const limit = rocket.legs ? SAFE_LAND+LEGS_BONUS : SAFE_LAND;
+  const where = body==="voon"?"on Voon 🌙":"back home";
+  let html=`<h2 class="disp ${safe?'ok':'bad'}">${safe?(body==="voon"?'VOON LANDING ✔':'TOUCHDOWN ✔'):'ROCKET DESTROYED ✷'}</h2>
+    <p>${safe
+        ? `Landed ${where} at <b style="color:var(--ink)">${impact.toFixed(1)} m/s</b> — under the ${limit} m/s limit${rocket.legs?" (legs)":""}. Data recovered.`
+        : `Impact at <b style="color:var(--red)">${impact.toFixed(1)} m/s</b> — over the ${limit} m/s limit${rocket.legs?" (even with legs)":""}. Everything aboard was lost.`}</p>`;
+  if(rows.length){
+    html+=`<div class="results-sci">`;
+    rows.forEach(([k,v])=>{ html+=`<div class="rr"><span>${k}</span><span>${v}</span></div>`; });
+    if(mult>1) html+=`<div class="rr"><span>× ${mult} science modules</span><span style="color:var(--cyan)">×${mult}</span></div>`;
+    html+=`<div class="rr total"><span>${safe?'SCIENCE RECOVERED':'SCIENCE LOST'}</span><span>${safe?'+'+total:'−'+total}</span></div></div>`;
+  } else {
+    html+=`<p style="font-family:var(--mono);font-size:12px;color:var(--dim)">No science was run this flight. Press SCIENCE (E) in new situations next time.</p>`;
+  }
+  html+=`<div class="modal-actions">
+      <button class="btn-primary" id="toHangar">BACK TO BUILD MENU ▸</button>
+    </div>
+    <p style="font-family:var(--mono);font-size:11px;color:var(--dim);text-align:center;margin-top:12px">Returning to the build menu…</p>`;
+  card.innerHTML=html;
+  $("#toHangar").addEventListener("click",returnToBuild);
+  // update the science counter right away; pulse it if this landing added any
+  $("#sciBank").textContent=Math.floor(save.sci);
+  if(safe && total>0){
+    const chip=$("#sciBank").closest(".stat-chip");
+    if(chip){ chip.classList.remove("bump"); void chip.offsetWidth; chip.classList.add("bump"); }
+  }
+  setTimeout(()=>{ $("#resultModal").hidden=false; }, safe?400:900);
+  clearTimeout(resultTimer);
+  resultTimer=setTimeout(returnToBuild, safe?3200:3800); // auto-return to the build menu
+}
+function returnToBuild(){ clearTimeout(resultTimer); $("#resultModal").hidden=true; abortFlight(); }
+
+// ============================================================
+//  RENDER
+// ============================================================
+function worldToScreen(wx,wy){ return {x:W/2+(wx-camx)*scale, y:Hh/2-(wy-camy)*scale}; }
+
+function computeScale(alt){
+  // choose view height in metres from altitude; smooth toward it
+  let viewM;
+  if(mapMode){                       // map view: fit the whole planet + Voon system
+    viewM = (MOON_R*2.7)/Math.max(0.2,userZoom);
+  } else {
+    viewM = 1400 + Math.max(0,alt)*3.2;
+    if(distMoon(rocket)<MOON_SOI*1.4) viewM=Math.max(viewM, MOON_SOI*1.6);
+    viewM=Math.min(viewM, MOON_R*2.8);
+    viewM/=userZoom;
+  }
+  const target=Hh/viewM;
+  scale = scale? scale+(target-scale)*0.12 : target;
+}
+
+function render(){
+  const r=rocket; const o=orbit(r);
+  computeScale(o.alt);
+  const camTX = mapMode?0:r.x, camTY = mapMode?0:r.y;   // map view centres on the planet
+  camx += (camTX-camx)*0.14; camy += (camTY-camy)*0.14;
+
+  cx.clearRect(0,0,W,Hh);
+  // space background
+  cx.fillStyle="#03060c"; cx.fillRect(0,0,W,Hh);
+  drawStars();
+
+  // atmosphere glow + planet
+  const pc=worldToScreen(0,0);
+  const atmR=(R+ATMO)*scale;
+  const g=cx.createRadialGradient(pc.x,pc.y,R*scale*0.98, pc.x,pc.y,atmR);
+  g.addColorStop(0,"rgba(90,168,255,.20)"); g.addColorStop(1,"rgba(90,168,255,0)");
+  cx.fillStyle=g; cx.beginPath(); cx.arc(pc.x,pc.y,atmR,0,7); cx.fill();
+  // planet body
+  const pg=cx.createRadialGradient(pc.x-R*scale*0.3,pc.y-R*scale*0.3,R*scale*0.2, pc.x,pc.y,R*scale);
+  pg.addColorStop(0,"#2c6b57"); pg.addColorStop(0.6,"#1a4a3c"); pg.addColorStop(1,"#0e2a22");
+  cx.fillStyle=pg; cx.beginPath(); cx.arc(pc.x,pc.y,R*scale,0,7); cx.fill();
+  cx.strokeStyle="rgba(143,227,107,.35)"; cx.lineWidth=1.5; cx.stroke();
+  // launch pad marker at (0,R)
+  const pad=worldToScreen(0,R);
+  if(scale>0.002){ cx.strokeStyle=varc("--amber"); cx.lineWidth=2; cx.beginPath(); cx.moveTo(pad.x-6,pad.y); cx.lineTo(pad.x+6,pad.y); cx.stroke(); }
+
+  // trajectory prediction (gravity only)
+  drawTrajectory(r);
+
+  // moon voon
+  const m=moonPos(moonAngle); const ms=worldToScreen(m.x,m.y);
+  const mg=cx.createRadialGradient(ms.x-MOON_RADIUS*scale*0.3,ms.y-MOON_RADIUS*scale*0.3,2, ms.x,ms.y,MOON_RADIUS*scale);
+  mg.addColorStop(0,"#c9c6d6"); mg.addColorStop(1,"#5a5668");
+  cx.fillStyle=mg; cx.beginPath(); cx.arc(ms.x,ms.y,Math.max(2,MOON_RADIUS*scale),0,7); cx.fill();
+  if(MOON_RADIUS*scale>18){ cx.fillStyle="#4a4658";
+    cx.beginPath(); cx.arc(ms.x-MOON_RADIUS*scale*0.2,ms.y+MOON_RADIUS*scale*0.1,MOON_RADIUS*scale*0.18,0,7); cx.fill(); }
+  if(MOON_RADIUS*scale>10){ cx.fillStyle="rgba(201,198,214,.7)"; cx.font="11px 'IBM Plex Mono'"; cx.textAlign="center";
+    cx.fillText("VOON", ms.x, ms.y-MOON_RADIUS*scale-8); }
+  // Voon sphere of influence — show it on an encounter or in map view
+  if(mapMode || encounterInfo){
+    cx.strokeStyle="rgba(255,180,84,.28)"; cx.lineWidth=1; cx.setLineDash([4,7]);
+    cx.beginPath(); cx.arc(ms.x,ms.y,MOON_SOI*scale,0,7); cx.stroke(); cx.setLineDash([]);
+  }
+
+  // particles (exhaust / explosion)
+  for(const p of particles){ const s=worldToScreen(p.x,p.y); const a=Math.max(0,p.life);
+    cx.fillStyle=`rgba(${255},${150+Math.random()*80|0},${60},${a})`;
+    const sz=(p.mx||0.6)*Math.max(1.5,scale*6);
+    cx.fillRect(s.x-sz/2,s.y-sz/2,sz,sz); }
+
+  // debris
+  for(const d of debris){ const s=worldToScreen(d.x,d.y); cx.save(); cx.translate(s.x,s.y); cx.rotate(d.ang);
+    cx.fillStyle="#2a3a4d"; const w=Math.max(3,d.w*scale*0.4); cx.fillRect(-w/2,-w,w,w*2); cx.restore(); }
+
+  // rocket
+  drawFlightRocket(r);
+
+  // prograde marker
+  if(o.speed>5 && r.alive){
+    const dir={x:r.vx/o.speed,y:r.vy/o.speed}; const rs=worldToScreen(r.x,r.y);
+    const px=rs.x+dir.x*34, py=rs.y-dir.y*34;
+    cx.strokeStyle=varc("--green"); cx.lineWidth=1.5; cx.beginPath(); cx.arc(px,py,6,0,7); cx.stroke();
+    cx.beginPath(); cx.moveTo(px-9,py); cx.lineTo(px-6,py); cx.moveTo(px+6,py); cx.lineTo(px+9,py); cx.moveTo(px,py-9); cx.lineTo(px,py-6); cx.stroke();
+  }
+
+  if(mapMode){
+    cx.fillStyle="rgba(79,227,193,.85)"; cx.font="600 13px 'Oxanium'"; cx.textAlign="center";
+    cx.fillText("MAP VIEW — press M to exit", W/2, 26);
+  }
+  updateHUD(o);
+}
+
+function drawStars(){
+  cx.save();
+  for(let i=0;i<STARS.length;i++){ const s=STARS[i];
+    // project a shallow parallax: stars sit "far", move a fraction of camera
+    const sx = W/2 + (s.x - camx*0.15)* (scale*0.15+0.00002);
+    const sy = Hh/2 - (s.y - camy*0.15)* (scale*0.15+0.00002);
+    const wx=((sx%W)+W)%W, wy=((sy%Hh)+Hh)%Hh;
+    cx.globalAlpha=0.3+s.b*0.6; cx.fillStyle="#cdd8e6"; cx.fillRect(wx,wy,s.b>0.8?1.6:1,s.b>0.8?1.6:1);
+  }
+  cx.restore(); cx.globalAlpha=1;
+}
+
+function drawTrajectory(r){
+  encounterInfo=null;
+  if(!r.alive) return;
+  let x=r.x,y=r.y,vx=r.vx,vy=r.vy, ma=moonAngle;
+  const alt=Math.hypot(x,y)-R;
+  const dt=Math.min(6, 1+alt/12000);   // bigger steps when higher
+  const pts=[]; let entry=null, minDist=Infinity, impact=false;
+  for(let i=0;i<2000;i++){
+    const g=gravityAccel(x,y,ma); vx+=g.ax*dt; vy+=g.ay*dt; x+=vx*dt; y+=vy*dt; ma+=MOON_OMEGA*dt;
+    if(Math.hypot(x,y)<=R) break;
+    const mp=moonPos(ma); const dm=Math.hypot(x-mp.x,y-mp.y);
+    const inSOI = dm<MOON_SOI;
+    if(inSOI){ if(!entry) entry={x,y}; if(dm<minDist) minDist=dm; }
+    const s=worldToScreen(x,y);
+    pts.push({x:s.x,y:s.y,inSOI});
+    if(dm<=MOON_RADIUS){ impact=true; break; }
+  }
+  if(pts.length<2) return;
+  cx.save(); cx.lineWidth=1.4; cx.setLineDash([5,6]);
+  // pass 1 — full path in cyan
+  cx.strokeStyle="rgba(79,227,193,.5)"; cx.beginPath();
+  pts.forEach((p,k)=> k? cx.lineTo(p.x,p.y):cx.moveTo(p.x,p.y)); cx.stroke();
+  // pass 2 — the encounter portion (inside Voon's influence) in amber, over the top
+  cx.strokeStyle="rgba(255,180,84,.95)";
+  let k=0;
+  while(k<pts.length){
+    if(pts[k].inSOI){
+      const start=Math.max(0,k-1); cx.beginPath(); cx.moveTo(pts[start].x,pts[start].y);
+      let m=k; for(; m<pts.length && pts[m].inSOI; m++) cx.lineTo(pts[m].x,pts[m].y);
+      cx.stroke(); k=m;
+    } else k++;
+  }
+  cx.setLineDash([]);
+  // mark where the encounter begins
+  if(entry){
+    const es=worldToScreen(entry.x,entry.y);
+    cx.strokeStyle="rgba(255,180,84,.95)"; cx.lineWidth=1.6;
+    cx.beginPath(); cx.arc(es.x,es.y,7,0,7); cx.stroke();
+    cx.fillStyle=varc("--amber"); cx.font="600 11px 'IBM Plex Mono'"; cx.textAlign="left";
+    cx.fillText(impact?"VOON IMPACT":"VOON ENCOUNTER", es.x+11, es.y+4);
+  }
+  cx.restore();
+  if(entry) encounterInfo={ closest:Math.max(0,minDist-MOON_RADIUS), impact };
+}
+
+function drawFlightRocket(r){
+  const s=worldToScreen(r.x,r.y);
+  // rocket icon: BIGGER when zoomed out, SMALLER when zoomed in (KSP-style map marker),
+  // so it stays visible from far away instead of shrinking to a dot.
+  const targetH = Math.max(14, Math.min(150, 62/userZoom));
+  const px = targetH/46;                              // ~pixels per rocket "unit"
+  cx.save(); cx.translate(s.x,s.y); cx.rotate(-r.ang); // match world thrust direction on the flipped-Y screen
+  // flame
+  const eng=activeStage(r);
+  if(r.thrusting && eng && eng.fuel>0){
+    const fl=18+Math.random()*10;
+    const grd=cx.createLinearGradient(0,10*px/3,0,10*px/3+fl);
+    grd.addColorStop(0,"#ffd27a"); grd.addColorStop(0.5,"#ff8a3d"); grd.addColorStop(1,"rgba(255,90,40,0)");
+    cx.fillStyle=grd; cx.beginPath();
+    const bw=8*px/3;
+    cx.moveTo(-bw/2, 10*px/3); cx.lineTo(bw/2,10*px/3); cx.lineTo(0,10*px/3+fl); cx.closePath(); cx.fill();
+  }
+  drawRocketShape(cx,0,0,px,{activeStage:r.active, sci:r.sciCount||1, legs:r.legs,
+    boosters:(r.boostersAttached&&r.boosters?r.boosters.n:0),
+    boosterFlame:(r.thrusting && r.boostersAttached && r.boosters && r.boosters.fuel>0)});
+  // open parachute
+  if(r.chuteOpen){
+    cx.fillStyle="rgba(255,180,84,.85)"; cx.strokeStyle="#a5701d"; cx.lineWidth=1;
+    const cw=26*px/3;
+    cx.beginPath(); cx.arc(0,-16*px/3,cw/2,Math.PI,0); cx.closePath(); cx.fill();
+    cx.beginPath(); cx.moveTo(-cw/2,-16*px/3); cx.lineTo(-2,-9*px/3); cx.moveTo(cw/2,-16*px/3); cx.lineTo(2,-9*px/3); cx.stroke();
+  }
+  cx.restore();
+}
+
+// ---------- HUD ----------
+function updateHUD(o){
+  const r=rocket;
+  const eng=activeStage(r);
+  // boosters and core stages each have their OWN fuel — show both
+  const coreFuelPct = eng ? Math.round(eng.fuel/eng.fuelMax*100) : 0;
+  const coreLabel = `Fuel (stg ${Math.min(r.active+1,r.stages.length)})`;
+  const boostFuelPct = (r.boostersAttached && r.boosters && r.boosters.fuelMax>0)
+                       ? Math.round(r.boosters.fuel/r.boosters.fuelMax*100) : null;
+  const nextStage = r.boostersAttached ? "Drop boosters"
+                  : (r.active<r.stages.length ? `Drop stage ${r.active+1}` : "—");
+  const situ=situation(r);
+  const sd=sciData(r);
+  if(r.alive) r.pending[sd.key]=sd.value;   // auto-collect science for where AND how high you are
+  const apo = o.apo===Infinity? "escape" : fmtKm(o.apo);
+  const speedC = o.speed>0? "var(--ink)":"var(--muted)";
+  const vs=o.vspeed;
+  const landColor = r.alive? (Math.hypot(r.vx,r.vy)<=SAFE_LAND?"var(--green)":"var(--red)"):"var(--muted)";
+  const pend=Object.values(r.pending).reduce((a,b)=>a+b,0)*(r.sciCount||1);
+  $("#tele").innerHTML=`
+    <div class="t"><span>Altitude</span><span>${fmtKm(o.alt)}</span></div>
+    <div class="t"><span>Speed</span><span style="color:${speedC}">${Math.round(o.speed)} m/s</span></div>
+    <div class="t"><span>Vertical</span><span style="color:${vs>=0?'var(--green)':'var(--amber)'}">${vs>=0?'+':''}${Math.round(vs)} m/s</span></div>
+    <div class="t"><span>Apoapsis</span><span>${apo}</span></div>
+    <div class="t"><span>Periapsis</span><span>${o.peri>-R?fmtKm(o.peri):'—'}</span></div>
+    ${boostFuelPct!==null?`<div class="t"><span>Fuel (boosters)</span><span style="color:${boostFuelPct>20?'var(--amber)':'var(--red)'}">${boostFuelPct}%</span></div>`:""}
+    <div class="t"><span>${coreLabel}</span><span style="color:${coreFuelPct>20?'var(--ink)':'var(--red)'}">${coreFuelPct}%</span></div>
+    <div class="t"><span>Next stage</span><span style="color:var(--amber)">${nextStage}</span></div>
+    <div class="t"><span>Science held</span><span style="color:var(--cyan)">${pend}</span></div>
+    ${encounterInfo?`<div class="t"><span>Voon ${encounterInfo.impact?"impact ⚠":"flyby"}</span><span style="color:var(--amber)">${encounterInfo.impact?"collision":fmtKm(encounterInfo.closest)}</span></div>`:""}
+    <div class="situ">${sd.key}</div>`;
+  $("#thrFill").style.height=(r.throttle*100)+"%";
+  // science is auto-collecting while you're alive; show the running total
+  $("#btnSci").classList.toggle("ready", r.alive && pend>0);
+  $("#btnSci").disabled=!r.alive;
+  const sciSmall=$("#btnSci").querySelector("small");
+  if(sciSmall) sciSmall.textContent = pend>0 ? ("⚗ "+pend+" held") : "[E]";
+  $("#btnStage").disabled=!r.alive;
+  $("#btnThruster").disabled=!r.alive;
+  const chuteBtn=$("#btnChute");
+  chuteBtn.disabled = !r.alive || !r.chute || r.chuteOpen;
+  chuteBtn.classList.toggle("ready", r.alive && r.chute && !r.chuteOpen && (o.alt<ATMO) && o.vspeed<0);
+  // toast fade
+  if(toastTimer>0){ toastTimer-=1/60; if(toastTimer<=0) $("#toast").classList.remove("show"); }
+}
+function fmtKm(m){ const km=m/1000; return Math.abs(km)>=100? Math.round(km)+" km" : km.toFixed(1)+" km"; }
+
+// ---------- main loop ----------
+function loop(now){
+  if(!running){ return; }
+  let dt=(now-lastT)/1000; lastT=now; if(dt>0.05) dt=0.05;
+  if(rocket.alive) physics(dt*warp);
+  else { // let particles/debris settle after crash/land
+    for(const p of particles){ p.x+=p.vx*dt; p.y+=p.vy*dt; p.life-=dt*0.7; }
+    particles=particles.filter(p=>p.life>0);
+    moonAngle+=MOON_OMEGA*dt;
+  }
+  render();
+  requestAnimationFrame(loop);
+}
+
+// ---------- controls modal ----------
+$("#btnControls").addEventListener("click",()=>$("#controlsModal").hidden=false);
+document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>$("#controlsModal").hidden=true));
+$("#controlsModal").addEventListener("click",e=>{ if(e.target.id==="controlsModal") $("#controlsModal").hidden=true; });
+
+// ---------- cheats ----------
+addEventListener("keydown",e=>{
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="q"){ e.preventDefault(); $("#cheatPanel").hidden=!$("#cheatPanel").hidden; }
+});
+$("#cheatClose").addEventListener("click",()=>{ $("#cheatPanel").hidden=true; });
+$("#cheatFuel").addEventListener("change",e=>{ cheats.infFuel=e.target.checked; });
+$("#cheatNoCrash").addEventListener("change",e=>{ cheats.noCrash=e.target.checked; });
+$("#cheatUnlock").addEventListener("click",()=>{
+  TECH.forEach(t=>{ if(!save.unlocked.includes(t.id)) save.unlocked.push(t.id); });
+  if(!save.unlocked.includes("decoupler")) save.unlocked.push("decoupler");
+  persist();
+  if(!$("#hangar").hidden) renderHangar();
+  if(!$("#flight").hidden) toast("😈 Everything unlocked");
+});
+$("#cheatSci").addEventListener("click",()=>{
+  save.sci+=1000; persist();
+  $("#sciBank").textContent=Math.floor(save.sci);
+  if(!$("#hangar").hidden) renderHangar();
+  if(!$("#flight").hidden) toast("😈 +1000 science");
+});
+
+// ---------- boot ----------
+renderHangar();
+</script>
