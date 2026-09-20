@@ -183,7 +183,11 @@ button{font:inherit;color:inherit}
   .dish{aspect-ratio:1/1}
   .vital{text-align:left;flex:1 1 100%}
 }
-@media (prefers-reduced-motion:reduce){ .fill{transition:none} }
+.pop{position:absolute;pointer-events:none;font-family:'IBM Plex Mono',ui-monospace,monospace;
+  font-size:13px;font-weight:600;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.9);
+  animation:rise 880ms cubic-bezier(.2,.7,.3,1) forwards}
+@keyframes rise{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-44px)}}
+@media (prefers-reduced-motion:reduce){ .fill{transition:none} .pop{animation-duration:1ms} }
 </style>
 
 <div class="wrap">
@@ -255,7 +259,7 @@ button{font:inherit;color:inherit}
     <strong>Drag</strong> a cell to move it, drag the water to pan &middot;
     <code>Ctrl</code> + <strong>scroll</strong> to zoom &middot;
     <strong>Right-click</strong> a cell to paint it (long-press on touch).<br>
-    Cells divide about every 10 s and die at about 21 s, so each one leaves two behind. Individuals turn over; the body persists.
+    Once <strong>Cell Multiplication</strong> is unlocked, cells divide about every 10 s and die at about 21 s — each leaves two behind, so the colony grows. Before that your cell is immortal. Daughters inherit the parent’s colour exactly, so individuals turn over while the body persists.
   </p>
 </div>
 
@@ -335,10 +339,10 @@ var CR      = 13;      /* cell radius, world units */
 var LIFE_MS = 21000;   /* a cell dies at ~21 s  */
 var DIV_MS  = 10000;   /* a cell divides at ~10 s → two children per lifetime */
 var TICK_MS = 5000;    /* the coin heartbeat, unchanged from v0.1 */
-var MUTATE  = 0.08;    /* chance a daughter drifts off the parent's lineage */
 var REVEAL_CELLS = 24; /* enough cells for a body to read at low zoom */
 var REVEAL_ZOOM  = 0.62;
 var OFFLINE_CAP  = 8*3600/5;
+var MITOSIS_COST = 50;   /* the one number carried over from v0.1 */
 
 function jit(base,spread){ return base*(1-spread+Math.random()*spread*2); }
 
@@ -357,7 +361,7 @@ function freshState(){
   return {
     coins:0, total:0, cells:[freshCell(0,0,"stem",now)],
     view:{x:0,y:0,z:1}, unlocked:{}, lv:{cap:0,life:0,div:0},
-    autoEyeDefault:true, nextTick:now+TICK_MS, born:now,
+    autoEyeDefault:true, nextTick:now+TICK_MS, born:now, land:null,
     births:0, deaths:0, seenReveal:false
   };
 }
@@ -371,7 +375,7 @@ function save(){
     localStorage.setItem(KEY, JSON.stringify({
       coins:S.coins,total:S.total,view:S.view,unlocked:S.unlocked,lv:S.lv,
       autoEyeDefault:S.autoEyeDefault,born:S.born,births:S.births,deaths:S.deaths,
-      seenReveal:S.seenReveal,nextTick:S.nextTick,
+      seenReveal:S.seenReveal,nextTick:S.nextTick,land:S.land||null,
       cells:S.cells.map(function(c){
         return {x:Math.round(c.x*10)/10,y:Math.round(c.y*10)/10,t:c.t,a:c.autoEye?1:0,
                 r:Math.round((Date.now()-c.born)/c.life*100)/100};
@@ -402,6 +406,7 @@ function adopt(d){
   if(typeof d.autoEyeDefault==="boolean") S.autoEyeDefault=d.autoEyeDefault;
   if(typeof d.seenReveal==="boolean") S.seenReveal=d.seenReveal;
   if(typeof d.born==="number") S.born=d.born;
+  if(d.land && isFinite(d.land.shoreX)) S.land={shoreX:d.land.shoreX,surfaceY:d.land.surfaceY};
   S.cells=d.cells.slice(0,400).map(function(c){
     var cell=freshCell(+c.x||0, +c.y||0, T[c.t]?c.t:"stem", now);
     cell.autoEye = c.a!==0;
@@ -422,6 +427,11 @@ function adopt(d){
    ============================================================ */
 function lifecycle(now){
   var i,c;
+  /* before mitosis is unlocked the cell is immortal and does not divide */
+  if(!S.unlocked.mitosis){
+    for(i=0;i<S.cells.length;i++){ c=S.cells[i]; c.born=now-500; c.nextDiv=now+divMs(); }
+    return;
+  }
   if(S.cells.length>2){
     for(i=S.cells.length-1;i>=0;i--){
       if(S.cells.length<=1) break;                 /* (a) */
@@ -440,11 +450,7 @@ function lifecycle(now){
 }
 function bud(p,now){
   var a=Math.random()*6.2832, d=CR*2.02;
-  var type=p.t;
-  if(Math.random()<MUTATE){
-    var pool=TYPES.filter(function(t){ return !t.hidden && unlocked(t.id); });
-    type=pool[(Math.random()*pool.length)|0].id;
-  }
+  var type=p.t;                       /* pure inheritance — no random drift */
   var c=freshCell(p.x+Math.cos(a)*d, p.y+Math.sin(a)*d, type, now);
   c.life=jit(lifeMs(),0.2);
   c.autoEye=p.autoEye;                              /* the reflex is heritable too */
@@ -510,7 +516,9 @@ function census(){
 function classify(q){
   var n=q.n;
   if(n<3) return {sub:n+" cell"+(n===1?"":"s")+" · undifferentiated", name:"Protocell",
-    desc:"One lineage, dividing on its own clock and dying on another. Right-click a cell to paint it."};
+    desc: S.unlocked.mitosis
+      ? "One lineage, dividing on its own clock and dying on another. Right-click a cell to paint it."
+      : "One cell, immortal and not yet dividing. Tap it to feed it; "+MITOSIS_COST+" coins starts the cycle."};
   if(n<10) return {sub:n+" cells · pre-tissue", name:"Cell Cluster",
     desc:"Enough cells to hold a shape between divisions, not yet enough to specialise."};
   var ranked=TRAITS.map(function(t){ return [t.id,q.traits[t.id]]; })
@@ -549,11 +557,6 @@ var RGB={}; TYPES.forEach(function(t){ RGB[t.id]=hex2rgb(t.hex); });
 /* ============================================================
    7. BACKGROUND — three habitats, composited by genome weight
    ============================================================ */
-function envWeights(tr){
-  var sky=clamp(tr.flight/0.18,0,1);
-  var land=clamp(Math.max(tr.walking/0.20,tr.air/0.22),0,1)*(1-sky);
-  return {sky:sky, land:land, water:Math.max(0,1-sky-land)};
-}
 function lin(x0,y0,x1,y1,st){ var g=ctx.createLinearGradient(x0,y0,x1,y1);
   for(var i=0;i<st.length;i++) g.addColorStop(st[i][0],st[i][1]); return g; }
 function bgWater(){
@@ -566,40 +569,92 @@ function bgWater(){
     ctx.closePath(); ctx.fill();
   }
 }
-function bgLand(a){
-  ctx.globalAlpha=a;
-  ctx.fillStyle=lin(0,0,0,H,[[0,"#5E92B8"],[0.55,"#B7C8C0"],[1,"#DCD3A9"]]); ctx.fillRect(0,0,W,H);
-  ctx.fillStyle="#6E8877"; ctx.beginPath(); ctx.moveTo(0,H*0.66);
-  for(var x=0;x<=W;x+=14) ctx.lineTo(x,H*0.66-Math.abs(Math.sin(x*0.0042+3))*H*0.14);
-  ctx.lineTo(W,H*0.66-Math.abs(Math.sin(W*0.0042+3))*H*0.14);
-  ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fill();
-  ctx.fillStyle=lin(0,H*0.78,0,H,[[0,"#6C7544"],[1,"#454D2C"]]);
-  ctx.beginPath(); ctx.moveTo(0,H*0.79);
-  for(x=0;x<=W;x+=12) ctx.lineTo(x,H*0.79+Math.sin(x*0.013+2)*3);
-  ctx.lineTo(W,H*0.79+Math.sin(W*0.013+2)*3);
-  ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fill();
-  ctx.globalAlpha=1;
-}
-function bgSky(a){
-  ctx.globalAlpha=a;
-  ctx.fillStyle=lin(0,0,0,H,[[0,"#3E86C4"],[0.6,"#9FC8E4"],[1,"#D9E9F2"]]); ctx.fillRect(0,0,W,H);
-  for(var i=0;i<7;i++){
-    var cx=((rnd(i)*1.3*W)+TT*(5+rnd(i+3)*9))%(W*1.35)-W*0.18, cy=H*(0.10+rnd(i+9)*0.5);
-    var s=H*(0.05+rnd(i+2)*0.07);
-    ctx.fillStyle="rgba(255,255,255,"+(0.30+rnd(i+7)*0.35).toFixed(2)+")";
-    ctx.beginPath();
-    ctx.ellipse(cx,cy,s*2.1,s,0,0,6.283); ctx.ellipse(cx+s*1.1,cy-s*0.4,s*1.3,s*0.8,0,0,6.283);
-    ctx.fill();
-  }
-  ctx.globalAlpha=1;
-}
 function rnd(i){ var x=Math.sin(i*127.1+311.7)*43758.5453; return x-Math.floor(x); }
-function drawBg(env){
-  bgWater();
-  if(env.land>0.01) bgLand(env.land);
-  if(env.sky>0.01) bgSky(env.sky);
-  ctx.fillStyle="rgba(0,0,0,.18)";
+/* ============================================================
+   LAND — real geography, spawned once lungs AND limbs exist.
+   Placed a few body-lengths away: visible when zoomed out,
+   far enough that crossing to it is a deliberate trip.
+   ============================================================ */
+function landSurfaceY(x){
+  var L=S.land; if(!L) return 1e9;
+  var t=Math.max(-3,(x-L.shoreX)/620);
+  if(t<0) return L.surfaceY + 90 - t*140;
+  t=clamp(t,0,1);
+  return L.surfaceY + 90 - (t*t*(3-2*t))*360;
+}
+function maybeSpawnLand(){
+  if(S.land) return false;
+  if(!unlocked("limb") || !unlocked("lung")) return false;
+  var h=hull||computeHull();
+  var cx=h?h.cx:0, cy=h?h.cy:0, r=h?h.maxR:70;
+  S.land={ shoreX: cx + clamp(r*4.5,520,900), surfaceY: cy - clamp(r*1.7,170,330) };
+  return true;
+}
+function isOnLand(h){
+  if(!S.land||!h) return false;
+  /* out of the water AND up on the ground — the seabed alone does not count */
+  return h.cy < S.land.surfaceY && h.cy < landSurfaceY(h.cx) + h.maxR*0.5;
+}
+function drawWorld(q,h){
+  if(!S.land){
+    bgWater();
+    ctx.fillStyle="rgba(0,0,0,.18)"; ctx.fillRect(0,0,W,H);
+    return;
+  }
+  var sy=w2sy(S.land.surfaceY);
+  /* 1. sky over everything */
+  ctx.fillStyle=lin(0,Math.min(0,sy-H*0.9),0,Math.max(sy,1),[[0,"#356FAA"],[0.55,"#77AED4"],[1,"#C6DFEE"]]);
   ctx.fillRect(0,0,W,H);
+  /* clouds only where sky shows */
+  if(sy>0){
+    ctx.save(); ctx.beginPath(); ctx.rect(0,0,W,sy); ctx.clip();
+    for(var i=0;i<6;i++){
+      var ccx=((rnd(i)*1.3*W)+TT*(4+rnd(i+3)*7))%(W*1.4)-W*0.2;
+      var ccy=sy-H*(0.10+rnd(i+9)*0.55), cs=H*(0.045+rnd(i+2)*0.06);
+      ctx.fillStyle="rgba(255,255,255,"+(0.3+rnd(i+7)*0.33).toFixed(2)+")";
+      ctx.beginPath(); ctx.ellipse(ccx,ccy,cs*2.2,cs,0,0,6.283);
+      ctx.ellipse(ccx+cs*1.2,ccy-cs*0.4,cs*1.3,cs*0.8,0,0,6.283); ctx.fill();
+    }
+    ctx.restore();
+  }
+  /* 2. the ground profile, drawn full width */
+  ctx.beginPath(); ctx.moveTo(-10,H+20);
+  for(var px=-10;px<=W+10;px+=7) ctx.lineTo(px, w2sy(landSurfaceY(s2wx(px))));
+  ctx.lineTo(W+10,H+20); ctx.closePath();
+  var gTop=Math.max(0,Math.min(H,sy-260));
+  var g=ctx.createLinearGradient(0,gTop,0,H);
+  g.addColorStop(0,"#C9B183"); g.addColorStop(0.35,"#A8935F"); g.addColorStop(1,"#5E5436");
+  ctx.fillStyle=g; ctx.fill();
+  /* grass on the dry part */
+  ctx.save(); ctx.beginPath(); ctx.rect(0,0,W,Math.max(0,sy-6)); ctx.clip();
+  ctx.beginPath(); ctx.moveTo(-10,H+20);
+  for(px=-10;px<=W+10;px+=7) ctx.lineTo(px, w2sy(landSurfaceY(s2wx(px))));
+  ctx.lineTo(W+10,H+20); ctx.closePath();
+  ctx.fillStyle="rgba(104,132,74,.85)"; ctx.fill();
+  ctx.restore();
+  /* 3. sea, translucent so it tints the submerged sand */
+  if(sy<H){
+    var y0=Math.max(0,sy);
+    var sg=ctx.createLinearGradient(0,y0,0,H);
+    sg.addColorStop(0,"rgba(18,116,150,.72)");
+    sg.addColorStop(0.45,"rgba(7,60,92,.88)");
+    sg.addColorStop(1,"rgba(2,22,34,.95)");
+    ctx.fillStyle=sg; ctx.fillRect(0,y0,W,H-y0);
+    if(!REDUCED) for(i=0;i<5;i++){
+      var lx=W*(0.08+i*0.2)+Math.sin(TT*0.22+i)*W*0.03;
+      ctx.fillStyle="rgba(190,238,255,"+(0.030+0.016*Math.sin(TT*0.55+i*1.3)).toFixed(3)+")";
+      ctx.beginPath(); ctx.moveTo(lx,y0); ctx.lineTo(lx+W*0.05,y0);
+      ctx.lineTo(lx+W*0.13,H); ctx.lineTo(lx-W*0.03,H); ctx.closePath(); ctx.fill();
+    }
+  }
+  /* 4. the waterline itself */
+  if(sy>-4&&sy<H+4){
+    ctx.strokeStyle="rgba(214,245,255,.5)"; ctx.lineWidth=2;
+    ctx.beginPath();
+    for(px=0;px<=W;px+=6) ctx.lineTo(px, sy+Math.sin(px*0.02+TT*1.2)*2);
+    ctx.stroke();
+  }
+  ctx.fillStyle="rgba(0,0,0,.12)"; ctx.fillRect(0,0,W,H);
 }
 
 /* ============================================================
@@ -922,7 +977,10 @@ var UPS=[
   ef:function(){ return (lifeMs()/1000).toFixed(0)+" s → "+(lifeMs()*1.15/1000).toFixed(0)+" s lifespan"; }}
 ];
 function upCost(u){ return Math.ceil(u.base*Math.pow(u.g,S.lv[u.id])); }
-function income(q){ return (1 + 0.8*q.by.photo + 0.15*q.n) * (1 + q.traits.cognition); }
+function income(q){
+  var base=(1 + 0.8*q.by.photo + 0.15*q.n) * (1 + q.traits.cognition);
+  return base * (isOnLand(hull)?1.3:1);   /* sunlight is stronger above water */
+}
 function pump(now,q){
   if(now<S.nextTick) return false;
   var due=Math.floor((now-S.nextTick)/TICK_MS)+1;
@@ -988,9 +1046,23 @@ function renderPanels(q){
       '"></span><span>'+t.nm+'</span><span class="ct">'+(q.by[t.id]||0)+'</span></div>';
   });
   $("tally").innerHTML=tal;
+  $("hudHint").innerHTML = !S.unlocked.mitosis
+    ? "<b>Tap</b> the cell to feed it · <b>"+MITOSIS_COST+" coins</b> starts multiplication"
+    : isOnLand(hull)
+      ? "<b>On land</b> · photocytes +30%"
+      : (S.land ? "<b>Drag</b> cells toward the beach · <b>Ctrl+scroll</b> zoom · <b>Right-click</b> paint"
+                : "<b>Drag</b> a cell · <b>Ctrl+scroll</b> to zoom · <b>Right-click</b> to paint");
 
   var html="";
-  TYPES.forEach(function(t){
+  if(!S.unlocked.mitosis){
+    var mcan=S.coins>=MITOSIS_COST;
+    html+='<div class="up'+(mcan?" can":"")+'" style="margin-bottom:9px">'+
+      '<span class="sw" style="background:var(--era);width:15px;height:15px"></span>'+
+      '<span><span class="nm">Cell Multiplication</span><span class="ef">Start the cycle \u2014 divide every '+
+      (divMs()/1000).toFixed(0)+' s, die at '+(lifeMs()/1000).toFixed(0)+' s. Until then your cell is immortal.</span></span>'+
+      '<button class="buy" data-unlock="mitosis"'+(mcan?"":" disabled")+'>'+MITOSIS_COST+'</button></div>';
+  }
+  if(S.unlocked.mitosis) TYPES.forEach(function(t){
     if(t.cost===0||unlocked(t.id)) return;
     var can=S.coins>=t.cost;
     html+='<div class="up'+(can?" can":"")+'" style="margin-bottom:9px">'+
@@ -999,7 +1071,7 @@ function renderPanels(q){
       TRAITS.filter(function(x){return x.need===t.id;})[0].nm.toLowerCase()+'</span></span>'+
       '<button class="buy" data-unlock="'+t.id+'"'+(can?"":" disabled")+'>'+fmt(t.cost)+'</button></div>';
   });
-  UPS.forEach(function(u){
+  if(S.unlocked.mitosis) UPS.forEach(function(u){
     var c=upCost(u), can=S.coins>=c;
     html+='<div class="up'+(can?" can":"")+'" style="margin-bottom:9px">'+
       '<span class="sw" style="background:var(--rule-strong);width:15px;height:15px"></span>'+
@@ -1013,7 +1085,20 @@ function renderPanels(q){
 $("ups").addEventListener("click",function(e){
   var b=e.target.closest("button"); if(!b) return;
   var u=b.getAttribute("data-unlock"), l=b.getAttribute("data-lv");
-  if(u && !unlocked(u) && S.coins>=T[u].cost){ S.coins-=T[u].cost; S.unlocked[u]=true; save(); dirty=true; }
+  if(u==="mitosis"){
+    if(!S.unlocked.mitosis && S.coins>=MITOSIS_COST){
+      S.coins-=MITOSIS_COST; S.unlocked.mitosis=true;
+      var t0=Date.now();
+      S.cells.forEach(function(c){ c.born=t0; c.life=jit(lifeMs(),0.2); c.nextDiv=t0+jit(divMs(),0.15); });
+      save(); dirty=true;
+    }
+    return;
+  }
+  if(u && T[u] && !unlocked(u) && S.coins>=T[u].cost){
+    S.coins-=T[u].cost; S.unlocked[u]=true;
+    maybeSpawnLand();
+    save(); dirty=true;
+  }
   if(l){ var up=UPS.filter(function(x){return x.id===l;})[0], c=upCost(up);
     if(S.coins>=c){ S.coins-=c; S.lv[l]++; save(); dirty=true; } }
 });
@@ -1125,7 +1210,19 @@ cv.addEventListener("pointermove",function(e){
 function endPtr(){ if(holdTimer){clearTimeout(holdTimer);holdTimer=null;}
   if(dragCell||panning) save();
   dragCell=null; panning=false; cv.classList.remove("grab"); }
-cv.addEventListener("pointerup",endPtr);
+function feedCell(cx,cy){
+  var g=Math.max(1,income(census())*0.5);
+  S.coins+=g; S.total+=g; dirty=true;
+  var r=dish.getBoundingClientRect(), el=document.createElement("span");
+  el.className="pop"; el.textContent="+"+fmt(g);
+  el.style.left=(cx-r.left)+"px"; el.style.top=(cy-r.top)+"px";
+  dish.appendChild(el); setTimeout(function(){ el.remove(); },900);
+}
+cv.addEventListener("pointerup",function(e){
+  var tap = !pressMoved && (Date.now()-pressT)<340 && e.button!==2 && dragCell;
+  var c=dragCell; endPtr();
+  if(tap && c) feedCell(e.clientX,e.clientY);
+});
 cv.addEventListener("pointercancel",endPtr);
 cv.addEventListener("contextmenu",function(e){
   e.preventDefault();
@@ -1165,8 +1262,8 @@ function frame(ts){
   var q=census();
   if(pump(now,q)) dirty=true;
 
-  var env=envWeights(q.traits);
-  drawBg(env);
+  var h0=getHull(now);
+  drawWorld(q,h0);
   var orgA = q.n>=REVEAL_CELLS ? clamp((REVEAL_ZOOM-S.view.z)/(REVEAL_ZOOM*0.45),0,1) : 0;
   drawOrganism(orgA,q,now);
   drawCells(1-orgA*0.80,now);
@@ -1191,7 +1288,6 @@ function frame(ts){
 function boot(hot){
   var d=(hot&&hot.cells)?hot:load();
   if(!adopt(d)) S=freshState();
-  $("hudHint").innerHTML="<b>Drag</b> a cell · <b>Ctrl+scroll</b> to zoom · <b>Right-click</b> to paint";
   sizeCanvas(); renderPanels(census());
   requestAnimationFrame(frame);
 }
