@@ -193,7 +193,7 @@ button{font:inherit;color:inherit}
 <div class="wrap">
   <header class="hdr">
     <h1 class="mark">Cell to <em>Cosmos</em></h1>
-    <span class="vtag">v0.2 &middot; genome</span>
+    <span class="vtag">v0.3 &middot; genome</span>
     <span class="sp"></span>
     <button class="ghost" id="theme" type="button">Theme</button>
     <button class="ghost" id="reset" type="button">Reset</button>
@@ -259,7 +259,7 @@ button{font:inherit;color:inherit}
     <strong>Drag</strong> a cell to move it, drag the water to pan &middot;
     <code>Ctrl</code> + <strong>scroll</strong> to zoom &middot;
     <strong>Right-click</strong> a cell to paint it (long-press on touch).<br>
-    Once <strong>Cell Multiplication</strong> is unlocked, cells divide about every 10 s and die at about 21 s — each leaves two behind, so the colony grows. Before that your cell is immortal. Daughters inherit the parent’s colour exactly, so individuals turn over while the body persists.
+    Once <strong>Cell Multiplication</strong> is unlocked, cells divide about every 10 s and die at about 21 s — each leaves two behind, so the colony grows. Before that your cell is immortal. Daughters are always blank white — every colour on your body is one you painted. There is no gravity: cells stick where they touch, so any shape you sculpt holds its form. Unattached cells drift past keeping their own colour; steer into one to absorb it.
   </p>
 </div>
 
@@ -273,7 +273,7 @@ button{font:inherit;color:inherit}
    1. CELL TYPES — colour IS function
    ============================================================ */
 var TYPES=[
- {id:"stem",   nm:"Stem",         hex:"#BFC9BC", trait:null,        cost:0},
+ {id:"stem",   nm:"Stem",         hex:"#F0F4F1", trait:null,        cost:0},
  {id:"photo",  nm:"Photocyte",    hex:"#5AC169", trait:"energy",    cost:0},
  {id:"eye",    nm:"Ocellus",      hex:"#15181C", trait:"vision",    cost:0},
  {id:"muscle", nm:"Myocyte",      hex:"#CE5247", trait:"motility",  cost:120},
@@ -361,7 +361,7 @@ function freshState(){
   return {
     coins:0, total:0, cells:[freshCell(0,0,"stem",now)],
     view:{x:0,y:0,z:1}, unlocked:{}, lv:{cap:0,life:0,div:0},
-    autoEyeDefault:true, nextTick:now+TICK_MS, born:now, land:null,
+    autoEyeDefault:true, nextTick:now+TICK_MS, born:now, land:null, absorbed:0,
     births:0, deaths:0, seenReveal:false
   };
 }
@@ -375,7 +375,7 @@ function save(){
     localStorage.setItem(KEY, JSON.stringify({
       coins:S.coins,total:S.total,view:S.view,unlocked:S.unlocked,lv:S.lv,
       autoEyeDefault:S.autoEyeDefault,born:S.born,births:S.births,deaths:S.deaths,
-      seenReveal:S.seenReveal,nextTick:S.nextTick,land:S.land||null,
+      seenReveal:S.seenReveal,nextTick:S.nextTick,land:S.land||null,absorbed:S.absorbed||0,
       cells:S.cells.map(function(c){
         return {x:Math.round(c.x*10)/10,y:Math.round(c.y*10)/10,t:c.t,a:c.autoEye?1:0,
                 r:Math.round((Date.now()-c.born)/c.life*100)/100};
@@ -395,7 +395,7 @@ function adopt(d){
   if(!d || !Array.isArray(d.cells) || !d.cells.length) return false;
   var now=Date.now();
   S=freshState();
-  ["coins","total","births","deaths"].forEach(function(k){
+  ["coins","total","births","deaths","absorbed"].forEach(function(k){
     if(typeof d[k]==="number" && isFinite(d[k])) S[k]=d[k];
   });
   if(d.view && isFinite(d.view.x)) S.view={x:d.view.x,y:d.view.y,z:Math.min(3,Math.max(0.18,d.view.z||1))};
@@ -450,28 +450,27 @@ function lifecycle(now){
 }
 function bud(p,now){
   var a=Math.random()*6.2832, d=CR*2.02;
-  var type=p.t;                       /* pure inheritance — no random drift */
+  var type="stem";        /* daughters are always blank — you paint every colour */
   var c=freshCell(p.x+Math.cos(a)*d, p.y+Math.sin(a)*d, type, now);
   c.life=jit(lifeMs(),0.2);
-  c.autoEye=p.autoEye;                              /* the reflex is heritable too */
+  c.autoEye=p.autoEye;                              /* the reflex is still heritable */
   S.cells.push(c); S.births++;
 }
 
-/* ---- soft-body relaxation: repel overlaps, gently cohere ---- */
-var GRID={}, BIN=CR*2.2;
+/* ---- soft body: cells repel when overlapping and STICK when touching.
+   There is no pull toward a centre, so a shape you sculpt holds its form
+   instead of rounding itself back into a ball. ---- */
+var GRID={}, BIN=CR*2.7;
 function relax(dt){
   var n=S.cells.length,i,c;
   if(!n) return;
-  var cx=0,cy=0;
-  for(i=0;i<n;i++){ cx+=S.cells[i].x; cy+=S.cells[i].y; }
-  cx/=n; cy/=n;
   GRID={};
   for(i=0;i<n;i++){
     c=S.cells[i];
     var k=((c.x/BIN)|0)+","+((c.y/BIN)|0);
     (GRID[k]||(GRID[k]=[])).push(c);
   }
-  var minD=CR*1.95, minD2=minD*minD;
+  var minD=CR*1.95, bondD=CR*2.55, bond2=bondD*bondD;
   for(i=0;i<n;i++){
     c=S.cells[i];
     var gx=(c.x/BIN)|0, gy=(c.y/BIN)|0;
@@ -480,20 +479,87 @@ function relax(dt){
       for(var j=0;j<b.length;j++){
         var o=b[j]; if(o===c) continue;
         var dx=c.x-o.x, dy=c.y-o.y, d2=dx*dx+dy*dy;
-        if(d2>minD2||d2<0.0001) continue;
-        var d=Math.sqrt(d2), push=(minD-d)/d*0.5;
-        c.vx+=dx*push*0.22; c.vy+=dy*push*0.22;
+        if(d2>bond2||d2<0.0001) continue;
+        var d=Math.sqrt(d2);
+        if(d<minD){                       /* overlapping — push apart */
+          var push=(minD-d)/d*0.5;
+          c.vx+=dx*push*0.22; c.vy+=dy*push*0.22;
+        }else{                            /* touching — hold the contact */
+          var pull=(d-minD)/d*0.5;
+          c.vx-=dx*pull*0.10; c.vy-=dy*pull*0.10;
+        }
       }
     }
-    c.vx += (cx-c.x)*0.0022;                      /* cohesion, very light */
-    c.vy += (cy-c.y)*0.0022;
   }
   var damp=Math.pow(0.86, dt*60);
   for(i=0;i<n;i++){
     c=S.cells[i];
-    if(c===dragCell) { c.vx=c.vy=0; continue; }
+    if(c===dragCell){ c.vx=c.vy=0; continue; }
     c.x+=c.vx; c.y+=c.vy; c.vx*=damp; c.vy*=damp;
   }
+}
+
+/* ---- wild cells: unattached life drifting past, absorbed on contact ---- */
+var WILD_MAX=14, WILD_MS=3800, wild=[], wildAt=0;
+function wildPool(){
+  var pool=["stem","stem","stem","photo","photo"];
+  TYPES.forEach(function(t){ if(!t.hidden && t.cost>0 && unlocked(t.id)) pool.push(t.id); });
+  return pool;
+}
+function spawnWild(){
+  var h=hull, cx=h?h.cx:0, cy=h?h.cy:0, r=h?h.maxR:60;
+  var a=Math.random()*6.283, d=r*(1.5+Math.random()*2.4)+CR*7, pool=wildPool();
+  wild.push({x:cx+Math.cos(a)*d, y:cy+Math.sin(a)*d, t:pool[(Math.random()*pool.length)|0],
+             vx:(Math.random()-0.5)*0.22, vy:(Math.random()-0.5)*0.22, ph:Math.random()*6.283});
+}
+function updateWild(now,dt){
+  if(wild.length<WILD_MAX && now-wildAt>WILD_MS){ wildAt=now; spawnWild(); }
+  var cap=maxCells(), hitR=CR*2.4, hit2=hitR*hitR, snap2=(CR*6.5)*(CR*6.5), h=hull;
+  for(var i=wild.length-1;i>=0;i--){
+    var w=wild[i];
+    w.ph+=dt*0.7;
+    w.x+=w.vx+Math.cos(w.ph)*0.16;
+    w.y+=w.vy+Math.sin(w.ph*0.8)*0.16;
+    w.vx*=0.985; w.vy*=0.985;
+    if(S.cells.length<cap){
+      var best=1e18, bx=0, by=0;
+      for(var j=0;j<S.cells.length;j++){
+        var c=S.cells[j], dx=c.x-w.x, dy=c.y-w.y, dd=dx*dx+dy*dy;
+        if(dd<best){ best=dd; bx=c.x; by=c.y; }
+      }
+      if(best>hit2 && best<snap2){        /* close enough to be drawn in */
+        w.vx+=(bx-w.x)*0.012; w.vy+=(by-w.y)*0.012;
+      }
+      if(best<hit2){
+        var nc=freshCell(w.x,w.y,w.t,now);
+        nc.life=jit(lifeMs(),0.2); nc.autoEye=S.autoEyeDefault;
+        S.cells.push(nc); wild.splice(i,1); S.absorbed=(S.absorbed||0)+1; dirty=true;
+        continue;
+      }
+    }
+    if(h){
+      var ex=w.x-h.cx, ey=w.y-h.cy, lim=h.maxR*7+900;
+      if(ex*ex+ey*ey>lim*lim) wild.splice(i,1);
+    }
+  }
+}
+function drawWild(alpha){
+  if(alpha<=0.01||!wild.length) return;
+  var Z=S.view.z, r0=CR*Z*0.8, pad=r0+12;
+  for(var i=0;i<wild.length;i++){
+    var w=wild[i], sx=w2sx(w.x), sy=w2sy(w.y);
+    if(sx<-pad||sx>W+pad||sy<-pad||sy>H+pad) continue;
+    var pl=0.82+0.18*Math.sin(TT*1.6+w.ph), r=r0*pl;
+    ctx.globalAlpha=alpha*0.5;
+    ctx.fillStyle=rgba(RGB[w.t],1);
+    ctx.beginPath(); ctx.arc(sx,sy,r,0,6.283); ctx.fill();
+    if(r>3){
+      ctx.globalAlpha=alpha*0.3;
+      ctx.strokeStyle="rgba(230,246,255,.9)"; ctx.lineWidth=Math.max(1,r*0.12);
+      ctx.beginPath(); ctx.arc(sx,sy,r*1.4,0,6.283); ctx.stroke();
+    }
+  }
+  ctx.globalAlpha=1;
 }
 
 /* ============================================================
@@ -1024,7 +1090,7 @@ function renderPanels(q){
   $("fname").textContent=f.name; $("fsub").textContent=f.sub; $("fdesc").textContent=f.desc;
   $("hudPop").textContent=q.n+" / "+maxCells()+" cells";
   $("rate").textContent="+"+fmt(income(q));
-  $("churn").innerHTML="<small>"+fmt(S.births)+" born · "+fmt(S.deaths)+" died</small>";
+  $("churn").innerHTML="<small>"+fmt(S.births)+" born · "+fmt(S.deaths)+" died · "+fmt(S.absorbed||0)+" eaten</small>";
 
   var bars="";
   TRAITS.forEach(function(t){
@@ -1259,6 +1325,7 @@ function frame(ts){
 
   lifecycle(now);
   relax(dt);
+  updateWild(now,dt);
   var q=census();
   if(pump(now,q)) dirty=true;
 
@@ -1266,6 +1333,7 @@ function frame(ts){
   drawWorld(q,h0);
   var orgA = q.n>=REVEAL_CELLS ? clamp((REVEAL_ZOOM-S.view.z)/(REVEAL_ZOOM*0.45),0,1) : 0;
   drawOrganism(orgA,q,now);
+  drawWild(1-orgA*0.55);
   drawCells(1-orgA*0.80,now);
 
   var left=Math.max(0,S.nextTick-now);
