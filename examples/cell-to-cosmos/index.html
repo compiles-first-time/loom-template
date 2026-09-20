@@ -205,7 +205,7 @@ button{font:inherit;color:inherit}
 <div class="wrap">
   <header class="hdr">
     <h1 class="mark">Cell to <em>Cosmos</em></h1>
-    <span class="vtag">v0.5 &middot; genome</span>
+    <span class="vtag">v0.6 &middot; genome</span>
     <span class="cbadge" id="cbadge" hidden>Creative</span>
     <span class="sp"></span>
     <button class="ghost" id="theme" type="button">Theme</button>
@@ -272,7 +272,7 @@ button{font:inherit;color:inherit}
     <strong>Drag</strong> a cell to move it, drag the water to pan &middot;
     <code>Ctrl</code> + <strong>scroll</strong> to zoom &middot;
     <strong>Right-click</strong> a cell to paint it (long-press on touch).<br>
-    Once <strong>Cell Multiplication</strong> is unlocked, cells divide about every 10 s and die at about 21 s — each leaves two behind, so the colony grows. Before that your cell is immortal. Daughters are always blank white — every colour on your body is one you painted. Cells never pull on each other — they only push apart when they overlap — so they stay exactly where you put them and any shape you sculpt holds. Unattached cells drift past keeping their own colour; steer into one to absorb it. Traits are free to switch on and off — only levelling them costs. Press <code>C</code> for creative mode: every trait on and fully levelled, and cells pull on each other very slightly.
+    Once <strong>Cell Multiplication</strong> is unlocked, cells divide about every 10 s and die at about 21 s — each leaves two behind, so the colony grows. Before that your cell is immortal. Daughters are always blank white — every colour on your body is one you painted. Cells never pull on each other — they only push apart when they overlap — so they stay exactly where you put them and any shape you sculpt holds. Unattached cells drift past keeping their own colour; steer into one to absorb it. Traits are free to switch on and off — only levelling them costs. Cell multiplication can be switched off at any time — paused, nothing divides and nothing dies. Press <code>C</code> for creative mode: every trait on and fully levelled, and cells pull on each other very slightly.
   </p>
 </div>
 
@@ -374,7 +374,7 @@ function freshState(){
   return {
     coins:0, total:0, cells:[freshCell(0,0,"stem",now)],
     view:{x:0,y:0,z:1}, unlocked:{}, lv:{cap:0,life:0,div:0},
-    enabled:{}, tlv:{}, creative:false,
+    enabled:{}, tlv:{}, creative:false, mitoOn:true,
     autoEyeDefault:true, nextTick:now+TICK_MS, born:now, land:null, absorbed:0,
     births:0, deaths:0, seenReveal:false
   };
@@ -395,7 +395,8 @@ function typeOn(tid){ var tr=T[tid].trait; return !tr || traitOn(tr); }
 function tlv(id){ return S.creative ? MAXTL : ((S.tlv&&S.tlv[id])|0); }
 function potency(id){ return 1 + 0.35*tlv(id); }
 function tCost(id){ return Math.ceil(TBASE[id]*Math.pow(1.6,tlv(id))); }
-function mitosisOn(){ return S.creative || !!S.unlocked.mitosis; }
+function mitosisBought(){ return S.creative || !!S.unlocked.mitosis; }
+function mitosisOn(){ return S.creative || (!!S.unlocked.mitosis && S.mitoOn!==false); }
 function lvOf(k){ return S.creative ? CREATIVE_LV : S.lv[k]; }
 function maxCells(){ return S.creative ? 400 : 40 + 40*S.lv.cap; }
 function lifeMs(){ return LIFE_MS*(1+0.15*lvOf("life")); }
@@ -405,7 +406,7 @@ function save(){
   try{
     localStorage.setItem(KEY, JSON.stringify({
       coins:S.coins,total:S.total,view:S.view,unlocked:S.unlocked,lv:S.lv,
-      enabled:S.enabled,tlv:S.tlv,creative:!!S.creative,
+      enabled:S.enabled,tlv:S.tlv,creative:!!S.creative,mitoOn:S.mitoOn!==false,
       autoEyeDefault:S.autoEyeDefault,born:S.born,births:S.births,deaths:S.deaths,
       seenReveal:S.seenReveal,nextTick:S.nextTick,land:S.land||null,absorbed:S.absorbed||0,
       cells:S.cells.map(function(c){
@@ -438,6 +439,7 @@ function adopt(d){
   if(d.enabled && typeof d.enabled==="object") S.enabled=d.enabled;
   if(d.tlv && typeof d.tlv==="object") S.tlv=d.tlv;
   S.creative=!!d.creative;
+  S.mitoOn = d.mitoOn!==false;
   if(typeof d.autoEyeDefault==="boolean") S.autoEyeDefault=d.autoEyeDefault;
   if(typeof d.seenReveal==="boolean") S.seenReveal=d.seenReveal;
   if(typeof d.born==="number") S.born=d.born;
@@ -621,9 +623,11 @@ function census(){
 function classify(q){
   var n=q.n;
   if(n<3) return {sub:n+" cell"+(n===1?"":"s")+" · undifferentiated", name:"Protocell",
-    desc: S.unlocked.mitosis
-      ? "One lineage, dividing on its own clock and dying on another. Right-click a cell to paint it."
-      : "One cell, immortal and not yet dividing. Tap it to feed it; "+MITOSIS_COST+" coins starts the cycle."};
+    desc: !mitosisBought()
+      ? "One cell, immortal and not yet dividing. Tap it to feed it; "+MITOSIS_COST+" coins starts the cycle."
+      : mitosisOn()
+        ? "One lineage, dividing on its own clock and dying on another. Right-click a cell to paint it."
+        : "Multiplication is paused \u2014 nothing divides and nothing dies. Switch it back on in the lab."};
   if(n<10) return {sub:n+" cells · pre-tissue", name:"Cell Cluster",
     desc:"Enough cells to hold a shape between divisions, not yet enough to specialise."};
   var ranked=TRAITS.map(function(t){ return [t.id,q.traits[t.id]]; })
@@ -1158,15 +1162,17 @@ function renderPanels(q){
   });
   $("tally").innerHTML=tal;
   $("cbadge").hidden = !S.creative;
-  $("hudHint").innerHTML = !S.unlocked.mitosis
+  $("hudHint").innerHTML = !mitosisBought()
     ? "<b>Tap</b> the cell to feed it · <b>"+MITOSIS_COST+" coins</b> starts multiplication"
+    : !mitosisOn()
+      ? "<b>Multiplication paused</b> · nothing divides, nothing dies"
     : isOnLand(hull)
       ? "<b>On land</b> · photocytes +30%"
       : (S.land ? "<b>Drag</b> cells toward the beach · <b>Ctrl+scroll</b> zoom · <b>Right-click</b> paint"
                 : "<b>Drag</b> a cell · <b>Ctrl+scroll</b> to zoom · <b>Right-click</b> to paint");
 
   var html="";
-  if(!mitosisOn()){
+  if(!mitosisBought()){
     var mcan=S.coins>=MITOSIS_COST;
     html+='<div class="up'+(mcan?" can":"")+'">'+
       '<span class="sw" style="background:var(--era);width:15px;height:15px"></span>'+
@@ -1174,7 +1180,18 @@ function renderPanels(q){
       (divMs()/1000).toFixed(0)+' s, die at '+(lifeMs()/1000).toFixed(0)+' s. Until then your cell is immortal.</span></span>'+
       '<button class="buy" data-unlock="mitosis"'+(mcan?"":" disabled")+'>'+MITOSIS_COST+'</button></div>';
   }
-  if(mitosisOn()){
+  if(mitosisBought()){
+    var mon=mitosisOn();
+    html+='<div class="up'+(mon?"":" off")+'">'+
+      '<input type="checkbox" class="tgl" data-mito="1"'+(mon?" checked":"")+
+        (S.creative?" disabled":"")+' aria-label="Cell multiplication">'+
+      '<span><span class="nm">Cell Multiplication</span><span class="ef">'+
+        (mon ? "running \u2014 divide every "+(divMs()/1000).toFixed(0)+" s, die at "+
+               (lifeMs()/1000).toFixed(0)+" s"
+             : "paused \u2014 nothing divides and nothing dies")+
+      '</span></span><span class="buy max">'+(mon?"on":"paused")+'</span></div>';
+  }
+  if(mitosisBought()){
     TRAITS.forEach(function(t){
       var on=traitOn(t.id), L=tlv(t.id), cst=tCost(t.id),
           can=!S.creative && on && L<MAXTL && S.coins>=cst;
@@ -1209,7 +1226,7 @@ $("ups").addEventListener("click",function(e){
   var u=b.getAttribute("data-unlock"), l=b.getAttribute("data-lv"), tu=b.getAttribute("data-tup");
   if(u==="mitosis"){
     if(!S.unlocked.mitosis && S.coins>=MITOSIS_COST){
-      S.coins-=MITOSIS_COST; S.unlocked.mitosis=true;
+      S.coins-=MITOSIS_COST; S.unlocked.mitosis=true; S.mitoOn=true;
       var t0=Date.now();
       S.cells.forEach(function(c){ c.born=t0; c.life=jit(lifeMs(),0.2); c.nextDiv=t0+jit(divMs(),0.15); });
       save(); dirty=true;
@@ -1228,9 +1245,13 @@ $("ups").addEventListener("click",function(e){
   }
 });
 $("ups").addEventListener("change",function(e){
-  var id=e.target.getAttribute && e.target.getAttribute("data-en");
+  var t=e.target;
+  if(t.hasAttribute && t.hasAttribute("data-mito")){
+    S.mitoOn=t.checked; save(); dirty=true; return;
+  }
+  var id=t.getAttribute && t.getAttribute("data-en");
   if(!id) return;
-  S.enabled[id]=e.target.checked;
+  S.enabled[id]=t.checked;
   save(); dirty=true;
 });
 
@@ -1453,7 +1474,7 @@ if(window.claude&&window.claude.hot&&window.claude.hot.snapshot){
   window.claude.hot.snapshot(function(){
     return {cells:S.cells.map(function(c){return {x:c.x,y:c.y,t:c.t,a:c.autoEye?1:0,r:0.2};}),
             coins:S.coins,total:S.total,view:S.view,unlocked:S.unlocked,lv:S.lv,
-            enabled:S.enabled,tlv:S.tlv,creative:!!S.creative,
+            enabled:S.enabled,tlv:S.tlv,creative:!!S.creative,mitoOn:S.mitoOn!==false,
             born:S.born,births:S.births,deaths:S.deaths,seenReveal:S.seenReveal};
   });
 }
