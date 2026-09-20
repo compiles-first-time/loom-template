@@ -205,7 +205,7 @@ button{font:inherit;color:inherit}
 <div class="wrap">
   <header class="hdr">
     <h1 class="mark">Cell to <em>Cosmos</em></h1>
-    <span class="vtag">v0.6 &middot; genome</span>
+    <span class="vtag">v0.7 &middot; genome</span>
     <span class="cbadge" id="cbadge" hidden>Creative</span>
     <span class="sp"></span>
     <button class="ghost" id="theme" type="button">Theme</button>
@@ -272,7 +272,7 @@ button{font:inherit;color:inherit}
     <strong>Drag</strong> a cell to move it, drag the water to pan &middot;
     <code>Ctrl</code> + <strong>scroll</strong> to zoom &middot;
     <strong>Right-click</strong> a cell to paint it (long-press on touch).<br>
-    Once <strong>Cell Multiplication</strong> is unlocked, cells divide about every 10 s and die at about 21 s — each leaves two behind, so the colony grows. Before that your cell is immortal. Daughters are always blank white — every colour on your body is one you painted. Cells never pull on each other — they only push apart when they overlap — so they stay exactly where you put them and any shape you sculpt holds. Unattached cells drift past keeping their own colour; steer into one to absorb it. Traits are free to switch on and off — only levelling them costs. Cell multiplication can be switched off at any time — paused, nothing divides and nothing dies. Press <code>C</code> for creative mode: every trait on and fully levelled, and cells pull on each other very slightly.
+    Once <strong>Cell Multiplication</strong> is unlocked, cells divide about every 7 s and die at about 30 s — each leaves four behind, so the colony grows quickly. Before that your cell is immortal. Daughters are always blank white — every colour on your body is one you painted. Cells never pull on each other — they only push apart when they overlap — so they stay exactly where you put them and any shape you sculpt holds. Unattached cells drift past keeping their own colour; steer into one to absorb it. Traits are free to switch on and off — only levelling them costs. Cell multiplication can be switched off at any time — paused, nothing divides and nothing dies. Press <code>C</code> for creative mode: every trait on and fully levelled, and cells pull on each other very slightly.
   </p>
 </div>
 
@@ -346,11 +346,11 @@ function habitat(tr){
 }
 
 /* ============================================================
-   2. LIFECYCLE CONSTANTS — R0 = 2, which is why it cannot die out
+   2. LIFECYCLE CONSTANTS — R0 = 4, which is why it cannot die out
    ============================================================ */
 var CR      = 13;      /* cell radius, world units */
-var LIFE_MS = 21000;   /* a cell dies at ~21 s  */
-var DIV_MS  = 10000;   /* a cell divides at ~10 s → two children per lifetime */
+var LIFE_MS = 30000;   /* a cell dies at ~30 s */
+var DIV_MS  =  7000;   /* divides at ~7 s → four children per lifetime, so R0 = 4 */
 var TICK_MS = 5000;    /* the coin heartbeat, unchanged from v0.1 */
 var REVEAL_CELLS = 24; /* enough cells for a body to read at low zoom */
 var REVEAL_ZOOM  = 0.62;
