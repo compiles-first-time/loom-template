@@ -173,6 +173,10 @@ button{font:inherit;color:inherit}
   position:relative;transition:transform .08s}
 .swb:hover:not(:disabled){transform:scale(1.09)}
 .swb.sel{border-color:var(--ink)}
+.swb.key{background:var(--panel-2);color:var(--ink);border:2px solid var(--rule);
+  font-family:'IBM Plex Mono',ui-monospace,monospace;font-weight:600;font-size:13px;
+  display:grid;place-items:center}
+.swb.key.sel{border-color:var(--era);color:var(--era)}
 .swb:disabled{opacity:.25;cursor:not-allowed}
 .swb:focus-visible{outline:2px solid var(--era);outline-offset:2px}
 .menu .row{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-top:1px solid var(--rule);
@@ -205,7 +209,7 @@ button{font:inherit;color:inherit}
 <div class="wrap">
   <header class="hdr">
     <h1 class="mark">Cell to <em>Cosmos</em></h1>
-    <span class="vtag">v0.7 &middot; genome</span>
+    <span class="vtag">v0.8 &middot; mobility</span>
     <span class="cbadge" id="cbadge" hidden>Creative</span>
     <span class="sp"></span>
     <button class="ghost" id="theme" type="button">Theme</button>
@@ -272,7 +276,7 @@ button{font:inherit;color:inherit}
     <strong>Drag</strong> a cell to move it, drag the water to pan &middot;
     <code>Ctrl</code> + <strong>scroll</strong> to zoom &middot;
     <strong>Right-click</strong> a cell to paint it (long-press on touch).<br>
-    Once <strong>Cell Multiplication</strong> is unlocked, cells divide about every 7 s and die at about 30 s — each leaves four behind, so the colony grows quickly. Before that your cell is immortal. Daughters are always blank white — every colour on your body is one you painted. Cells never pull on each other — they only push apart when they overlap — so they stay exactly where you put them and any shape you sculpt holds. Unattached cells drift past keeping their own colour; steer into one to absorb it. Traits are free to switch on and off — only levelling them costs. Cell multiplication can be switched off at any time — paused, nothing divides and nothing dies. Press <code>C</code> for creative mode: every trait on and fully levelled, and cells pull on each other very slightly.
+    Once <strong>Cell Multiplication</strong> is unlocked, cells divide about every 7 s and die at about 30 s — each leaves four behind, so the colony grows quickly. Before that your cell is immortal. Daughters are always blank white — every colour on your body is one you painted. Cells never pull on each other — they only push apart when they overlap — so they stay exactly where you put them and any shape you sculpt holds. Unattached cells drift past keeping their own colour; steer into one to absorb it. Traits are free to switch on and off — only levelling them costs. Cell multiplication can be switched off at any time — paused, nothing divides and nothing dies. Zoom out far enough to find the sea/air barrier and the beach east of it — crossing it needs at least 2 myocytes, 2 osteocytes and 2 pneumocytes. Paint a <strong>Ganglion</strong> and ctrl+right-click it to bind W, A, S or D; it drives only the cells beyond itself. <code>Z</code> deletes the cell under the cursor, <code>X</code> drops a ganglion in creative. Press <code>C</code> for creative mode: every trait on and fully levelled, and cells pull on each other very slightly.
   </p>
 </div>
 
@@ -299,6 +303,7 @@ var TYPES=[
  {id:"wing",   nm:"Pterocyte",    hex:"#CFDDEA", trait:"flight",    cost:30000},
  {id:"venom",  nm:"Toxocyte",     hex:"#D4C43F", trait:"venom",     cost:60000},
  {id:"display",nm:"Chromatocyte", hex:"#E06BA8", trait:"display",   cost:110000},
+ {id:"brain",  nm:"Ganglion",     hex:"#7BE0FF", trait:"control",   cost:0},
  /* black paint with the eye reflex switched off — pigment, no function */
  {id:"pigment",nm:"Melanocyte",   hex:"#15181C", trait:null,        cost:0, hidden:true}
 ];
@@ -316,15 +321,17 @@ var TRAITS=[
  {id:"endothermy",nm:"Warm blood", hex:"#E8823C", need:"warm"},
  {id:"flight",    nm:"Wings",      hex:"#A9C4DC", need:"wing"},
  {id:"venom",     nm:"Venom",      hex:"#D4C43F", need:"venom"},
- {id:"display",   nm:"Display",    hex:"#E06BA8", need:"display"}
+ {id:"display",   nm:"Display",    hex:"#E06BA8", need:"display"},
+ {id:"control",   nm:"Control",    hex:"#7BE0FF", need:"brain"}
 ];
-var ADJ={energy:"Verdant",vision:"Eyed",motility:"Swift",structure:"Armoured",cognition:"Sapient",
+var ADJ={control:"Steered",energy:"Verdant",vision:"Eyed",motility:"Swift",structure:"Armoured",cognition:"Sapient",
  aquatic:"Pelagic",air:"Air-breathing",walking:"Striding",endothermy:"Warm-blooded",flight:"Winged",
  venom:"Venomous",display:"Gaudy"};
-var NOUN={energy:"Bloom",vision:"Watcher",motility:"Runner",structure:"Bulwark",cognition:"Thinker",
+var NOUN={control:"Pilot",energy:"Bloom",vision:"Watcher",motility:"Runner",structure:"Bulwark",cognition:"Thinker",
  aquatic:"Swimmer",air:"Breather",walking:"Walker",endothermy:"Furnace",flight:"Flier",
  venom:"Stinger",display:"Herald"};
 var FLAVOR={
+ control:"Ganglia articulate the body \u2014 each one drives the cells beyond it.",
  energy:"Photocytes carry the metabolism — this body feeds itself on light.",
  vision:"Ocelli sit close enough together to resolve direction, not just brightness.",
  motility:"Myocytes are dense enough to push the whole mass through water.",
@@ -367,7 +374,7 @@ var S, nextId=1;
 
 function freshCell(x,y,type,now){
   return {id:nextId++, x:x, y:y, t:type||"stem", autoEye:true,
-          born:now, life:jit(LIFE_MS,0.2), nextDiv:now+jit(DIV_MS,0.15), vx:0, vy:0};
+          born:now, life:jit(LIFE_MS,0.2), nextDiv:now+jit(DIV_MS,0.15), vx:0, vy:0, key:null};
 }
 function freshState(){
   var now=Date.now();
@@ -375,28 +382,29 @@ function freshState(){
     coins:0, total:0, cells:[freshCell(0,0,"stem",now)],
     view:{x:0,y:0,z:1}, unlocked:{}, lv:{cap:0,life:0,div:0},
     enabled:{}, tlv:{}, creative:false, mitoOn:true,
-    autoEyeDefault:true, nextTick:now+TICK_MS, born:now, land:null, absorbed:0,
+    autoEyeDefault:true, nextTick:now+TICK_MS, born:now, absorbed:0,
     births:0, deaths:0, seenReveal:false
   };
 }
 /* Traits are free to switch on and off; levelling them is what costs. */
 var TBASE={energy:60,vision:80,motility:100,structure:120,cognition:150,aquatic:140,
-           air:200,walking:240,endothermy:300,flight:400,venom:500,display:600};
+           air:200,walking:240,endothermy:300,flight:400,venom:500,display:600,control:120};
 var TDESC={energy:"photocytes feed the colony",vision:"ocelli resolve the world",
   motility:"myocytes drive the fins",structure:"osteocytes hold the shape",
   cognition:"neurocytes multiply income",aquatic:"branchiocytes take oxygen from water",
   air:"pneumocytes breathe atmosphere",walking:"ambulocytes bear weight on land",
   endothermy:"thermocytes hold temperature",flight:"pterocytes generate lift",
-  venom:"toxocytes load the spines",display:"chromatocytes signal"};
+  venom:"toxocytes load the spines",display:"chromatocytes signal",
+  control:"ganglia steer the body with W A S D"};
 var MAXTL=10, CREATIVE_LV=8;
 
-function traitOn(id){ return S.creative || S.enabled[id]!==false; }
+function traitOn(id){ return S.enabled[id]!==false; }   /* toggles work in creative too */
 function typeOn(tid){ var tr=T[tid].trait; return !tr || traitOn(tr); }
 function tlv(id){ return S.creative ? MAXTL : ((S.tlv&&S.tlv[id])|0); }
 function potency(id){ return 1 + 0.35*tlv(id); }
 function tCost(id){ return Math.ceil(TBASE[id]*Math.pow(1.6,tlv(id))); }
 function mitosisBought(){ return S.creative || !!S.unlocked.mitosis; }
-function mitosisOn(){ return S.creative || (!!S.unlocked.mitosis && S.mitoOn!==false); }
+function mitosisOn(){ return mitosisBought() && S.mitoOn!==false; }
 function lvOf(k){ return S.creative ? CREATIVE_LV : S.lv[k]; }
 function maxCells(){ return S.creative ? 400 : 40 + 40*S.lv.cap; }
 function lifeMs(){ return LIFE_MS*(1+0.15*lvOf("life")); }
@@ -408,10 +416,10 @@ function save(){
       coins:S.coins,total:S.total,view:S.view,unlocked:S.unlocked,lv:S.lv,
       enabled:S.enabled,tlv:S.tlv,creative:!!S.creative,mitoOn:S.mitoOn!==false,
       autoEyeDefault:S.autoEyeDefault,born:S.born,births:S.births,deaths:S.deaths,
-      seenReveal:S.seenReveal,nextTick:S.nextTick,land:S.land||null,absorbed:S.absorbed||0,
+      seenReveal:S.seenReveal,nextTick:S.nextTick,absorbed:S.absorbed||0,
       cells:S.cells.map(function(c){
         return {x:Math.round(c.x*10)/10,y:Math.round(c.y*10)/10,t:c.t,a:c.autoEye?1:0,
-                r:Math.round((Date.now()-c.born)/c.life*100)/100};
+                k:c.key||"",r:Math.round((Date.now()-c.born)/c.life*100)/100};
       })
     }));
   }catch(e){}
@@ -443,10 +451,10 @@ function adopt(d){
   if(typeof d.autoEyeDefault==="boolean") S.autoEyeDefault=d.autoEyeDefault;
   if(typeof d.seenReveal==="boolean") S.seenReveal=d.seenReveal;
   if(typeof d.born==="number") S.born=d.born;
-  if(d.land && isFinite(d.land.shoreX)) S.land={shoreX:d.land.shoreX,surfaceY:d.land.surfaceY};
   S.cells=d.cells.slice(0,400).map(function(c){
     var cell=freshCell(+c.x||0, +c.y||0, T[c.t]?c.t:"stem", now);
     cell.autoEye = c.a!==0;
+    if(c.k) cell.key=c.k;
     var r=Math.min(0.92,Math.max(0,+c.r||0));
     cell.born = now - r*cell.life;            /* resume mid-life */
     return cell;
@@ -498,7 +506,7 @@ function bud(p,now){
    Nothing attracts anything — no bond spring, no pull toward a centre.
    A cell stays exactly where it is put; a pile expands to contact spacing
    and then stops, because damping removes the leftover motion. ---- */
-var GRID={}, BIN=CR*2.7;
+var GRID={}, BIN=CR*2.7, canCrossNow=false;
 function relax(dt){
   var n=S.cells.length,i,c;
   if(!n) return;
@@ -519,7 +527,13 @@ function relax(dt){
       for(var j=0;j<b.length;j++){
         var o=b[j]; if(o===c) continue;
         var dx=c.x-o.x, dy=c.y-o.y, d2=dx*dx+dy*dy;
-        if(d2>reach2||d2<0.0001) continue;
+        if(d2>reach2) continue;
+        if(d2<0.0001){        /* exactly co-located (a hard clamp can do this):
+                                 nudge apart on a deterministic angle or they deadlock */
+          var an=c.id*2.399963;
+          c.vx+=Math.cos(an)*0.30; c.vy+=Math.sin(an)*0.30;
+          continue;
+        }
         var d=Math.sqrt(d2);
         if(d<minD){
           var push=(minD-d)/d*0.5;
@@ -531,11 +545,17 @@ function relax(dt){
       }
     }
   }
-  var damp=Math.pow(0.86, dt*60);
+  var damp=Math.pow(0.86, dt*60), lid=SURFACE_Y+CR*0.9;
   for(i=0;i<n;i++){
     c=S.cells[i];
-    if(c===dragCell){ c.vx=c.vy=0; continue; }
-    c.x+=c.vx; c.y+=c.vy; c.vx*=damp; c.vy*=damp;
+    if(c===dragCell){ c.vx=c.vy=0; }
+    else { c.x+=c.vx; c.y+=c.vy; c.vx*=damp; c.vy*=damp; }
+    var g=landSurfaceY(c.x)-CR*0.9;            /* the ground is solid */
+    if(c.y>g){ c.y=g; if(c.vy>0) c.vy=0; }
+    if(!canCrossNow){                           /* and the surface is a ceiling */
+      if(c.y<lid){ c.y=lid; if(c.vy<0) c.vy=0; }
+      if(c.x>WATER_EDGE_X-CR) c.x=WATER_EDGE_X-CR;
+    }
   }
 }
 
@@ -689,34 +709,33 @@ function rnd(i){ var x=Math.sin(i*127.1+311.7)*43758.5453; return x-Math.floor(x
    Placed a few body-lengths away: visible when zoomed out,
    far enough that crossing to it is a deliberate trip.
    ============================================================ */
+/* The world is fixed and always there: air above the waterline, sea below,
+   and a beach rising out of the water to the east. Zoom out to find it. */
+var SURFACE_Y = -900;              /* the barrier between sea and air */
+var SHORE_X   = 1100;
+var SEABED_Y  =  620;
+var LAND_TOP  = SURFACE_Y - 300;
 function landSurfaceY(x){
-  var L=S.land; if(!L) return 1e9;
-  var t=Math.max(-3,(x-L.shoreX)/620);
-  if(t<0) return L.surfaceY + 90 - t*140;
-  t=clamp(t,0,1);
-  return L.surfaceY + 90 - (t*t*(3-2*t))*360;
+  var t=(x-SHORE_X)/900; t = t<0?0 : t>1?1 : t;
+  var sm=t*t*(3-2*t);
+  return SEABED_Y + sm*(LAND_TOP-SEABED_Y);
 }
-function maybeSpawnLand(q){
-  if(S.land) return false;
-  if(!traitOn("walking")||!traitOn("air")) return false;
-  if(!q||!q.by.limb||!q.by.lung) return false;   /* you must actually grow them */
-  var h=hull||computeHull();
-  var cx=h?h.cx:0, cy=h?h.cy:0, r=h?h.maxR:70;
-  S.land={ shoreX: cx + clamp(r*4.5,520,900), surfaceY: cy - clamp(r*1.7,170,330) };
-  return true;
-}
+/* where the beach breaks the surface — the wall for a body that cannot cross */
+var WATER_EDGE_X=(function(){
+  var lo=SHORE_X, hi=SHORE_X+900;
+  for(var i=0;i<40;i++){ var m=(lo+hi)/2; if(landSurfaceY(m)>SURFACE_Y) lo=m; else hi=m; }
+  return lo;
+})();
+/* leaving the water takes a body built for it */
+function canCross(q){ return q.by.muscle>=2 && q.by.bone>=2 && q.by.lung>=2; }
 function isOnLand(h){
-  if(!S.land||!h) return false;
-  /* out of the water AND up on the ground — the seabed alone does not count */
-  return h.cy < S.land.surfaceY && h.cy < landSurfaceY(h.cx) + h.maxR*0.5;
+  if(!h) return false;
+  /* in the air AND over ground that is itself above the waterline — floating
+     above open ocean is not "on land" */
+  return h.cy < SURFACE_Y && landSurfaceY(h.cx) < SURFACE_Y;
 }
 function drawWorld(q,h){
-  if(!S.land){
-    bgWater();
-    ctx.fillStyle="rgba(0,0,0,.18)"; ctx.fillRect(0,0,W,H);
-    return;
-  }
-  var sy=w2sy(S.land.surfaceY);
+  var sy=w2sy(SURFACE_Y);
   /* 1. sky over everything */
   ctx.fillStyle=lin(0,Math.min(0,sy-H*0.9),0,Math.max(sy,1),[[0,"#356FAA"],[0.55,"#77AED4"],[1,"#C6DFEE"]]);
   ctx.fillRect(0,0,W,H);
@@ -807,6 +826,12 @@ function drawCells(alpha,now){
       ctx.beginPath(); ctx.arc(sx+Math.cos(TT*0.6)*r*0.12,sy+Math.sin(TT*0.5)*r*0.12,r*0.32,0,6.283); ctx.fill();
       ctx.fillStyle="rgba(255,255,255,.9)";
       ctx.beginPath(); ctx.arc(sx-r*0.2,sy-r*0.24,r*0.11,0,6.283); ctx.fill();
+    }
+    if(c.t==="brain" && r>5){
+      ctx.fillStyle="rgba(8,16,24,.92)";
+      ctx.font="700 "+Math.max(7,r).toFixed(0)+"px 'IBM Plex Mono',ui-monospace,monospace";
+      ctx.textAlign="center"; ctx.textBaseline="middle";
+      ctx.fillText(c.key?c.key.toUpperCase():"\u00b7",sx,sy);
     }
     if(c===dragCell){
       ctx.strokeStyle="rgba(255,255,255,.85)"; ctx.lineWidth=2;
@@ -1037,6 +1062,29 @@ function fEyes(q,h){
   }
 }
 
+/* ---- ganglia drive the body. Each bound ganglion moves only the cells at
+   or beyond it, measured outward from the body's centre, so it articulates
+   like a joint rather than shoving the whole organism. ---- */
+var KEYDIR={w:[1,0], s:[-1,0], a:[0,-1], d:[0,1]}, held={};
+function drive(q,h){
+  if(!h||!traitOn("control")) return;
+  if(!(held.w||held.a||held.s||held.d)) return;
+  var fwd=headDir(q,h), px=-fwd[1], py=fwd[0], i, j;
+  for(i=0;i<S.cells.length;i++){
+    var b=S.cells[i];
+    if(b.t!=="brain"||!b.key||!held[b.key]) continue;
+    var kd=KEYDIR[b.key];
+    var dx=fwd[0]*kd[0]+px*kd[1], dy=fwd[1]*kd[0]+py*kd[1];
+    var ax=b.x-h.cx, ay=b.y-h.cy, am=Math.sqrt(ax*ax+ay*ay);
+    if(am<CR){ ax=fwd[0]; ay=fwd[1]; } else { ax/=am; ay/=am; }
+    for(j=0;j<S.cells.length;j++){
+      var c=S.cells[j];
+      if((c.x-b.x)*ax+(c.y-b.y)*ay < -CR) continue;
+      c.vx+=dx*0.5; c.vy+=dy*0.5;
+    }
+  }
+}
+
 /* ---------------- assemble the animal ---------------- */
 function drawOrganism(alpha,q,now){
   if(alpha<=0.01) return;
@@ -1168,8 +1216,9 @@ function renderPanels(q){
       ? "<b>Multiplication paused</b> · nothing divides, nothing dies"
     : isOnLand(hull)
       ? "<b>On land</b> · photocytes +30%"
-      : (S.land ? "<b>Drag</b> cells toward the beach · <b>Ctrl+scroll</b> zoom · <b>Right-click</b> paint"
-                : "<b>Drag</b> a cell · <b>Ctrl+scroll</b> to zoom · <b>Right-click</b> to paint");
+    : !canCrossNow
+      ? "<b>Held under the surface</b> · needs 2 myocytes, 2 osteocytes, 2 pneumocytes"
+      : "<b>WASD</b> drives bound ganglia · <b>Ctrl+scroll</b> zoom · <b>Right-click</b> paint";
 
   var html="";
   if(!mitosisBought()){
@@ -1184,7 +1233,7 @@ function renderPanels(q){
     var mon=mitosisOn();
     html+='<div class="up'+(mon?"":" off")+'">'+
       '<input type="checkbox" class="tgl" data-mito="1"'+(mon?" checked":"")+
-        (S.creative?" disabled":"")+' aria-label="Cell multiplication">'+
+        ' aria-label="Cell multiplication">'+
       '<span><span class="nm">Cell Multiplication</span><span class="ef">'+
         (mon ? "running \u2014 divide every "+(divMs()/1000).toFixed(0)+" s, die at "+
                (lifeMs()/1000).toFixed(0)+" s"
@@ -1197,7 +1246,7 @@ function renderPanels(q){
           can=!S.creative && on && L<MAXTL && S.coins>=cst;
       html+='<div class="up'+(can?" can":"")+(on?"":" off")+'">'+
         '<input type="checkbox" class="tgl" data-en="'+t.id+'"'+(on?" checked":"")+
-          (S.creative?" disabled":"")+' aria-label="Enable '+t.nm+'">'+
+          ' aria-label="Enable '+t.nm+'">'+
         '<span><span class="nm"><span class="sw" style="background:'+t.hex+'"></span>'+t.nm+
           ' <span class="lvl">Lv '+L+'</span></span><span class="ef">'+
           (on ? "×"+potency(t.id).toFixed(2)+" — "+TDESC[t.id] : "switched off")+
@@ -1277,20 +1326,48 @@ function openMenu(c,cx,cy){
     '<div class="hd"><span class="sw" style="background:'+T[c.t].hex+'"></span>'+
       '<span class="nm">'+T[c.t].nm+'</span><span class="id">#'+c.id+'</span></div>'+
     '<div class="swatches">'+sw+'</div>'+
+    (c.t==="brain" ? '<button class="mbtn" id="bindkey">Bind movement key'+
+        (c.key?' \u00b7 '+c.key.toUpperCase():'')+'</button>' : '')+
     '<div class="row"><input type="checkbox" id="aeye"'+(c.autoEye?" checked":"")+'>'+
       '<label for="aeye">Auto-eye when painted black</label></div>'+
     '<button class="mbtn" id="aeyeAll">Apply this to every cell</button>'+
     '<p class="note">Off means black stays pigment — colour without an eye.</p>'+
     '<button class="mbtn danger" id="delc">Remove cell</button>';
+  placeMenu(cx,cy);
+}
+function placeMenu(cx,cy){
   menu.hidden=false;
   var r=menu.getBoundingClientRect();
   menu.style.left=Math.min(cx,window.innerWidth-r.width-10)+"px";
   menu.style.top=Math.min(cy,window.innerHeight-r.height-10)+"px";
 }
+function openKeyMenu(c,cx,cy){
+  menuCell=c;
+  var sw="";
+  ["w","a","s","d"].forEach(function(k){
+    sw+='<button class="swb key'+(c.key===k?" sel":"")+'" data-key="'+k+'">'+k.toUpperCase()+'</button>';
+  });
+  menu.innerHTML=
+    '<div class="hd"><span class="sw" style="background:'+T.brain.hex+'"></span>'+
+      '<span class="nm">Ganglion</span><span class="id">#'+c.id+'</span></div>'+
+    '<div class="swatches">'+sw+'</div>'+
+    '<button class="mbtn" data-key="">Unbind</button>'+
+    '<p class="note">W and S drive forward and back, A and D strafe. Only the cells beyond this ganglion move, so it acts as a joint.</p>';
+  placeMenu(cx,cy);
+}
 function closeMenu(){ menu.hidden=true; menuCell=null; }
 menu.addEventListener("click",function(e){
   if(!menuCell) return;
   var b=e.target.closest("button");
+  if(b && b.hasAttribute("data-key")){
+    menuCell.key = b.getAttribute("data-key") || null;
+    openKeyMenu(menuCell, parseFloat(menu.style.left), parseFloat(menu.style.top));
+    save(); dirty=true; return;
+  }
+  if(b && b.id==="bindkey"){
+    openKeyMenu(menuCell, parseFloat(menu.style.left), parseFloat(menu.style.top));
+    return;
+  }
   if(b && b.hasAttribute("data-t")){
     var id=b.getAttribute("data-t");
     if(!typeOn(id)) return;
@@ -1321,12 +1398,34 @@ document.addEventListener("pointerdown",function(e){
 },true);
 document.addEventListener("keydown",function(e){
   if(e.key==="Escape"){ closeMenu(); return; }
-  if(e.key!=="c"&&e.key!=="C") return;
   var tg=e.target&&e.target.tagName;
   if(tg==="INPUT"||tg==="TEXTAREA"||e.ctrlKey||e.metaKey||e.altKey) return;
-  S.creative=!S.creative;          /* every trait on and maxed, plus a faint pull */
-  closeMenu(); save(); dirty=true;
+  var k=(e.key||"").toLowerCase();
+  if(k==="w"||k==="a"||k==="s"||k==="d"){ held[k]=true; return; }
+  if(k==="c"){ S.creative=!S.creative; closeMenu(); save(); dirty=true; return; }
+  if(!overCanvas) return;
+  if(k==="z"){                                  /* delete the cell under the cursor */
+    var dc=cellAt(hoverX,hoverY);
+    if(dc && S.cells.length>1){
+      if(menuCell===dc) closeMenu();
+      S.cells.splice(S.cells.indexOf(dc),1);
+      save(); dirty=true;
+    }
+    return;
+  }
+  if(k==="x"){                                  /* creative only: drop a ganglion */
+    if(!S.creative || S.cells.length>=maxCells()) return;
+    var nc=freshCell(s2wx(hoverX),s2wy(hoverY),"brain",Date.now());
+    nc.life=jit(lifeMs(),0.2); nc.autoEye=S.autoEyeDefault;
+    S.cells.push(nc); save(); dirty=true;
+    return;
+  }
 });
+document.addEventListener("keyup",function(e){
+  var k=(e.key||"").toLowerCase();
+  if(k==="w"||k==="a"||k==="s"||k==="d") held[k]=false;
+});
+window.addEventListener("blur",function(){ held={}; });
 
 /* ============================================================
    13. INPUT — drag a cell, pan the water, ctrl+scroll to zoom
@@ -1359,7 +1458,11 @@ cv.addEventListener("pointerdown",function(e){
     },480);
   }
 });
+var hoverX=0, hoverY=0, overCanvas=false;
+cv.addEventListener("pointerleave",function(){ overCanvas=false; });
 cv.addEventListener("pointermove",function(e){
+  var hr=cv.getBoundingClientRect();
+  hoverX=e.clientX-hr.left; hoverY=e.clientY-hr.top; overCanvas=true;
   var dx=e.clientX-lastX, dy=e.clientY-lastY;
   if(Math.abs(dx)>3||Math.abs(dy)>3) pressMoved=true;
   lastX=e.clientX; lastY=e.clientY;
@@ -1386,7 +1489,9 @@ cv.addEventListener("pointercancel",endPtr);
 cv.addEventListener("contextmenu",function(e){
   e.preventDefault();
   var r=cv.getBoundingClientRect(), c=cellAt(e.clientX-r.left,e.clientY-r.top);
-  if(c) openMenu(c,e.clientX,e.clientY); else closeMenu();
+  if(!c){ closeMenu(); return; }
+  if((e.ctrlKey||e.metaKey) && c.t==="brain") openKeyMenu(c,e.clientX,e.clientY);
+  else openMenu(c,e.clientX,e.clientY);
 });
 cv.addEventListener("wheel",function(e){
   var r=cv.getBoundingClientRect();
@@ -1420,10 +1525,11 @@ function frame(ts){
   relax(dt);
   updateWild(now,dt);
   var q=census();
+  canCrossNow=canCross(q);
   if(pump(now,q)) dirty=true;
 
   var h0=getHull(now);
-  if(!S.land) maybeSpawnLand(q);
+  drive(q,h0);
   drawWorld(q,h0);
   var orgA = q.n>=REVEAL_CELLS ? clamp((REVEAL_ZOOM-S.view.z)/(REVEAL_ZOOM*0.45),0,1) : 0;
   drawOrganism(orgA,q,now);
@@ -1472,7 +1578,7 @@ setInterval(save,8000);
 
 if(window.claude&&window.claude.hot&&window.claude.hot.snapshot){
   window.claude.hot.snapshot(function(){
-    return {cells:S.cells.map(function(c){return {x:c.x,y:c.y,t:c.t,a:c.autoEye?1:0,r:0.2};}),
+    return {cells:S.cells.map(function(c){return {x:c.x,y:c.y,t:c.t,a:c.autoEye?1:0,k:c.key||"",r:0.2};}),
             coins:S.coins,total:S.total,view:S.view,unlocked:S.unlocked,lv:S.lv,
             enabled:S.enabled,tlv:S.tlv,creative:!!S.creative,mitoOn:S.mitoOn!==false,
             born:S.born,births:S.births,deaths:S.deaths,seenReveal:S.seenReveal};
