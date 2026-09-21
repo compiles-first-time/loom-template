@@ -209,7 +209,7 @@ button{font:inherit;color:inherit}
 <div class="wrap">
   <header class="hdr">
     <h1 class="mark">Cell to <em>Cosmos</em></h1>
-    <span class="vtag">v0.12 &middot; mobility</span>
+    <span class="vtag">v0.13 &middot; rigid</span>
     <span class="cbadge" id="cbadge" hidden>Creative</span>
     <span class="sp"></span>
     <button class="ghost" id="theme" type="button">Theme</button>
@@ -276,7 +276,7 @@ button{font:inherit;color:inherit}
     <strong>Drag</strong> a cell to move it, drag the water to pan &middot;
     <code>Ctrl</code> + <strong>scroll</strong> to zoom &middot;
     <strong>Right-click</strong> a cell to paint it (long-press on touch).<br>
-    Once <strong>Cell Multiplication</strong> is unlocked, cells divide about every 7 s and die at about 30 s — each leaves four behind, so the colony grows quickly. Before that your cell is immortal. Daughters are always blank white — every colour on your body is one you painted. Cells never pull on each other — they only push apart when they overlap — so they stay exactly where you put them and any shape you sculpt holds. Unattached cells drift past keeping their own colour; steer into one to absorb it. Traits are free to switch on and off — only levelling them costs. Cell multiplication can be switched off at any time — paused, nothing divides and nothing dies. Zoom out far enough to find the sea/air barrier and the beach east of it — crossing it needs at least 2 myocytes, 2 osteocytes and 2 pneumocytes, which gets you onto the beach — staying up in open air needs 5 pterocytes, or you simply fall. Paint a <strong>Ganglion</strong> and ctrl+right-click it to bind W, A, S or D; Q and E turn the organism and W A S D drive it relative to that heading — the cyan arrow shows which way is forward. More bound ganglia push harder. <code>Z</code> deletes the cell under the cursor and <code>X</code> drops a ganglion there — both work in any mode, up to the tissue cap. Press <code>C</code> for creative mode: every trait on and fully levelled, and cells pull on each other very slightly.
+    Once <strong>Cell Multiplication</strong> is unlocked, cells divide about every 7 s and die at about 30 s — each leaves four behind, so the colony grows quickly. Before that your cell is immortal. Daughters are always blank white — every colour on your body is one you painted. The organism is rigid: gravity, thrust and collisions move the whole body together, so it cannot be squashed or slump out of shape. Dragging a cell is the only thing that changes its form. Unattached cells drift past keeping their own colour; steer into one to absorb it. Traits are free to switch on and off — only levelling them costs. Cell multiplication can be switched off at any time — paused, nothing divides and nothing dies. Zoom out far enough to find the sea/air barrier and the beach east of it — crossing it needs at least 2 myocytes, 2 osteocytes and 2 pneumocytes, which gets you onto the beach — staying up in open air needs 5 pterocytes, or you simply fall. Paint a <strong>Ganglion</strong> and ctrl+right-click it to bind W, A, S or D; Q and E turn the organism and W A S D drive it relative to that heading — the cyan arrow shows which way is forward. More bound ganglia push harder. <code>Z</code> deletes the cell under the cursor and <code>X</code> drops a ganglion there — both work in any mode, up to the tissue cap. Press <code>C</code> for creative mode: every trait fully levelled.
   </p>
 </div>
 
@@ -374,14 +374,14 @@ var S, nextId=1;
 
 function freshCell(x,y,type,now){
   return {id:nextId++, x:x, y:y, t:type||"stem", autoEye:true,
-          born:now, life:jit(LIFE_MS,0.2), nextDiv:now+jit(DIV_MS,0.15), vx:0, vy:0, key:null};
+          born:now, life:jit(LIFE_MS,0.2), nextDiv:now+jit(DIV_MS,0.15), key:null};
 }
 function freshState(){
   var now=Date.now();
   return {
     coins:0, total:0, cells:[freshCell(0,0,"stem",now)],
     view:{x:0,y:0,z:1}, unlocked:{}, lv:{cap:0,life:0,div:0},
-    enabled:{}, tlv:{}, creative:false, mitoOn:true, heading:0,
+    enabled:{}, tlv:{}, creative:false, mitoOn:true, heading:0, vel:{x:0,y:0},
     autoEyeDefault:true, nextTick:now+TICK_MS, born:now, absorbed:0,
     births:0, deaths:0, seenReveal:false
   };
@@ -448,6 +448,7 @@ function adopt(d){
   if(d.enabled && typeof d.enabled==="object") S.enabled=d.enabled;
   if(d.tlv && typeof d.tlv==="object") S.tlv=d.tlv;
   S.creative=!!d.creative;
+  S.vel={x:0,y:0};
   S.mitoOn = d.mitoOn!==false;
   if(typeof d.heading==="number" && isFinite(d.heading)) S.heading=d.heading;
   if(typeof d.autoEyeDefault==="boolean") S.autoEyeDefault=d.autoEyeDefault;
@@ -496,73 +497,89 @@ function lifecycle(now){
   }
 }
 function bud(p,now){
-  var a=Math.random()*6.2832, d=CR*2.02;
-  var type="stem";        /* daughters are always blank — you paint every colour */
-  var c=freshCell(p.x+Math.cos(a)*d, p.y+Math.sin(a)*d, type, now);
+  var spot=freeSpot(p.x,p.y);
+  if(!spot) return;                        /* no room: skip rather than overlap */
+  var c=freshCell(spot[0],spot[1],"stem",now);
   c.life=jit(lifeMs(),0.2);
-  c.autoEye=p.autoEye;                              /* the reflex is still heritable */
-  S.cells.push(c); S.births++;
+  c.autoEye=p.autoEye;                     /* the reflex is still heritable */
+  S.cells.push(c); addToGrid(c); S.births++;
 }
 
-/* ---- soft body: cells ONLY push apart when they overlap.
-   Nothing attracts anything — no bond spring, no pull toward a centre.
-   A cell stays exactly where it is put; a pile expands to contact spacing
-   and then stops, because damping removes the leftover motion. ---- */
+/* ---- The organism is a RIGID body.
+
+   Gravity, thrust and collision all act on the body as a whole: every cell is
+   translated or rotated by exactly the same amount, so the shape cannot change.
+   The single thing that deforms it is dragging a cell, which is the sculpting
+   tool. Cells therefore never push on each other at all — new cells are placed
+   into a free slot instead of being shoved into one. ---- */
 var GRID={}, BIN=CR*2.7, canCrossNow=false, canFlyNow=false;
-function relax(dt){
-  var n=S.cells.length,i,c;
-  if(!n) return;
+function addToGrid(c){
+  var k=((c.x/BIN)|0)+","+((c.y/BIN)|0);
+  (GRID[k]||(GRID[k]=[])).push(c);
+}
+function buildGrid(){
   GRID={};
-  for(i=0;i<n;i++){
-    c=S.cells[i];
-    var k=((c.x/BIN)|0)+","+((c.y/BIN)|0);
-    (GRID[k]||(GRID[k]=[])).push(c);
-  }
-  var minD=CR*1.95;
-  /* creative mode only: a very slight pull so sculpting settles tidily */
-  var pullOn=!!S.creative, reach=pullOn?CR*2.6:minD, reach2=reach*reach;
-  for(i=0;i<n;i++){
-    c=S.cells[i];
-    var gx=(c.x/BIN)|0, gy=(c.y/BIN)|0;
-    for(var ox=-1;ox<=1;ox++) for(var oy=-1;oy<=1;oy++){
-      var b=GRID[(gx+ox)+","+(gy+oy)]; if(!b) continue;
-      for(var j=0;j<b.length;j++){
-        var o=b[j]; if(o===c) continue;
-        var dx=c.x-o.x, dy=c.y-o.y, d2=dx*dx+dy*dy;
-        if(d2>reach2) continue;
-        if(d2<0.0001){        /* exactly co-located (a hard clamp can do this):
-                                 nudge apart on a deterministic angle or they deadlock */
-          var an=c.id*2.399963;
-          c.vx+=Math.cos(an)*0.30; c.vy+=Math.sin(an)*0.30;
-          continue;
-        }
-        var d=Math.sqrt(d2);
-        if(d<minD){
-          var push=(minD-d)/d*0.5;
-          c.vx+=dx*push*0.22; c.vy+=dy*push*0.22;
-        }else if(pullOn){
-          var pull=(d-minD)/d*0.5;
-          c.vx-=dx*pull*0.030; c.vy-=dy*pull*0.030;
-        }
-      }
+  for(var i=0;i<S.cells.length;i++) addToGrid(S.cells[i]);
+}
+function overlaps(x,y){
+  var m2=(CR*1.9)*(CR*1.9), gx=(x/BIN)|0, gy=(y/BIN)|0;
+  for(var ox=-1;ox<=1;ox++) for(var oy=-1;oy<=1;oy++){
+    var b=GRID[(gx+ox)+","+(gy+oy)]; if(!b) continue;
+    for(var j=0;j<b.length;j++){
+      var dx=b[j].x-x, dy=b[j].y-y;
+      if(dx*dx+dy*dy<m2) return true;
     }
   }
-  var damp=Math.pow(0.86, dt*60), lid=SURFACE_Y+CR*0.9;
-  for(i=0;i<n;i++){
-    c=S.cells[i];
-    /* Out of the water, nothing holds a wingless body up. It falls until the
-       ground catches it, or until it is back under the surface — so the kit
-       gets you onto the beach, and only wings keep you in open air. */
-    if(canCrossNow && !canFlyNow && c.y<SURFACE_Y) c.vy += 0.35;
-    if(c===dragCell){ c.vx=c.vy=0; }
-    else { c.x+=c.vx; c.y+=c.vy; c.vx*=damp; c.vy*=damp; }
-    var g=landSurfaceY(c.x)-CR*0.9;            /* the ground is solid */
-    if(c.y>g){ c.y=g; if(c.vy>0) c.vy=0; }
-    if(!canCrossNow){                           /* and the surface is a ceiling */
-      if(c.y<lid){ c.y=lid; if(c.vy<0) c.vy=0; }
-      if(c.x>WATER_EDGE_X-CR) c.x=WATER_EDGE_X-CR;
+  return false;
+}
+/* the nearest spot to (x,y) that touches nothing */
+function freeSpot(x,y){
+  if(!overlaps(x,y)) return [x,y];
+  for(var r=CR*2.02; r<=CR*10; r+=CR*0.6){
+    for(var k=0;k<18;k++){
+      var a=k/18*6.283185+r*0.7;
+      var px=x+Math.cos(a)*r, py=y+Math.sin(a)*r;
+      if(!overlaps(px,py)) return [px,py];
     }
   }
+  return null;
+}
+function shiftBody(dx,dy){
+  for(var i=0;i<S.cells.length;i++){ S.cells[i].x+=dx; S.cells[i].y+=dy; }
+}
+function relax(dt){
+  var n=S.cells.length, i, c, pen, worst;
+  if(!n) return;
+
+  /* gravity acts on the body, and only while it is entirely clear of the sea */
+  var maxY=-1e9;
+  for(i=0;i<n;i++){ if(S.cells[i].y>maxY) maxY=S.cells[i].y; }
+  if(canCrossNow && !canFlyNow && maxY<SURFACE_Y) S.vel.y += 0.35;
+
+  if(S.vel.x||S.vel.y) shiftBody(S.vel.x,S.vel.y);
+  var damp=Math.pow(0.86,dt*60);
+  S.vel.x*=damp; S.vel.y*=damp;
+
+  /* collisions resolve by pushing the WHOLE body out of its deepest
+     penetration, never by moving one cell relative to another */
+  worst=0;
+  for(i=0;i<n;i++){
+    c=S.cells[i];
+    pen=c.y-(landSurfaceY(c.x)-CR*0.9);
+    if(pen>worst) worst=pen;
+  }
+  if(worst>0){ shiftBody(0,-worst); if(S.vel.y>0) S.vel.y=0; }
+
+  if(!canCrossNow){
+    var lid=SURFACE_Y+CR*0.9;
+    worst=0;
+    for(i=0;i<n;i++){ pen=lid-S.cells[i].y; if(pen>worst) worst=pen; }
+    if(worst>0){ shiftBody(0,worst); if(S.vel.y<0) S.vel.y=0; }
+    worst=0;
+    for(i=0;i<n;i++){ pen=S.cells[i].x-(WATER_EDGE_X-CR); if(pen>worst) worst=pen; }
+    if(worst>0){ shiftBody(-worst,0); if(S.vel.x>0) S.vel.x=0; }
+  }
+  buildGrid();
 }
 
 /* ---- wild cells: unattached life drifting past, absorbed on contact ---- */
@@ -597,9 +614,13 @@ function updateWild(now,dt){
         w.vx+=(bx-w.x)*0.007; w.vy+=(by-w.y)*0.007;
       }
       if(best<hit2){
-        var nc=freshCell(w.x,w.y,w.t,now);
-        nc.life=jit(lifeMs(),0.2); nc.autoEye=S.autoEyeDefault;
-        S.cells.push(nc); wild.splice(i,1); S.absorbed=(S.absorbed||0)+1; dirty=true;
+        var spot=freeSpot(w.x,w.y);
+        if(spot){
+          var nc=freshCell(spot[0],spot[1],w.t,now);
+          nc.life=jit(lifeMs(),0.2); nc.autoEye=S.autoEyeDefault;
+          S.cells.push(nc); addToGrid(nc);
+          wild.splice(i,1); S.absorbed=(S.absorbed||0)+1; dirty=true;
+        }
         continue;
       }
     }
@@ -1091,13 +1112,12 @@ function rotateBody(da,h){
   var cs=Math.cos(da), sn=Math.sin(da);
   for(var i=0;i<S.cells.length;i++){
     var c=S.cells[i];
-    if(c===dragCell) continue;
     var rx=c.x-h.cx, ry=c.y-h.cy;
     c.x=h.cx + rx*cs - ry*sn;
     c.y=h.cy + rx*sn + ry*cs;
-    var vx=c.vx, vy=c.vy;
-    c.vx=vx*cs - vy*sn; c.vy=vx*sn + vy*cs;
   }
+  var vx=S.vel.x, vy=S.vel.y;
+  S.vel.x=vx*cs - vy*sn; S.vel.y=vx*sn + vy*cs;
 }
 function drive(q,h,dt){
   if(!h||!traitOn("control")) return;
@@ -1133,9 +1153,7 @@ function drive(q,h,dt){
   if(m<0.001) return;                       /* opposed ganglia cancel out */
   dx/=m; dy/=m;
   var sp=0.45*Math.min(3,Math.sqrt(n));     /* more ganglia push harder */
-  for(i=0;i<S.cells.length;i++){
-    S.cells[i].vx+=dx*sp; S.cells[i].vy+=dy*sp;
-  }
+  S.vel.x+=dx*sp; S.vel.y+=dy*sp;           /* one velocity for the whole body */
 }
 /* an arrow showing which way is forward, once there is anything to steer */
 function drawHeading(q,h){
@@ -1484,9 +1502,11 @@ document.addEventListener("keydown",function(e){
   }
   if(k==="x"){                                  /* drop a ganglion at the cursor */
     if(S.cells.length>=maxCells()) return;      /* the cap is the only limit */
-    var nc=freshCell(s2wx(hoverX),s2wy(hoverY),"brain",Date.now());
+    var sp=freeSpot(s2wx(hoverX),s2wy(hoverY));
+    if(!sp) return;
+    var nc=freshCell(sp[0],sp[1],"brain",Date.now());
     nc.life=jit(lifeMs(),0.2); nc.autoEye=S.autoEyeDefault;
-    S.cells.push(nc); save(); dirty=true;
+    S.cells.push(nc); addToGrid(nc); save(); dirty=true;
     return;
   }
 });
@@ -1535,7 +1555,7 @@ cv.addEventListener("pointermove",function(e){
   var dx=e.clientX-lastX, dy=e.clientY-lastY;
   if(Math.abs(dx)>3||Math.abs(dy)>3) pressMoved=true;
   lastX=e.clientX; lastY=e.clientY;
-  if(dragCell){ dragCell.x+=dx/S.view.z; dragCell.y+=dy/S.view.z; dragCell.vx=0; dragCell.vy=0; }
+  if(dragCell){ dragCell.x+=dx/S.view.z; dragCell.y+=dy/S.view.z; }   /* the only deformation */
   else if(panning){ S.view.x-=dx/S.view.z; S.view.y-=dy/S.view.z; }
 });
 function endPtr(){ if(holdTimer){clearTimeout(holdTimer);holdTimer=null;}
