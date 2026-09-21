@@ -1,0 +1,1873 @@
+<title>Cell to Cosmos</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400..700&family=Fraunces:SOFT,WONK,opsz,wght@0..100,0..1,9..144,400..700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#EDEAE2; --panel:#FBFAF6; --panel-2:#E2DED4; --sunken:#E7E3DA;
+  --ink:#1A1E23; --ink-2:#59636D; --ink-3:#8B96A0;
+  --rule:#D3CEC2; --rule-strong:#B9B2A2;
+  --era:#0E8F72; --era-soft:#0E8F7226;
+  --dish:#0A2422; --die:#B4553F;
+  --shadow:0 1px 2px rgba(26,30,35,.07), 0 10px 26px rgba(26,30,35,.05);
+  --shadow-lift:0 2px 4px rgba(26,30,35,.09), 0 16px 34px rgba(26,30,35,.10);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B0F14; --panel:#121820; --panel-2:#1A222C; --sunken:#0E141B;
+    --ink:#E8EEF4; --ink-2:#95A5B4; --ink-3:#61717F;
+    --rule:#222C38; --rule-strong:#35424F;
+    --era:#4FE0B8; --era-soft:#4FE0B82B;
+    --dish:#061A19; --die:#E0785E;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 26px rgba(0,0,0,.35);
+    --shadow-lift:0 2px 4px rgba(0,0,0,.5), 0 16px 34px rgba(0,0,0,.45);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B0F14; --panel:#121820; --panel-2:#1A222C; --sunken:#0E141B;
+  --ink:#E8EEF4; --ink-2:#95A5B4; --ink-3:#61717F;
+  --rule:#222C38; --rule-strong:#35424F;
+  --era:#4FE0B8; --era-soft:#4FE0B82B;
+  --dish:#061A19; --die:#E0785E;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 26px rgba(0,0,0,.35);
+  --shadow-lift:0 2px 4px rgba(0,0,0,.5), 0 16px 34px rgba(0,0,0,.45);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:'Archivo','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;
+  -webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:16px;padding-block:18px 44px}
+.k{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.14em;
+   text-transform:uppercase;color:var(--ink-3)}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+
+.hdr{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.mark{font-family:'Fraunces',Georgia,serif;font-variation-settings:'SOFT' 40,'WONK' 1,'opsz' 96;
+  font-weight:700;font-size:clamp(24px,4.6vw,34px);line-height:1;letter-spacing:-.015em;margin:0}
+.mark em{font-style:normal;color:var(--era)}
+.vtag{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-3)}
+.sp{flex:1 1 20px}
+.ghost{background:transparent;border:1px solid var(--rule);border-radius:999px;padding:6px 13px;
+  font-size:12.5px;font-weight:500;cursor:pointer;color:var(--ink-2);
+  transition:border-color .15s,color .15s}
+.ghost:hover{border-color:var(--rule-strong);color:var(--ink)}
+.ghost:focus-visible,.zb:focus-visible{outline:2px solid var(--era);outline-offset:2px}
+
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start}
+.col{display:flex;flex-direction:column;gap:13px;min-width:0}
+
+/* ---------- dish ---------- */
+.dish{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--rule-strong);
+  background:var(--dish);box-shadow:var(--shadow);aspect-ratio:16/11;max-width:100%;
+  touch-action:none;-webkit-tap-highlight-color:transparent}
+.dish canvas{display:block;width:100%;height:100%;cursor:grab}
+.dish canvas.grab{cursor:grabbing}
+.dish:focus-visible{outline:2px solid var(--era);outline-offset:3px}
+.hud{position:absolute;pointer-events:none;font-family:'IBM Plex Mono',ui-monospace,monospace;
+  font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:rgba(255,255,255,.62);
+  text-shadow:0 1px 4px rgba(0,0,0,.85);font-variant-numeric:tabular-nums}
+.hud.tl{left:12px;top:11px}
+.hud.bl{left:12px;bottom:11px;max-width:62%;line-height:1.7;letter-spacing:.06em}
+.hud.bl b{color:rgba(255,255,255,.88);font-weight:600}
+.zoomer{position:absolute;right:11px;top:10px;display:flex;align-items:center;gap:6px}
+.zb{width:28px;height:28px;border-radius:8px;border:1px solid rgba(255,255,255,.22);
+  background:rgba(8,14,18,.55);color:rgba(255,255,255,.85);cursor:pointer;font-size:15px;
+  line-height:1;display:grid;place-items:center;padding:0;backdrop-filter:blur(4px)}
+.zb:hover{background:rgba(8,14,18,.8);border-color:rgba(255,255,255,.4)}
+.zlvl{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;color:rgba(255,255,255,.62);
+  min-width:38px;text-align:center;font-variant-numeric:tabular-nums;text-shadow:0 1px 4px rgba(0,0,0,.85)}
+.reveal{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);pointer-events:none;
+  font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.12em;
+  text-transform:uppercase;color:#0B0F14;background:rgba(255,255,255,.9);padding:6px 13px;
+  border-radius:999px;white-space:nowrap;transition:opacity .4s}
+
+/* ---------- form card ---------- */
+.form{background:var(--panel);border:1px solid var(--rule);border-radius:14px;padding:15px 17px;
+  box-shadow:var(--shadow)}
+.form h2{font-family:'Fraunces',Georgia,serif;font-variation-settings:'SOFT' 30,'WONK' 1,'opsz' 72;
+  font-weight:600;font-size:clamp(21px,3.8vw,28px);line-height:1.14;margin:0 0 4px;letter-spacing:-.01em;
+  text-wrap:balance}
+.form .sub{margin:0 0 8px;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--era)}
+.form p{margin:0;color:var(--ink-2);font-size:14px;max-width:62ch}
+
+/* ---------- genome ---------- */
+.gen{background:var(--panel);border:1px solid var(--rule);border-radius:14px;padding:15px;
+  box-shadow:var(--shadow)}
+.gen > .k{display:block;margin-bottom:11px}
+.bars{display:grid;gap:9px;margin-bottom:14px}
+.bar{display:grid;grid-template-columns:78px 1fr 38px;gap:8px;align-items:center;font-size:12.5px}
+.bar .nm{color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.track{height:7px;border-radius:99px;background:var(--panel-2);overflow:hidden}
+.fill{height:100%;border-radius:99px;transition:width .35s ease}
+.bar .pc{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;text-align:right;
+  color:var(--ink-3);font-variant-numeric:tabular-nums}
+.tally{display:grid;gap:5px;border-top:1px solid var(--rule);padding-top:11px}
+.trow{display:grid;grid-template-columns:13px 1fr auto;gap:8px;align-items:center;font-size:12.5px}
+.sw{width:13px;height:13px;border-radius:4px;border:1px solid rgba(128,128,128,.4)}
+.trow .ct{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11.5px;color:var(--ink-3);
+  font-variant-numeric:tabular-nums}
+.trow.locked{opacity:.42}
+
+/* ---------- ledger ---------- */
+.ledger{background:var(--panel);border:1px solid var(--rule);border-radius:14px;padding:13px 17px;
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;box-shadow:var(--shadow)}
+.ring{flex:0 0 auto;position:relative;width:54px;height:54px}
+.ring svg{display:block;transform:rotate(-90deg)}
+.ring .tr{stroke:var(--rule)} .ring .fg{stroke:var(--era)}
+.ring b{position:absolute;inset:0;display:grid;place-items:center;
+  font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11.5px;font-weight:600;
+  font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.bank{flex:1 1 130px;min-width:0}
+.bank .big{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;
+  font-size:clamp(25px,5.5vw,34px);font-weight:600;line-height:1;letter-spacing:-.02em;display:block;
+  overflow-wrap:anywhere}
+.vital{text-align:right;flex:0 0 auto}
+.vital .v{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;
+  font-size:16px;font-weight:600;color:var(--era);display:block;line-height:1.25}
+.vital .v small{font-size:11px;color:var(--ink-3);font-weight:400}
+
+/* ---------- lab ---------- */
+.lab{display:grid;gap:9px}
+#ups{display:grid;gap:9px}
+.tgl{width:16px;height:16px;accent-color:var(--era);cursor:pointer;margin:0}
+.up.off{opacity:.5}
+.up .nm .sw{display:inline-block;vertical-align:-2px;width:11px;height:11px;margin-right:6px;border-radius:3px}
+.up .lvl{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;color:var(--ink-3);
+  font-variant-numeric:tabular-nums;font-weight:400}
+.buy.max{display:inline-block;min-width:84px;text-align:center;padding:7px 11px;
+  border:1px dashed var(--rule);background:transparent;color:var(--ink-3);cursor:default;opacity:.75}
+.bar.off{opacity:.4}
+.cbadge{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--bg);background:var(--era);padding:3px 10px;border-radius:999px;
+  font-weight:600}
+.lab > .k{display:block;margin-bottom:1px}
+.up{display:grid;grid-template-columns:auto 1fr auto;gap:11px;align-items:center;background:var(--panel);
+  border:1px solid var(--rule);border-radius:12px;padding:10px 12px 10px 13px;transition:border-color .18s,box-shadow .18s}
+.up.can{border-color:var(--era);box-shadow:0 0 0 3px var(--era-soft)}
+.up.done{opacity:.55}
+.up .nm{font-weight:600;font-size:14px}
+.up .ef{font-size:12.5px;color:var(--ink-2);margin-left:8px}
+.buy{border:1px solid var(--rule-strong);background:var(--panel-2);border-radius:9px;padding:7px 11px;
+  cursor:pointer;min-width:84px;text-align:center;font-family:'IBM Plex Mono',ui-monospace,monospace;
+  font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums;transition:background .15s,border-color .15s}
+.buy:hover:not(:disabled){border-color:var(--era);background:var(--era-soft)}
+.buy:disabled{opacity:.42;cursor:not-allowed}
+.buy:focus-visible{outline:2px solid var(--era);outline-offset:2px}
+
+/* ---------- context menu ---------- */
+.menu{position:fixed;z-index:50;width:222px;background:var(--panel);border:1px solid var(--rule-strong);
+  border-radius:13px;box-shadow:var(--shadow-lift);padding:11px;font-size:13px}
+.menu .hd{display:flex;align-items:center;gap:7px;margin-bottom:9px}
+.menu .hd .nm{font-weight:600;font-size:13.5px}
+.menu .hd .id{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;color:var(--ink-3);
+  margin-left:auto}
+.swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+.swb{aspect-ratio:1;border-radius:8px;border:2px solid transparent;cursor:pointer;padding:0;
+  position:relative;transition:transform .08s}
+.swb:hover:not(:disabled){transform:scale(1.09)}
+.swb.sel{border-color:var(--ink)}
+.swb.key{background:var(--panel-2);color:var(--ink);border:2px solid var(--rule);
+  font-family:'IBM Plex Mono',ui-monospace,monospace;font-weight:600;font-size:13px;
+  display:grid;place-items:center}
+.swb.key.sel{border-color:var(--era);color:var(--era)}
+.swb:disabled{opacity:.25;cursor:not-allowed}
+.swb:focus-visible{outline:2px solid var(--era);outline-offset:2px}
+.menu .row{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-top:1px solid var(--rule);
+  font-size:12.5px;color:var(--ink-2);line-height:1.35}
+.menu .row input{margin:2px 0 0;flex:0 0 auto;accent-color:var(--era)}
+.menu .row label{cursor:pointer}
+.mbtn{width:100%;border:1px solid var(--rule);background:var(--panel-2);border-radius:9px;padding:7px;
+  cursor:pointer;font-size:12.5px;margin-top:2px}
+.mbtn:hover{border-color:var(--rule-strong)}
+.mbtn.danger:hover{border-color:var(--die);color:var(--die)}
+.mbtn:focus-visible{outline:2px solid var(--era);outline-offset:2px}
+.note{font-size:11.5px;color:var(--ink-3);margin:7px 0 0;line-height:1.4}
+
+.foot{margin-top:22px;color:var(--ink-3);font-size:12.5px;line-height:1.7}
+.foot code{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11.5px;background:var(--sunken);
+  padding:1px 5px;border-radius:4px}
+
+@media (max-width:880px){
+  .grid{grid-template-columns:minmax(0,1fr)}
+  .dish{aspect-ratio:1/1}
+  .vital{text-align:left;flex:1 1 100%}
+}
+.craft{position:absolute;left:12px;right:12px;top:48px;bottom:12px;overflow-y:auto;
+  background:var(--panel);border:1px solid var(--rule-strong);border-radius:13px;
+  padding:13px;box-shadow:var(--shadow-lift);font-size:13px}
+.craft .hd2{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.craft .cx{margin-left:auto;border:1px solid var(--rule);background:var(--panel-2);
+  border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px;color:var(--ink-2)}
+.craft .cx:hover{border-color:var(--rule-strong);color:var(--ink)}
+.rbar{display:flex;gap:16px;flex-wrap:wrap;font-family:'IBM Plex Mono',ui-monospace,monospace;
+  font-size:12px;color:var(--ink-3);border-bottom:1px solid var(--rule);
+  padding-bottom:9px;margin-bottom:10px}
+.rbar b{color:var(--ink);font-variant-numeric:tabular-nums}
+.rec{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;
+  border:1px solid var(--rule);border-radius:11px;padding:9px 11px;margin-bottom:8px}
+.rec.can{border-color:var(--era);box-shadow:0 0 0 3px var(--era-soft)}
+.rec .rn{font-weight:600}
+.rec .rc{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11.5px;color:var(--ink-3)}
+.rec .re{font-size:12px;color:var(--ink-2);margin-top:2px;display:block}
+.pop{position:absolute;pointer-events:none;font-family:'IBM Plex Mono',ui-monospace,monospace;
+  font-size:13px;font-weight:600;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.9);
+  animation:rise 880ms cubic-bezier(.2,.7,.3,1) forwards}
+@keyframes rise{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-44px)}}
+@media (prefers-reduced-motion:reduce){ .fill{transition:none} .pop{animation-duration:1ms} }
+</style>
+
+<div class="wrap">
+  <header class="hdr">
+    <h1 class="mark">Cell to <em>Cosmos</em></h1>
+    <span class="vtag">v0.14 &middot; crafting</span>
+    <span class="cbadge" id="cbadge" hidden>Creative</span>
+    <span class="sp"></span>
+    <button class="ghost" id="theme" type="button">Theme</button>
+    <button class="ghost" id="reset" type="button">Reset</button>
+  </header>
+
+  <div class="grid">
+    <div class="col">
+      <div class="dish" id="dish">
+        <canvas id="cv"></canvas>
+        <span class="hud tl" id="hudPop">1 cell</span>
+        <div class="zoomer">
+          <button class="zb" id="zout" type="button" aria-label="Zoom out">&minus;</button>
+          <button class="zb" id="zctr" type="button" aria-label="Centre on organism">&#9678;</button>
+          <span class="zlvl" id="zlvl">1.00&times;</span>
+          <button class="zb" id="zin" type="button" aria-label="Zoom in">+</button>
+        </div>
+        <span class="hud bl" id="hudHint"></span>
+        <span class="reveal" id="reveal" hidden>Zoom out to see what you built</span>
+        <div class="craft" id="craft" hidden></div>
+      </div>
+
+      <div class="form">
+        <p class="sub" id="fsub">1 cell &middot; undifferentiated</p>
+        <h2 id="fname">Protocell</h2>
+        <p id="fdesc">One cell, dividing and dying on its own clock. Right-click it to paint it.</p>
+      </div>
+
+      <div class="ledger">
+        <div class="ring">
+          <svg width="54" height="54" viewBox="0 0 54 54" aria-hidden="true">
+            <circle class="tr" cx="27" cy="27" r="22" fill="none" stroke-width="4"></circle>
+            <circle class="fg" id="arc" cx="27" cy="27" r="22" fill="none" stroke-width="4"
+                    stroke-linecap="round" stroke-dasharray="138.23" stroke-dashoffset="138.23"></circle>
+          </svg>
+          <b id="cd">5.0</b>
+        </div>
+        <div class="bank">
+          <span class="k">Cell coins</span>
+          <span class="big" id="coins">0</span>
+        </div>
+        <div class="vital">
+          <span class="k">Per 5 s</span>
+          <span class="v" id="rate">+1</span>
+          <span class="v" id="churn"><small>&mdash;</small></span>
+        </div>
+      </div>
+
+      <div class="lab">
+        <span class="k">Lab</span>
+        <div id="ups"></div>
+      </div>
+    </div>
+
+    <aside class="col">
+      <div class="gen">
+        <span class="k">Genome &middot; read from the cells</span>
+        <div class="bars" id="bars"></div>
+        <div class="tally" id="tally"></div>
+      </div>
+    </aside>
+  </div>
+
+  <p class="foot">
+    <strong>Drag</strong> a cell to move it, drag the water to pan &middot;
+    <code>Ctrl</code> + <strong>scroll</strong> to zoom &middot;
+    <strong>Right-click</strong> a cell to paint it (long-press on touch).<br>
+    Once <strong>Cell Multiplication</strong> is unlocked, cells divide about every 7 s and die at about 30 s — each leaves four behind, so the colony grows quickly. Before that your cell is immortal. Daughters are always blank white — every colour on your body is one you painted. The organism is rigid: gravity, thrust and collisions move the whole body together, so it cannot be squashed or slump out of shape. Dragging a cell is the only thing that changes its form. Unattached cells drift past keeping their own colour; steer into one to absorb it. Traits are free to switch on and off — only levelling them costs. Cell multiplication can be switched off at any time — paused, nothing divides and nothing dies. Zoom out far enough to find the sea/air barrier and the beach east of it — crossing it needs at least 2 myocytes, 2 osteocytes and 2 pneumocytes, which gets you onto the beach — staying up in open air needs 5 pterocytes, or you simply fall. Paint a <strong>Ganglion</strong> and ctrl+right-click it to bind W, A, S or D; Q and E turn the organism and W A S D drive it relative to that heading — the cyan arrow shows which way is forward. More bound ganglia push harder. <code>Z</code> deletes the cell under the cursor and <code>X</code> drops a ganglion there. With <strong>8 ganglia</strong> press <code>F</code> for crafting; with two ambulocytes as well you gather rocks, sticks and wood by touching them, and can build up to a rocket. Tissue capacity is an endless purchase whose step grows every time. Press <code>C</code> for creative mode: every trait fully levelled.
+  </p>
+</div>
+
+<div class="menu" id="menu" hidden></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   1. CELL TYPES — colour IS function
+   ============================================================ */
+var TYPES=[
+ {id:"stem",   nm:"Stem",         hex:"#F0F4F1", trait:null,        cost:0},
+ {id:"photo",  nm:"Photocyte",    hex:"#5AC169", trait:"energy",    cost:0},
+ {id:"eye",    nm:"Ocellus",      hex:"#15181C", trait:"vision",    cost:0},
+ {id:"muscle", nm:"Myocyte",      hex:"#CE5247", trait:"motility",  cost:120},
+ {id:"bone",   nm:"Osteocyte",    hex:"#B49B78", trait:"structure", cost:300},
+ {id:"nerve",  nm:"Neurocyte",    hex:"#EFE3CB", trait:"cognition", cost:700},
+ {id:"gill",   nm:"Branchiocyte", hex:"#4C9FD4", trait:"aquatic",   cost:1400},
+ {id:"lung",   nm:"Pneumocyte",   hex:"#E79AA6", trait:"air",       cost:3000},
+ {id:"limb",   nm:"Ambulocyte",   hex:"#8E6FC6", trait:"walking",   cost:6500},
+ {id:"warm",   nm:"Thermocyte",   hex:"#E8823C", trait:"endothermy",cost:14000},
+ {id:"wing",   nm:"Pterocyte",    hex:"#CFDDEA", trait:"flight",    cost:30000},
+ {id:"venom",  nm:"Toxocyte",     hex:"#D4C43F", trait:"venom",     cost:60000},
+ {id:"display",nm:"Chromatocyte", hex:"#E06BA8", trait:"display",   cost:110000},
+ {id:"brain",  nm:"Ganglion",     hex:"#7BE0FF", trait:"control",   cost:0},
+ /* black paint with the eye reflex switched off — pigment, no function */
+ {id:"pigment",nm:"Melanocyte",   hex:"#15181C", trait:null,        cost:0, hidden:true}
+];
+var T={}; TYPES.forEach(function(t){ T[t.id]=t; });
+
+var TRAITS=[
+ {id:"energy",    nm:"Energy",     hex:"#5AC169", need:"photo"},
+ {id:"vision",    nm:"Vision",     hex:"#7C8894", need:"eye"},
+ {id:"motility",  nm:"Motility",   hex:"#CE5247", need:"muscle"},
+ {id:"structure", nm:"Structure",  hex:"#B49B78", need:"bone"},
+ {id:"cognition", nm:"Cognition",  hex:"#C9B78E", need:"nerve"},
+ {id:"aquatic",   nm:"Gills",      hex:"#4C9FD4", need:"gill"},
+ {id:"air",       nm:"Lungs",      hex:"#E79AA6", need:"lung"},
+ {id:"walking",   nm:"Limbs",      hex:"#8E6FC6", need:"limb"},
+ {id:"endothermy",nm:"Warm blood", hex:"#E8823C", need:"warm"},
+ {id:"flight",    nm:"Wings",      hex:"#A9C4DC", need:"wing"},
+ {id:"venom",     nm:"Venom",      hex:"#D4C43F", need:"venom"},
+ {id:"display",   nm:"Display",    hex:"#E06BA8", need:"display"},
+ {id:"control",   nm:"Control",    hex:"#7BE0FF", need:"brain"}
+];
+var ADJ={control:"Steered",energy:"Verdant",vision:"Eyed",motility:"Swift",structure:"Armoured",cognition:"Sapient",
+ aquatic:"Pelagic",air:"Air-breathing",walking:"Striding",endothermy:"Warm-blooded",flight:"Winged",
+ venom:"Venomous",display:"Gaudy"};
+var NOUN={control:"Pilot",energy:"Bloom",vision:"Watcher",motility:"Runner",structure:"Bulwark",cognition:"Thinker",
+ aquatic:"Swimmer",air:"Breather",walking:"Walker",endothermy:"Furnace",flight:"Flier",
+ venom:"Stinger",display:"Herald"};
+var FLAVOR={
+ control:"Ganglia articulate the body \u2014 each one drives the cells beyond it.",
+ energy:"Photocytes carry the metabolism — this body feeds itself on light.",
+ vision:"Ocelli sit close enough together to resolve direction, not just brightness.",
+ motility:"Myocytes are dense enough to push the whole mass through water.",
+ structure:"Osteocytes hold a shape that would otherwise slump under itself.",
+ cognition:"Neurocytes weave a net that will outlive every cell currently in it.",
+ aquatic:"Branchiocytes pull dissolved oxygen straight out of the water.",
+ air:"Pneumocytes breathe atmosphere. The water is no longer required.",
+ walking:"Ambulocytes bear weight against gravity — this body can cross dry ground.",
+ endothermy:"Thermocytes burn energy to hold temperature. Night and winter stop mattering.",
+ flight:"Pterocytes generate lift. The ground is now optional.",
+ venom:"Toxocytes load the spines. Very little wants to eat this any more.",
+ display:"Chromatocytes signal to others of its kind. This body is talking."
+};
+/* where the body lives is read off the genome, not chosen */
+function habitat(tr){
+  if(tr.flight  > 0.10) return {id:"sky",   nm:"Open air"};
+  if(tr.walking > 0.12 || tr.air > 0.14) return {id:"land", nm:"Shoreline"};
+  return {id:"water", nm:"Water column"};
+}
+
+/* ============================================================
+   2. LIFECYCLE CONSTANTS — R0 = 4, which is why it cannot die out
+   ============================================================ */
+var CR      = 13;      /* cell radius, world units */
+var LIFE_MS = 30000;   /* a cell dies at ~30 s */
+var DIV_MS  =  7000;   /* divides at ~7 s → four children per lifetime, so R0 = 4 */
+var TICK_MS = 5000;    /* the coin heartbeat, unchanged from v0.1 */
+var REVEAL_CELLS = 24; /* enough cells for a body to read at low zoom */
+var REVEAL_ZOOM  = 0.62;
+var OFFLINE_CAP  = 8*3600/5;
+var MITOSIS_COST = 50;   /* the one number carried over from v0.1 */
+
+function jit(base,spread){ return base*(1-spread+Math.random()*spread*2); }
+
+/* ============================================================
+   3. STATE
+   ============================================================ */
+var KEY="cell-to-cosmos.v2";
+var S, nextId=1;
+
+function freshCell(x,y,type,now){
+  return {id:nextId++, x:x, y:y, t:type||"stem", autoEye:true,
+          born:now, life:jit(LIFE_MS,0.2), nextDiv:now+jit(DIV_MS,0.15), key:null};
+}
+function freshState(){
+  var now=Date.now();
+  return {
+    coins:0, total:0, cells:[freshCell(0,0,"stem",now)],
+    view:{x:0,y:0,z:1}, unlocked:{}, lv:{cap:0,life:0,div:0},
+    enabled:{}, tlv:{}, creative:false, mitoOn:true, heading:0, vel:{x:0,y:0},
+    res:{rock:0,stick:0,wood:0}, taken:{}, craft:{}, launched:false, craftOpen:false,
+    autoEyeDefault:true, nextTick:now+TICK_MS, born:now, absorbed:0,
+    births:0, deaths:0, seenReveal:false
+  };
+}
+/* Traits are free to switch on and off; levelling them is what costs. */
+var TBASE={energy:60,vision:80,motility:100,structure:120,cognition:150,aquatic:140,
+           air:200,walking:240,endothermy:300,flight:400,venom:500,display:600,control:120};
+var TDESC={energy:"photocytes feed the colony",vision:"ocelli resolve the world",
+  motility:"myocytes drive the fins",structure:"osteocytes hold the shape",
+  cognition:"neurocytes multiply income",aquatic:"branchiocytes take oxygen from water",
+  air:"pneumocytes breathe atmosphere",walking:"ambulocytes bear weight on land",
+  endothermy:"thermocytes hold temperature",flight:"pterocytes generate lift",
+  venom:"toxocytes load the spines",display:"chromatocytes signal",
+  control:"ganglia steer the body with W A S D"};
+var MAXTL=10, CREATIVE_LV=8;
+
+function traitOn(id){ return S.enabled[id]!==false; }   /* toggles work in creative too */
+function typeOn(tid){ var tr=T[tid].trait; return !tr || traitOn(tr); }
+function tlv(id){ return S.creative ? MAXTL : ((S.tlv&&S.tlv[id])|0); }
+function potency(id){ return 1 + 0.35*tlv(id); }
+function tCost(id){ return Math.ceil(TBASE[id]*Math.pow(1.6,tlv(id))); }
+function mitosisBought(){ return S.creative || !!S.unlocked.mitosis; }
+function mitosisOn(){ return mitosisBought() && S.mitoOn!==false; }
+function lvOf(k){ return S.creative ? CREATIVE_LV : S.lv[k]; }
+function capStep(lv){ return 25+15*lv; }   /* each purchase adds more than the last */
+function maxCells(){
+  var n=40;
+  for(var i=0;i<S.lv.cap;i++) n+=capStep(i);
+  n += 50*(S.craft.cart||0);
+  return S.creative ? Math.max(400,n) : n;
+}
+function lifeMs(){ return LIFE_MS*(1+0.15*lvOf("life")); }
+function divMs(){ return DIV_MS*Math.pow(0.88,lvOf("div")); }
+
+function save(){
+  try{
+    localStorage.setItem(KEY, JSON.stringify({
+      coins:S.coins,total:S.total,view:S.view,unlocked:S.unlocked,lv:S.lv,
+      enabled:S.enabled,tlv:S.tlv,creative:!!S.creative,mitoOn:S.mitoOn!==false,
+      heading:S.heading||0,res:S.res,taken:S.taken,craft:S.craft,launched:!!S.launched,
+      autoEyeDefault:S.autoEyeDefault,born:S.born,births:S.births,deaths:S.deaths,
+      seenReveal:S.seenReveal,nextTick:S.nextTick,absorbed:S.absorbed||0,
+      cells:S.cells.map(function(c){
+        return {x:Math.round(c.x*10)/10,y:Math.round(c.y*10)/10,t:c.t,a:c.autoEye?1:0,
+                k:c.key||"",r:Math.round((Date.now()-c.born)/c.life*100)/100};
+      })
+    }));
+  }catch(e){}
+}
+function load(){
+  var raw=null; try{ raw=localStorage.getItem(KEY); }catch(e){}
+  if(!raw) return null;
+  try{ return JSON.parse(raw); }catch(e){ return null; }
+}
+/* Individuals do not survive a reload; the lineage does. Rebase every clock
+   to now, preserving each cell's position, colour and how far through life
+   it had got. */
+function adopt(d){
+  if(!d || !Array.isArray(d.cells) || !d.cells.length) return false;
+  var now=Date.now();
+  S=freshState();
+  ["coins","total","births","deaths","absorbed"].forEach(function(k){
+    if(typeof d[k]==="number" && isFinite(d[k])) S[k]=d[k];
+  });
+  if(d.view && isFinite(d.view.x)) S.view={x:d.view.x,y:d.view.y,z:Math.min(3,Math.max(0.18,d.view.z||1))};
+  if(d.unlocked && typeof d.unlocked==="object") S.unlocked=d.unlocked;
+  if(d.lv && typeof d.lv==="object"){
+    S.lv.cap=d.lv.cap|0; S.lv.life=d.lv.life|0; S.lv.div=d.lv.div|0;
+  }
+  if(d.enabled && typeof d.enabled==="object") S.enabled=d.enabled;
+  if(d.tlv && typeof d.tlv==="object") S.tlv=d.tlv;
+  S.creative=!!d.creative;
+  S.vel={x:0,y:0};
+  if(d.res && typeof d.res==="object") S.res=d.res;
+  if(d.taken && typeof d.taken==="object") S.taken=d.taken;
+  if(d.craft && typeof d.craft==="object") S.craft=d.craft;
+  S.launched=!!d.launched;
+  S.mitoOn = d.mitoOn!==false;
+  if(typeof d.heading==="number" && isFinite(d.heading)) S.heading=d.heading;
+  if(typeof d.autoEyeDefault==="boolean") S.autoEyeDefault=d.autoEyeDefault;
+  if(typeof d.seenReveal==="boolean") S.seenReveal=d.seenReveal;
+  if(typeof d.born==="number") S.born=d.born;
+  S.cells=d.cells.slice(0,400).map(function(c){
+    var cell=freshCell(+c.x||0, +c.y||0, T[c.t]?c.t:"stem", now);
+    cell.autoEye = c.a!==0;
+    if(c.k) cell.key=c.k;
+    var r=Math.min(0.92,Math.max(0,+c.r||0));
+    cell.born = now - r*cell.life;            /* resume mid-life */
+    return cell;
+  });
+  if(!S.cells.length) S.cells=[freshCell(0,0,"stem",now)];
+  S.nextTick = (typeof d.nextTick==="number") ? d.nextTick : now+TICK_MS;
+  return true;
+}
+
+/* ============================================================
+   4. THE CYCLE — deaths, then divisions. Three guarantees keep it alive:
+      (a) a hard floor of one cell,
+      (b) ageing suspends entirely below three cells,
+      (c) lifespans are jittered, so cohorts never die in lockstep.
+   ============================================================ */
+function lifecycle(now){
+  var i,c;
+  /* before mitosis is unlocked the cell is immortal and does not divide */
+  if(!mitosisOn()){
+    for(i=0;i<S.cells.length;i++){ c=S.cells[i]; c.born=now-500; c.nextDiv=now+divMs(); }
+    return;
+  }
+  if(S.cells.length>2){
+    for(i=S.cells.length-1;i>=0;i--){
+      if(S.cells.length<=1) break;                 /* (a) */
+      c=S.cells[i];
+      if(now-c.born >= c.life){ S.cells.splice(i,1); S.deaths++; }
+    }
+  }                                                 /* (b) */
+  var cap=maxCells(), dm=divMs(), n=S.cells.length;
+  for(i=0;i<n;i++){
+    c=S.cells[i];
+    if(now < c.nextDiv) continue;
+    c.nextDiv = now + jit(dm,0.15);
+    if(S.cells.length >= cap) continue;
+    bud(c,now);
+  }
+}
+function bud(p,now){
+  var spot=freeSpot(p.x,p.y);
+  if(!spot) return;                        /* no room: skip rather than overlap */
+  var c=freshCell(spot[0],spot[1],"stem",now);
+  c.life=jit(lifeMs(),0.2);
+  c.autoEye=p.autoEye;                     /* the reflex is still heritable */
+  S.cells.push(c); addToGrid(c); S.births++;
+}
+
+/* ---- The organism is a RIGID body.
+
+   Gravity, thrust and collision all act on the body as a whole: every cell is
+   translated or rotated by exactly the same amount, so the shape cannot change.
+   The single thing that deforms it is dragging a cell, which is the sculpting
+   tool. Cells therefore never push on each other at all — new cells are placed
+   into a free slot instead of being shoved into one. ---- */
+var GRID={}, BIN=CR*2.7, canCrossNow=false, canFlyNow=false;
+function addToGrid(c){
+  var k=((c.x/BIN)|0)+","+((c.y/BIN)|0);
+  (GRID[k]||(GRID[k]=[])).push(c);
+}
+function buildGrid(){
+  GRID={};
+  for(var i=0;i<S.cells.length;i++) addToGrid(S.cells[i]);
+}
+function overlaps(x,y){
+  var m2=(CR*1.9)*(CR*1.9), gx=(x/BIN)|0, gy=(y/BIN)|0;
+  for(var ox=-1;ox<=1;ox++) for(var oy=-1;oy<=1;oy++){
+    var b=GRID[(gx+ox)+","+(gy+oy)]; if(!b) continue;
+    for(var j=0;j<b.length;j++){
+      var dx=b[j].x-x, dy=b[j].y-y;
+      if(dx*dx+dy*dy<m2) return true;
+    }
+  }
+  return false;
+}
+/* the nearest spot to (x,y) that touches nothing */
+function freeSpot(x,y){
+  if(!overlaps(x,y)) return [x,y];
+  for(var r=CR*2.02; r<=CR*10; r+=CR*0.6){
+    for(var k=0;k<18;k++){
+      var a=k/18*6.283185+r*0.7;
+      var px=x+Math.cos(a)*r, py=y+Math.sin(a)*r;
+      if(!overlaps(px,py)) return [px,py];
+    }
+  }
+  return null;
+}
+function shiftBody(dx,dy){
+  for(var i=0;i<S.cells.length;i++){ S.cells[i].x+=dx; S.cells[i].y+=dy; }
+}
+function relax(dt){
+  var n=S.cells.length, i, c, pen, worst;
+  if(!n) return;
+
+  /* gravity acts on the body, and only while it is entirely clear of the sea */
+  var maxY=-1e9;
+  for(i=0;i<n;i++){ if(S.cells[i].y>maxY) maxY=S.cells[i].y; }
+  if(canCrossNow && !canFlyNow && maxY<SURFACE_Y) S.vel.y += 0.35;
+
+  if(S.vel.x||S.vel.y) shiftBody(S.vel.x,S.vel.y);
+  var damp=Math.pow(0.86,dt*60);
+  S.vel.x*=damp; S.vel.y*=damp;
+
+  /* collisions resolve by pushing the WHOLE body out of its deepest
+     penetration, never by moving one cell relative to another */
+  worst=0;
+  for(i=0;i<n;i++){
+    c=S.cells[i];
+    pen=c.y-(landSurfaceY(c.x)-CR*0.9);
+    if(pen>worst) worst=pen;
+  }
+  if(worst>0){ shiftBody(0,-worst); if(S.vel.y>0) S.vel.y=0; }
+
+  if(!canCrossNow){
+    var lid=SURFACE_Y+CR*0.9;
+    worst=0;
+    for(i=0;i<n;i++){ pen=lid-S.cells[i].y; if(pen>worst) worst=pen; }
+    if(worst>0){ shiftBody(0,worst); if(S.vel.y<0) S.vel.y=0; }
+    worst=0;
+    for(i=0;i<n;i++){ pen=S.cells[i].x-(WATER_EDGE_X-CR); if(pen>worst) worst=pen; }
+    if(worst>0){ shiftBody(-worst,0); if(S.vel.x>0) S.vel.x=0; }
+  }
+  buildGrid();
+}
+
+/* ---- wild cells: unattached life drifting past, absorbed on contact ---- */
+var WILD_MAX=14, WILD_MS=3800, wild=[], wildAt=0;
+function wildPool(){
+  var pool=["stem","stem","stem","photo","photo"];
+  TYPES.forEach(function(t){ if(!t.hidden && t.cost>0 && typeOn(t.id)) pool.push(t.id); });
+  return pool;
+}
+function spawnWild(){
+  var h=hull, cx=h?h.cx:0, cy=h?h.cy:0, r=h?h.maxR:60;
+  var a=Math.random()*6.283, d=r*(1.5+Math.random()*2.4)+CR*7, pool=wildPool();
+  wild.push({x:cx+Math.cos(a)*d, y:cy+Math.sin(a)*d, t:pool[(Math.random()*pool.length)|0],
+             vx:(Math.random()-0.5)*0.22, vy:(Math.random()-0.5)*0.22, ph:Math.random()*6.283});
+}
+function updateWild(now,dt){
+  if(wild.length<WILD_MAX && now-wildAt>WILD_MS){ wildAt=now; spawnWild(); }
+  var cap=maxCells(), hitR=CR*2.4, hit2=hitR*hitR, snap2=(CR*3.4)*(CR*3.4), h=hull;
+  for(var i=wild.length-1;i>=0;i--){
+    var w=wild[i];
+    w.ph+=dt*0.7;
+    w.x+=w.vx+Math.cos(w.ph)*0.16;
+    w.y+=w.vy+Math.sin(w.ph*0.8)*0.16;
+    w.vx*=0.985; w.vy*=0.985;
+    if(S.cells.length<cap){
+      var best=1e18, bx=0, by=0;
+      for(var j=0;j<S.cells.length;j++){
+        var c=S.cells[j], dx=c.x-w.x, dy=c.y-w.y, dd=dx*dx+dy*dy;
+        if(dd<best){ best=dd; bx=c.x; by=c.y; }
+      }
+      if(best>hit2 && best<snap2){        /* close enough to be drawn in */
+        w.vx+=(bx-w.x)*0.007; w.vy+=(by-w.y)*0.007;
+      }
+      if(best<hit2){
+        var spot=freeSpot(w.x,w.y);
+        if(spot){
+          var nc=freshCell(spot[0],spot[1],w.t,now);
+          nc.life=jit(lifeMs(),0.2); nc.autoEye=S.autoEyeDefault;
+          S.cells.push(nc); addToGrid(nc);
+          wild.splice(i,1); S.absorbed=(S.absorbed||0)+1; dirty=true;
+        }
+        continue;
+      }
+    }
+    if(h){
+      var ex=w.x-h.cx, ey=w.y-h.cy, lim=h.maxR*7+900;
+      if(ex*ex+ey*ey>lim*lim) wild.splice(i,1);
+    }
+  }
+}
+function drawWild(alpha){
+  if(alpha<=0.01||!wild.length) return;
+  var Z=S.view.z, r0=CR*Z*0.8, pad=r0+12;
+  for(var i=0;i<wild.length;i++){
+    var w=wild[i], sx=w2sx(w.x), sy=w2sy(w.y);
+    if(sx<-pad||sx>W+pad||sy<-pad||sy>H+pad) continue;
+    var pl=0.82+0.18*Math.sin(TT*1.6+w.ph), r=r0*pl;
+    ctx.globalAlpha=alpha*0.5;
+    ctx.fillStyle=rgba(RGB[w.t],1);
+    ctx.beginPath(); ctx.arc(sx,sy,r,0,6.283); ctx.fill();
+    if(r>3){
+      ctx.globalAlpha=alpha*0.3;
+      ctx.strokeStyle="rgba(230,246,255,.9)"; ctx.lineWidth=Math.max(1,r*0.12);
+      ctx.beginPath(); ctx.arc(sx,sy,r*1.4,0,6.283); ctx.stroke();
+    }
+  }
+  ctx.globalAlpha=1;
+}
+
+/* ============================================================
+   5. READING THE GENOME OFF THE CELLS
+   ============================================================ */
+function census(){
+  var out={n:S.cells.length, by:{}, traits:{}, eyes:[]};
+  TYPES.forEach(function(t){ out.by[t.id]=0; });
+  TRAITS.forEach(function(t){ out.traits[t.id]=0; });
+  for(var i=0;i<S.cells.length;i++){
+    var c=S.cells[i], t=T[c.t];
+    out.by[c.t]++;
+    if(t.trait && traitOn(t.trait)) out.traits[t.trait]++;
+    if(c.t==="eye" && traitOn("vision")) out.eyes.push(c);
+  }
+  var n=out.n||1;
+  /* a switched-off trait contributes nothing; levelling scales what is left */
+  TRAITS.forEach(function(t){ out.traits[t.id] = out.traits[t.id]/n*potency(t.id); });
+  return out;
+}
+function classify(q){
+  var n=q.n;
+  if(n<3) return {sub:n+" cell"+(n===1?"":"s")+" · undifferentiated", name:"Protocell",
+    desc: !mitosisBought()
+      ? "One cell, immortal and not yet dividing. Tap it to feed it; "+MITOSIS_COST+" coins starts the cycle."
+      : mitosisOn()
+        ? "One lineage, dividing on its own clock and dying on another. Right-click a cell to paint it."
+        : "Multiplication is paused \u2014 nothing divides and nothing dies. Switch it back on in the lab."};
+  if(n<10) return {sub:n+" cells · pre-tissue", name:"Cell Cluster",
+    desc:"Enough cells to hold a shape between divisions, not yet enough to specialise."};
+  var ranked=TRAITS.map(function(t){ return [t.id,q.traits[t.id]]; })
+                   .sort(function(a,b){ return b[1]-a[1]; });
+  if(ranked[0][1]<0.12) return {sub:n+" cells · no dominant lineage", name:"Undifferentiated Mass",
+    desc:"Mostly stem cells. Paint a lineage and its daughters will carry the colour outward."};
+  var a=ranked[0][0], b=ranked[1][1]>0.09 ? ranked[1][0] : ranked[0][0];
+  return {sub:n+" cells · "+Math.round(ranked[0][1]*100)+"% "+a, name:ADJ[a]+" "+NOUN[b],
+          desc:FLAVOR[a]};
+}
+
+/* ============================================================
+   6. CANVAS + CAMERA
+   ============================================================ */
+var dish=document.getElementById("dish"), cv=document.getElementById("cv"), ctx=cv.getContext("2d");
+var W=0,H=0,DPR=1,TT=0,dragCell=null;
+var REDUCED=window.matchMedia&&window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+
+function sizeCanvas(){
+  var r=dish.getBoundingClientRect(); if(r.width<2) return;
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  W=r.width; H=r.height;
+  cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+function w2sx(x){ return (x-S.view.x)*S.view.z + W/2; }
+function w2sy(y){ return (y-S.view.y)*S.view.z + H/2; }
+function s2wx(x){ return (x-W/2)/S.view.z + S.view.x; }
+function s2wy(y){ return (y-H/2)/S.view.z + S.view.y; }
+function clamp(v,a,b){ return v<a?a:v>b?b:v; }
+function hex2rgb(h){ return [parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]; }
+function rgba(c,a){ return "rgba("+(c[0]|0)+","+(c[1]|0)+","+(c[2]|0)+","+a+")"; }
+function shade(c,f){ return [clamp(c[0]*f,0,255),clamp(c[1]*f,0,255),clamp(c[2]*f,0,255)]; }
+var RGB={}, OFFRGB={};
+TYPES.forEach(function(t){
+  var c=hex2rgb(t.hex); RGB[t.id]=c;
+  var g=(c[0]+c[1]+c[2])/3;
+  OFFRGB[t.id]=[g*0.5+44,g*0.5+48,g*0.5+54];   /* switched off = inert grey */
+});
+
+/* ============================================================
+   7. BACKGROUND — three habitats, composited by genome weight
+   ============================================================ */
+function lin(x0,y0,x1,y1,st){ var g=ctx.createLinearGradient(x0,y0,x1,y1);
+  for(var i=0;i<st.length;i++) g.addColorStop(st[i][0],st[i][1]); return g; }
+function bgWater(){
+  ctx.fillStyle=lin(0,0,0,H,[[0,"#0C5A7A"],[0.42,"#073B58"],[1,"#02161F"]]); ctx.fillRect(0,0,W,H);
+  var sh=REDUCED?0:1;
+  for(var i=0;i<6;i++){
+    var x=W*(0.06+i*0.17)+Math.sin(TT*0.22+i)*W*0.03*sh;
+    ctx.fillStyle="rgba(190,238,255,"+(0.030+0.018*Math.sin(TT*0.55+i*1.3)*sh).toFixed(3)+")";
+    ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x+W*0.05,0); ctx.lineTo(x+W*0.14,H); ctx.lineTo(x-W*0.03,H);
+    ctx.closePath(); ctx.fill();
+  }
+}
+function rnd(i){ var x=Math.sin(i*127.1+311.7)*43758.5453; return x-Math.floor(x); }
+/* ============================================================
+   LAND — real geography, spawned once lungs AND limbs exist.
+   Placed a few body-lengths away: visible when zoomed out,
+   far enough that crossing to it is a deliberate trip.
+   ============================================================ */
+/* The world is fixed and always there: air above the waterline, sea below,
+   and a beach rising out of the water to the east. Zoom out to find it. */
+var SURFACE_Y = -900;              /* the barrier between sea and air */
+var SHORE_X   = 1100;
+var SEABED_Y  =  620;
+var LAND_TOP  = SURFACE_Y - 300;
+function landSurfaceY(x){
+  var t=(x-SHORE_X)/900; t = t<0?0 : t>1?1 : t;
+  var sm=t*t*(3-2*t);
+  return SEABED_Y + sm*(LAND_TOP-SEABED_Y);
+}
+/* where the beach breaks the surface — the wall for a body that cannot cross */
+var WATER_EDGE_X=(function(){
+  var lo=SHORE_X, hi=SHORE_X+900;
+  for(var i=0;i<40;i++){ var m=(lo+hi)/2; if(landSurfaceY(m)>SURFACE_Y) lo=m; else hi=m; }
+  return lo;
+})();
+/* Leaving the water and staying up in the air are different problems.
+   Cells of a switched-off trait are inert, so they do not count. */
+function canCross(q){
+  return traitOn("motility")  && q.by.muscle>=2
+      && traitOn("structure") && q.by.bone>=2
+      && traitOn("air")       && q.by.lung>=2;
+}
+function canFly(q){ return S.launched || (traitOn("flight") && q.by.wing>=5); }
+function isOnLand(h){
+  if(!h) return false;
+  /* in the air AND over ground that is itself above the waterline — floating
+     above open ocean is not "on land" */
+  return h.cy < SURFACE_Y && landSurfaceY(h.cx) < SURFACE_Y;
+}
+
+/* ============================================================
+   RESOURCES AND CRAFTING
+
+   Eight ganglia is the threshold for a body organised enough to make
+   things. Gathering also wants limbs, because picking a rock up off a
+   beach is a limb problem. Nodes are generated deterministically from
+   their index, so the world is the same on every load, and regrow on a
+   timer rather than being consumed for good.
+   ============================================================ */
+var NODE_N=26, REGROW_MS=40000, RES_REACH=CR*3.0;
+var RES_KIND=["rock","stick","wood"];
+function node(i){
+  var x=WATER_EDGE_X+140+rnd(i*7.31)*2800;
+  return {x:x, y:landSurfaceY(x)-CR*0.8, k:RES_KIND[(rnd(i*3.17)*3)|0]};
+}
+function nodeReady(i,now){
+  var t=S.taken[i];
+  return !t || (now-t)>REGROW_MS;
+}
+function ganglia(q){ return traitOn("control") ? (q.by.brain||0) : 0; }
+function canCraft(q){ return ganglia(q)>=8; }
+function canHarvest(q){ return canCraft(q) && traitOn("walking") && q.by.limb>=2; }
+
+function harvest(q,h,now){
+  if(!h||!canHarvest(q)) return;
+  var gain=1+(S.craft.axe?1:0), far=h.maxR+RES_REACH+CR*2, far2=far*far;
+  for(var i=0;i<NODE_N;i++){
+    if(!nodeReady(i,now)) continue;
+    var n=node(i), dx=n.x-h.cx, dy=n.y-h.cy;
+    if(dx*dx+dy*dy>far2) continue;                 /* nowhere near the body */
+    for(var j=0;j<S.cells.length;j++){
+      var c=S.cells[j], ex=c.x-n.x, ey=c.y-n.y;
+      if(ex*ex+ey*ey<RES_REACH*RES_REACH){
+        S.res[n.k]=(S.res[n.k]||0)+gain;
+        S.taken[i]=now; dirty=true;
+        break;
+      }
+    }
+  }
+}
+function drawSpace(){
+  if(!S.launched) return;
+  var yLow=w2sy(-1800), yHigh=w2sy(-5200);
+  if(yLow<=0) return;
+  var g=ctx.createLinearGradient(0,yHigh,0,yLow);
+  g.addColorStop(0,"rgba(3,5,14,1)");
+  g.addColorStop(1,"rgba(3,5,14,0)");
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,Math.min(H,yLow));
+  var band=Math.min(H,yLow);
+  for(var i=0;i<90;i++){
+    var sx=rnd(i+500)*W, sy=rnd(i+900)*band;
+    var a=(1-sy/Math.max(1,band))*0.85;
+    if(a<=0.03) continue;
+    ctx.fillStyle="rgba(255,255,255,"+a.toFixed(3)+")";
+    ctx.fillRect(sx,sy,1.4,1.4);
+  }
+}
+function drawNodes(now){
+  var Z=S.view.z, s=Math.max(5,26*Z);
+  for(var i=0;i<NODE_N;i++){
+    if(!nodeReady(i,now)) continue;
+    var n=node(i), sx=w2sx(n.x), sy=w2sy(n.y);
+    if(sx<-60||sx>W+60||sy<-80||sy>H+60) continue;
+    if(n.k==="rock"){
+      ctx.fillStyle="#8D8F93";
+      ctx.beginPath();
+      ctx.moveTo(sx-s*0.5,sy); ctx.lineTo(sx-s*0.32,sy-s*0.46);
+      ctx.lineTo(sx+s*0.18,sy-s*0.52); ctx.lineTo(sx+s*0.5,sy-s*0.1);
+      ctx.lineTo(sx+s*0.34,sy); ctx.closePath(); ctx.fill();
+      ctx.fillStyle="rgba(255,255,255,.18)";
+      ctx.beginPath(); ctx.moveTo(sx-s*0.3,sy-s*0.42); ctx.lineTo(sx+s*0.1,sy-s*0.48);
+      ctx.lineTo(sx-s*0.05,sy-s*0.2); ctx.closePath(); ctx.fill();
+    }else if(n.k==="stick"){
+      ctx.strokeStyle="#9A7A4E"; ctx.lineWidth=Math.max(1.5,s*0.11); ctx.lineCap="round";
+      ctx.beginPath(); ctx.moveTo(sx-s*0.45,sy); ctx.lineTo(sx+s*0.42,sy-s*0.22); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(sx+s*0.05,sy-s*0.1); ctx.lineTo(sx+s*0.2,sy-s*0.42); ctx.stroke();
+    }else{
+      ctx.fillStyle="#7A5B39";
+      ctx.fillRect(sx-s*0.09,sy-s*0.55,s*0.18,s*0.55);
+      ctx.fillStyle="#3F7A46";
+      ctx.beginPath(); ctx.moveTo(sx,sy-s*1.55); ctx.lineTo(sx+s*0.55,sy-s*0.5);
+      ctx.lineTo(sx-s*0.55,sy-s*0.5); ctx.closePath(); ctx.fill();
+      ctx.fillStyle="#4E8E52";
+      ctx.beginPath(); ctx.moveTo(sx,sy-s*1.25); ctx.lineTo(sx+s*0.42,sy-s*0.72);
+      ctx.lineTo(sx-s*0.42,sy-s*0.72); ctx.closePath(); ctx.fill();
+    }
+  }
+}
+
+var RECIPES=[
+ {id:"axe",    nm:"Stone Axe", need:{rock:3,stick:2},            once:true,
+  ef:"Gathering yields two of everything instead of one"},
+ {id:"cart",   nm:"Hauling Cart", need:{wood:6,stick:4},         once:false,
+  ef:"+50 tissue capacity, each one you build"},
+ {id:"shelter",nm:"Shelter", need:{wood:10,rock:6},              once:true,
+  ef:"Income x1.5 — the colony stops losing energy to the weather"},
+ {id:"forge",  nm:"Forge", need:{rock:14,wood:8},                once:true,
+  ef:"Hot enough to work metal. The rocket needs one"},
+ {id:"rocket", nm:"Rocket", need:{rock:30,wood:24,stick:18},     once:true, want:"forge",
+  ef:"Leaves the planet. Flight forever, and the sky opens"}
+];
+function haveFor(r){
+  if(r.want && !S.craft[r.want]) return false;
+  if(r.once && S.craft[r.id]) return false;
+  for(var k in r.need){ if((S.res[k]||0) < r.need[k]) return false; }
+  return true;
+}
+function craftIt(id){
+  var r=null,i;
+  for(i=0;i<RECIPES.length;i++) if(RECIPES[i].id===id) r=RECIPES[i];
+  if(!r||!haveFor(r)) return;
+  for(var k in r.need) S.res[k]-=r.need[k];
+  S.craft[r.id]=(S.craft[r.id]||0)+1;
+  if(r.id==="rocket") S.launched=true;
+  save(); dirty=true;
+}
+function drawWorld(q,h){
+  var sy=w2sy(SURFACE_Y);
+  /* 1. sky over everything */
+  ctx.fillStyle=lin(0,Math.min(0,sy-H*0.9),0,Math.max(sy,1),[[0,"#356FAA"],[0.55,"#77AED4"],[1,"#C6DFEE"]]);
+  ctx.fillRect(0,0,W,H);
+  /* clouds only where sky shows */
+  if(sy>0){
+    ctx.save(); ctx.beginPath(); ctx.rect(0,0,W,sy); ctx.clip();
+    for(var i=0;i<6;i++){
+      var ccx=((rnd(i)*1.3*W)+TT*(4+rnd(i+3)*7))%(W*1.4)-W*0.2;
+      var ccy=sy-H*(0.10+rnd(i+9)*0.55), cs=H*(0.045+rnd(i+2)*0.06);
+      ctx.fillStyle="rgba(255,255,255,"+(0.3+rnd(i+7)*0.33).toFixed(2)+")";
+      ctx.beginPath(); ctx.ellipse(ccx,ccy,cs*2.2,cs,0,0,6.283);
+      ctx.ellipse(ccx+cs*1.2,ccy-cs*0.4,cs*1.3,cs*0.8,0,0,6.283); ctx.fill();
+    }
+    ctx.restore();
+  }
+  drawSpace();
+  /* 2. the ground profile, drawn full width */
+  ctx.beginPath(); ctx.moveTo(-10,H+20);
+  for(var px=-10;px<=W+10;px+=7) ctx.lineTo(px, w2sy(landSurfaceY(s2wx(px))));
+  ctx.lineTo(W+10,H+20); ctx.closePath();
+  var gTop=Math.max(0,Math.min(H,sy-260));
+  var g=ctx.createLinearGradient(0,gTop,0,H);
+  g.addColorStop(0,"#C9B183"); g.addColorStop(0.35,"#A8935F"); g.addColorStop(1,"#5E5436");
+  ctx.fillStyle=g; ctx.fill();
+  /* grass on the dry part */
+  ctx.save(); ctx.beginPath(); ctx.rect(0,0,W,Math.max(0,sy-6)); ctx.clip();
+  ctx.beginPath(); ctx.moveTo(-10,H+20);
+  for(px=-10;px<=W+10;px+=7) ctx.lineTo(px, w2sy(landSurfaceY(s2wx(px))));
+  ctx.lineTo(W+10,H+20); ctx.closePath();
+  ctx.fillStyle="rgba(104,132,74,.85)"; ctx.fill();
+  ctx.restore();
+  drawNodes(Date.now());          /* sit on the ground, under the sea */
+  /* 3. sea, translucent so it tints the submerged sand */
+  if(sy<H){
+    var y0=Math.max(0,sy);
+    var sg=ctx.createLinearGradient(0,y0,0,H);
+    sg.addColorStop(0,"rgba(18,116,150,.72)");
+    sg.addColorStop(0.45,"rgba(7,60,92,.88)");
+    sg.addColorStop(1,"rgba(2,22,34,.95)");
+    ctx.fillStyle=sg; ctx.fillRect(0,y0,W,H-y0);
+    if(!REDUCED) for(i=0;i<5;i++){
+      var lx=W*(0.08+i*0.2)+Math.sin(TT*0.22+i)*W*0.03;
+      ctx.fillStyle="rgba(190,238,255,"+(0.030+0.016*Math.sin(TT*0.55+i*1.3)).toFixed(3)+")";
+      ctx.beginPath(); ctx.moveTo(lx,y0); ctx.lineTo(lx+W*0.05,y0);
+      ctx.lineTo(lx+W*0.13,H); ctx.lineTo(lx-W*0.03,H); ctx.closePath(); ctx.fill();
+    }
+  }
+  /* 4. the waterline itself */
+  if(sy>-4&&sy<H+4){
+    ctx.strokeStyle="rgba(214,245,255,.5)"; ctx.lineWidth=2;
+    ctx.beginPath();
+    for(px=0;px<=W;px+=6) ctx.lineTo(px, sy+Math.sin(px*0.02+TT*1.2)*2);
+    ctx.stroke();
+  }
+  ctx.fillStyle="rgba(0,0,0,.12)"; ctx.fillRect(0,0,W,H);
+}
+
+/* ============================================================
+   8. CELLS AT HIGH ZOOM
+   ============================================================ */
+function drawCells(alpha,now){
+  if(alpha<=0.01) return;
+  var Z=S.view.z, r0=CR*Z, pad=r0+8;
+  for(var i=0;i<S.cells.length;i++){
+    var c=S.cells[i], sx=w2sx(c.x), sy=w2sy(c.y);
+    if(sx<-pad||sx>W+pad||sy<-pad||sy>H+pad) continue;
+    var age=now-c.born, rem=c.life-age, k=1, fade=1;
+    if(age<320) k=0.45+0.55*(age/320);
+    if(rem<1400 && S.cells.length>2){ var f=Math.max(0,rem/1400); k*=0.55+0.45*f; fade=0.25+0.75*f; }
+    var r=r0*k, col=typeOn(c.t)?RGB[c.t]:OFFRGB[c.t];
+    ctx.globalAlpha=alpha*fade;
+    /* life ring — makes the 21-second clock visible */
+    if(r0>9){
+      var life=clamp(rem/c.life,0,1);
+      ctx.strokeStyle="rgba(255,255,255,.14)"; ctx.lineWidth=Math.max(1,r0*0.09);
+      ctx.beginPath(); ctx.arc(sx,sy,r0*1.28,0,6.283); ctx.stroke();
+      ctx.strokeStyle=rgba(shade(col,1.5),0.75);
+      ctx.beginPath(); ctx.arc(sx,sy,r0*1.28,-1.5708,-1.5708+6.283*life); ctx.stroke();
+    }
+    ctx.fillStyle=rgba(col,1);
+    ctx.beginPath(); ctx.arc(sx,sy,r,0,6.283); ctx.fill();
+    if(r>5){
+      ctx.fillStyle="rgba(255,255,255,.16)";
+      ctx.beginPath(); ctx.arc(sx-r*0.28,sy-r*0.3,r*0.44,0,6.283); ctx.fill();
+    }
+    if(c.t==="eye" && r>4){
+      ctx.fillStyle="rgba(232,240,246,.92)";
+      ctx.beginPath(); ctx.arc(sx,sy,r*0.60,0,6.283); ctx.fill();
+      ctx.fillStyle="#0A0D11";
+      ctx.beginPath(); ctx.arc(sx+Math.cos(TT*0.6)*r*0.12,sy+Math.sin(TT*0.5)*r*0.12,r*0.32,0,6.283); ctx.fill();
+      ctx.fillStyle="rgba(255,255,255,.9)";
+      ctx.beginPath(); ctx.arc(sx-r*0.2,sy-r*0.24,r*0.11,0,6.283); ctx.fill();
+    }
+    if(c.t==="brain" && r>5){
+      ctx.fillStyle="rgba(8,16,24,.92)";
+      ctx.font="700 "+Math.max(7,r).toFixed(0)+"px 'IBM Plex Mono',ui-monospace,monospace";
+      ctx.textAlign="center"; ctx.textBaseline="middle";
+      ctx.fillText(c.key?c.key.toUpperCase():"\u00b7",sx,sy);
+    }
+    if(c===dragCell){
+      ctx.strokeStyle="rgba(255,255,255,.85)"; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.arc(sx,sy,r+4,0,6.283); ctx.stroke();
+    }
+  }
+  ctx.globalAlpha=1;
+}
+
+/* ============================================================
+   9. THE BODY — a hull traced from the real cell cloud.
+      Every ray is an exact ray/circle solve against every cell, so the
+      outline hugs whatever you sculpted. Cached ~11x/second.
+   ============================================================ */
+var HN=64, hull=null, hullAt=-1e9;
+function computeHull(){
+  var cells=S.cells, n=cells.length;
+  if(n<3) return null;
+  var cx=0,cy=0,i,j;
+  for(i=0;i<n;i++){ cx+=cells[i].x; cy+=cells[i].y; }
+  cx/=n; cy/=n;
+  var R=new Float64Array(HN), rr=CR*1.55, rr2=rr*rr;
+  var dx=new Float64Array(n), dy=new Float64Array(n);
+  for(i=0;i<n;i++){ dx[i]=cells[i].x-cx; dy[i]=cells[i].y-cy; }
+  for(var b=0;b<HN;b++){
+    var a=b/HN*6.283185, ca=Math.cos(a), sa=Math.sin(a), best=0;
+    for(i=0;i<n;i++){
+      var p=dx[i]*ca+dy[i]*sa;
+      if(p+rr<=best) continue;
+      var q=-dx[i]*sa+dy[i]*ca;
+      if(q>rr||q<-rr) continue;
+      var far=p+Math.sqrt(rr2-q*q);
+      if(far>best) best=far;
+    }
+    R[b]=best;
+  }
+  for(var pass=0;pass<2;pass++){
+    var C=R.slice(0);
+    for(b=0;b<HN;b++) R[b]=(C[(b-1+HN)%HN]+2*C[b]+C[(b+1)%HN])/4;
+  }
+  var maxR=0; for(b=0;b<HN;b++) if(R[b]>maxR) maxR=R[b];
+  return {cx:cx,cy:cy,R:R,maxR:maxR,n:n};
+}
+function getHull(now){
+  if(hull && now-hullAt<90) return hull;
+  hullAt=now; hull=computeHull(); return hull;
+}
+function hullPt(h,b,grow){
+  var a=b/HN*6.283185, r=h.R[((b%HN)+HN)%HN]*(grow||1);
+  return [h.cx+Math.cos(a)*r, h.cy+Math.sin(a)*r];
+}
+function traceHull(h,grow){
+  var p0=hullPt(h,0,grow), pts=[p0];
+  for(var b=1;b<HN;b++) pts.push(hullPt(h,b,grow));
+  ctx.beginPath();
+  var mx=(pts[HN-1][0]+pts[0][0])/2, my=(pts[HN-1][1]+pts[0][1])/2;
+  ctx.moveTo(w2sx(mx),w2sy(my));
+  for(var i=0;i<HN;i++){
+    var cur=pts[i], nx=pts[(i+1)%HN];
+    var midx=(cur[0]+nx[0])/2, midy=(cur[1]+nx[1])/2;
+    ctx.quadraticCurveTo(w2sx(cur[0]),w2sy(cur[1]),w2sx(midx),w2sy(midy));
+  }
+  ctx.closePath();
+}
+/* average colour of the tissue, ignoring black so it never muddies */
+function bodyColour(q){
+  var r=0,g=0,b=0,w=0;
+  TYPES.forEach(function(t){
+    if(t.id==="eye"||t.id==="pigment"||!typeOn(t.id)) return;
+    var k=q.by[t.id]||0; if(!k) return;
+    var c=RGB[t.id]; r+=c[0]*k; g+=c[1]*k; b+=c[2]*k; w+=k;
+  });
+  if(!w) return [150,160,150];
+  return [r/w,g/w,b/w];
+}
+
+/* ---- which way is the head? toward the eyes, else toward the brain ---- */
+function headDir(q,h){
+  var src=q.eyes.length?q.eyes:S.cells.filter(function(c){return c.t==="nerve";});
+  if(src.length){
+    var x=0,y=0,i;
+    for(i=0;i<src.length;i++){ x+=src[i].x; y+=src[i].y; }
+    x/=src.length; y/=src.length;
+    var dx=x-h.cx, dy=y-h.cy, m=Math.sqrt(dx*dx+dy*dy);
+    if(m>CR*0.4) return [dx/m,dy/m];
+  }
+  var best=0,bi=0;
+  for(var b=0;b<HN;b++) if(h.R[b]>best){ best=h.R[b]; bi=b; }
+  var a=bi/HN*6.283185; return [Math.cos(a),Math.sin(a)];
+}
+/* a patch of black cells resolves into ONE eye, sized by the patch */
+function eyeClusters(q){
+  var cl=[],i,j;
+  for(i=0;i<q.eyes.length;i++){
+    var c=q.eyes[i], hit=null;
+    for(j=0;j<cl.length;j++){
+      var dx=c.x-cl[j].x, dy=c.y-cl[j].y;
+      if(dx*dx+dy*dy < CR*CR*10.2){ hit=cl[j]; break; }
+    }
+    if(hit){ hit.x=(hit.x*hit.n+c.x)/(hit.n+1); hit.y=(hit.y*hit.n+c.y)/(hit.n+1); hit.n++; }
+    else if(cl.length<26) cl.push({x:c.x,y:c.y,n:1});
+  }
+  return cl.sort(function(a,b){ return b.n-a.n; }).slice(0,9);
+}
+function angleCells(h,type,minFrac){
+  var out=[],i;
+  for(i=0;i<S.cells.length;i++){
+    var c=S.cells[i]; if(c.t!==type) continue;
+    var dx=c.x-h.cx, dy=c.y-h.cy, d=Math.sqrt(dx*dx+dy*dy);
+    if(d < h.maxR*minFrac) continue;
+    out.push({a:Math.atan2(dy,dx), d:d});
+  }
+  return out;
+}
+function topAngles(list,k,bins){
+  if(!list.length) return [];
+  var acc=new Array(bins); for(var i=0;i<bins;i++) acc[i]={n:0,a:0,d:0};
+  for(i=0;i<list.length;i++){
+    var b=Math.floor(((list[i].a+Math.PI)/6.283185)*bins)%bins;
+    acc[b].n++; acc[b].a+=list[i].a; acc[b].d+=list[i].d;
+  }
+  return acc.filter(function(x){return x.n>0;})
+            .map(function(x){ return {a:x.a/x.n, d:x.d/x.n, n:x.n}; })
+            .sort(function(a,b){ return b.n-a.n; }).slice(0,k);
+}
+
+/* ---------------- features ---------------- */
+function fWings(h,fwd,amt,col,now){
+  var flap=REDUCED?0:Math.sin(now/235)*0.30;
+  var span=h.maxR*(1.30+clamp(amt,0,0.4)*3.0);
+  var ax=h.cx+fwd[0]*h.maxR*0.10, ay=h.cy-h.maxR*0.18;
+  var back=[-fwd[0],-fwd[1]];
+  for(var s=0;s<2;s++){
+    var k=s?1:0.78, up=span*(0.74+flap)*k;
+    ctx.fillStyle=rgba(shade(col,s?1.16:0.70),0.95);
+    ctx.beginPath();
+    ctx.moveTo(w2sx(ax),w2sy(ay));
+    ctx.quadraticCurveTo(w2sx(ax+back[0]*span*0.20),w2sy(ay-up*1.18),
+                         w2sx(ax+back[0]*span*0.92*k),w2sy(ay-up*0.92));
+    ctx.quadraticCurveTo(w2sx(ax+back[0]*span*0.66*k),w2sy(ay-up*0.10),
+                         w2sx(ax+back[0]*h.maxR*0.25),w2sy(ay+h.maxR*0.30));
+    ctx.closePath(); ctx.fill();
+  }
+}
+
+function fLegs(h,amt,col,now){
+  var count=clamp(Math.round(2+amt*20),2,6), legL=h.maxR*(0.42+clamp(amt,0,0.3)*1.5);
+  ctx.lineCap="round"; ctx.lineJoin="round";
+  for(var i=0;i<count;i++){
+    var t=(i+0.5)/count, ang=Math.PI*0.22+t*Math.PI*0.56;
+    var b=Math.round(ang/6.283185*HN), p=hullPt(h,b,0.92);
+    var sw=REDUCED?0:Math.sin(now/280+i*1.9)*0.36;
+    var kx=p[0]+Math.sin(sw)*legL*0.5, ky=p[1]+Math.cos(sw)*legL*0.5;
+    var fx=kx+Math.sin(-sw*0.5)*legL*0.45, fy=ky+Math.cos(sw*0.2)*legL*0.5;
+    ctx.strokeStyle=rgba(shade(col,0.72),0.95); ctx.lineWidth=Math.max(2,h.maxR*S.view.z*0.075);
+    ctx.beginPath(); ctx.moveTo(w2sx(p[0]),w2sy(p[1]));
+    ctx.lineTo(w2sx(kx),w2sy(ky)); ctx.lineTo(w2sx(fx),w2sy(fy)); ctx.stroke();
+    ctx.fillStyle=rgba(shade(col,0.72),0.95);
+    ctx.beginPath(); ctx.ellipse(w2sx(fx),w2sy(fy),h.maxR*S.view.z*0.062,h.maxR*S.view.z*0.036,0,0,6.283); ctx.fill();
+  }
+}
+function fFins(h,col,now){
+  var pk=topAngles(angleCells(h,"muscle",0.42),4,12);
+  for(var i=0;i<pk.length;i++){
+    var a=pk[i].a, wob=REDUCED?0:Math.sin(now/300+i)*0.22;
+    var len=h.maxR*(0.30+Math.min(0.5,pk[i].n*0.05));
+    var bx=h.cx+Math.cos(a)*pk[i].d*0.96, by=h.cy+Math.sin(a)*pk[i].d*0.96;
+    var tx=bx+Math.cos(a+wob)*len, ty=by+Math.sin(a+wob)*len;
+    var px=-Math.sin(a), py=Math.cos(a), wdt=h.maxR*0.20;
+    ctx.fillStyle=rgba(shade(col,1.18),0.82);
+    ctx.beginPath();
+    ctx.moveTo(w2sx(bx+px*wdt),w2sy(by+py*wdt));
+    ctx.quadraticCurveTo(w2sx(tx+px*wdt*0.4),w2sy(ty+py*wdt*0.4),w2sx(tx),w2sy(ty));
+    ctx.quadraticCurveTo(w2sx(tx-px*wdt*0.4),w2sy(ty-py*wdt*0.4),w2sx(bx-px*wdt),w2sy(by-py*wdt));
+    ctx.closePath(); ctx.fill();
+  }
+}
+function fSpines(h,col){
+  for(var i=0;i<9;i++){
+    var b=Math.round((0.56+i/9*0.38)*HN)%HN, p=hullPt(h,b,0.98), q2=hullPt(h,b,1.26);
+    ctx.strokeStyle=rgba(col,0.9); ctx.lineWidth=Math.max(1.4,h.maxR*S.view.z*0.03);
+    ctx.beginPath(); ctx.moveTo(w2sx(p[0]),w2sy(p[1])); ctx.lineTo(w2sx(q2[0]),w2sy(q2[1])); ctx.stroke();
+  }
+}
+function fCrest(h,fwd,col){
+  var a=Math.atan2(fwd[1],fwd[0])+0.9;   /* +y is down, so +0.9 is the back */
+  var b=Math.round(((a+6.283185)%6.283185)/6.283185*HN);
+  ctx.fillStyle=rgba(col,0.88); ctx.beginPath();
+  for(var i=-3;i<=3;i++){
+    var p=hullPt(h,b+i,1+0.30*Math.cos(i/3*1.5708));
+    if(i===-3) ctx.moveTo(w2sx(p[0]),w2sy(p[1])); else ctx.lineTo(w2sx(p[0]),w2sy(p[1]));
+  }
+  for(i=3;i>=-3;i--){ var p2=hullPt(h,b+i,0.97); ctx.lineTo(w2sx(p2[0]),w2sy(p2[1])); }
+  ctx.closePath(); ctx.fill();
+}
+function fGills(h,fwd,col){
+  var px=-fwd[1], py=fwd[0];
+  for(var i=0;i<3;i++){
+    var ox=h.cx+fwd[0]*h.maxR*(0.30-i*0.13), oy=h.cy+fwd[1]*h.maxR*(0.30-i*0.13);
+    ctx.strokeStyle=rgba(shade(col,0.55),0.7); ctx.lineWidth=Math.max(1.5,h.maxR*S.view.z*0.028);
+    ctx.beginPath();
+    ctx.moveTo(w2sx(ox+px*h.maxR*0.30),w2sy(oy+py*h.maxR*0.30));
+    ctx.lineTo(w2sx(ox-px*h.maxR*0.30),w2sy(oy-py*h.maxR*0.30));
+    ctx.stroke();
+  }
+}
+function fFuzz(h,col){
+  ctx.strokeStyle=rgba(shade(col,1.25),0.42);
+  ctx.lineWidth=Math.max(1,h.maxR*S.view.z*0.022);
+  for(var b=0;b<HN;b+=2){
+    var p=hullPt(h,b,1.0), q2=hullPt(h,b,1.10);
+    ctx.beginPath(); ctx.moveTo(w2sx(p[0]),w2sy(p[1])); ctx.lineTo(w2sx(q2[0]),w2sy(q2[1])); ctx.stroke();
+  }
+}
+function fEyes(q,h){
+  var cl=eyeClusters(q), Z=S.view.z;
+  for(var i=0;i<cl.length;i++){
+    var e=cl[i], r=CR*(0.95+Math.sqrt(e.n)*0.62)*Z;
+    if(r<2) continue;
+    var sx=w2sx(e.x), sy=w2sy(e.y);
+    ctx.fillStyle="rgba(234,241,247,.96)"; ctx.beginPath(); ctx.arc(sx,sy,r,0,6.283); ctx.fill();
+    ctx.fillStyle="rgba(30,52,66,.9)"; ctx.beginPath();
+    ctx.arc(sx+Math.cos(TT*0.5)*r*0.16,sy+Math.sin(TT*0.42)*r*0.16,r*0.62,0,6.283); ctx.fill();
+    ctx.fillStyle="#080B0E"; ctx.beginPath();
+    ctx.arc(sx+Math.cos(TT*0.5)*r*0.2,sy+Math.sin(TT*0.42)*r*0.2,r*0.32,0,6.283); ctx.fill();
+    ctx.fillStyle="rgba(255,255,255,.92)"; ctx.beginPath();
+    ctx.arc(sx-r*0.30,sy-r*0.34,r*0.19,0,6.283); ctx.fill();
+  }
+}
+
+/* ---- ganglia drive the body.
+
+   The organism carries its own heading. Q and E turn it — rotating every
+   cell rigidly about the centroid, so the body visibly swings round — and
+   W/S/A/D then move along that heading: W and S forward and back, A and D
+   left and right of wherever it is pointing.
+
+   Movement deliberately does NOT read the facing off the eyes. That was
+   implicit and unsteerable; a heading the player turns is the thing the
+   keys are relative to. ---- */
+var KEYDIR={w:[1,0], s:[-1,0], a:[0,-1], d:[0,1]};
+var ROTKEY={q:-1, e:1};
+var ROT_SPEED=1.7, held={};
+function rotateBody(da,h){
+  var cs=Math.cos(da), sn=Math.sin(da);
+  for(var i=0;i<S.cells.length;i++){
+    var c=S.cells[i];
+    var rx=c.x-h.cx, ry=c.y-h.cy;
+    c.x=h.cx + rx*cs - ry*sn;
+    c.y=h.cy + rx*sn + ry*cs;
+  }
+  var vx=S.vel.x, vy=S.vel.y;
+  S.vel.x=vx*cs - vy*sn; S.vel.y=vx*sn + vy*cs;
+}
+function drive(q,h,dt){
+  if(!h||!traitOn("control")) return;
+  var i, b;
+
+  /* turn first, so this frame's movement uses the new heading */
+  var rot=0, rn=0;
+  for(i=0;i<S.cells.length;i++){
+    b=S.cells[i];
+    if(b.t!=="brain"||!b.key||!ROTKEY[b.key]||!held[b.key]) continue;
+    rot+=ROTKEY[b.key]; rn++;
+  }
+  if(rn && Math.abs(rot)>0.001){
+    var da=(rot>0?1:-1)*ROT_SPEED*dt*Math.min(3,Math.sqrt(rn));
+    rotateBody(da,h);
+    S.heading=(S.heading||0)+da;
+  }
+
+  if(!(held.w||held.a||held.s||held.d)) return;
+  var fwd=[Math.cos(S.heading||0), Math.sin(S.heading||0)];
+  var px=-fwd[1], py=fwd[0];
+  var dx=0, dy=0, n=0;
+  for(i=0;i<S.cells.length;i++){
+    b=S.cells[i];
+    if(b.t!=="brain"||!b.key||!KEYDIR[b.key]||!held[b.key]) continue;
+    var kd=KEYDIR[b.key];
+    dx+=fwd[0]*kd[0]+px*kd[1];
+    dy+=fwd[1]*kd[0]+py*kd[1];
+    n++;
+  }
+  if(!n) return;
+  var m=Math.sqrt(dx*dx+dy*dy);
+  if(m<0.001) return;                       /* opposed ganglia cancel out */
+  dx/=m; dy/=m;
+  var sp=0.45*Math.min(3,Math.sqrt(n));     /* more ganglia push harder */
+  S.vel.x+=dx*sp; S.vel.y+=dy*sp;           /* one velocity for the whole body */
+}
+/* an arrow showing which way is forward, once there is anything to steer */
+function drawHeading(q,h){
+  if(!h||!q.by.brain||!traitOn("control")) return;
+  var Z=S.view.z, r=Math.max(24,h.maxR*Z*1.1);
+  ctx.save();
+  ctx.translate(w2sx(h.cx),w2sy(h.cy));
+  ctx.rotate(S.heading||0);
+  ctx.strokeStyle="rgba(123,224,255,.75)"; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(r*0.5,0); ctx.lineTo(r,0); ctx.stroke();
+  ctx.fillStyle="rgba(123,224,255,.9)";
+  ctx.beginPath(); ctx.moveTo(r+10,0); ctx.lineTo(r-3,-7); ctx.lineTo(r-3,7);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+/* ---------------- assemble the animal ---------------- */
+function drawOrganism(alpha,q,now){
+  if(alpha<=0.01) return;
+  var h=getHull(now); if(!h) return;
+  var tr=q.traits, col=bodyColour(q), fwd=headDir(q,h);
+  ctx.globalAlpha=alpha;
+
+  if(tr.flight>0.015) fWings(h,fwd,tr.flight,col,now);
+  if(tr.walking>0.015) fLegs(h,tr.walking,col,now);
+  if(tr.motility>0.02) fFins(h,col,now);
+
+  traceHull(h,1);
+  ctx.fillStyle=rgba(shade(col,0.94),0.97); ctx.fill();
+  ctx.strokeStyle=rgba(shade(col,0.58),0.9);
+  ctx.lineWidth=Math.max(1.5,h.maxR*S.view.z*0.022); ctx.stroke();
+
+  ctx.save(); traceHull(h,1); ctx.clip();
+  var by=w2sy(h.cy), bx=w2sx(h.cx), rad=h.maxR*S.view.z;
+  var g=ctx.createLinearGradient(bx,by-rad,bx,by+rad);
+  g.addColorStop(0,rgba(shade(col,1.22),0.55));
+  g.addColorStop(0.55,"rgba(255,255,255,0)");
+  g.addColorStop(1,rgba(shade(col,0.62),0.5));
+  ctx.fillStyle=g; ctx.fillRect(bx-rad*1.6,by-rad*1.6,rad*3.2,rad*3.2);
+  if(tr.display>0.02){
+    ctx.strokeStyle=rgba(RGB.display,0.42);
+    ctx.lineWidth=Math.max(2,rad*0.075);
+    for(var s=-3;s<=3;s++){
+      ctx.beginPath();
+      ctx.moveTo(bx+fwd[0]*rad*s*0.26+fwd[1]*rad*1.3, by+fwd[1]*rad*s*0.26-fwd[0]*rad*1.3);
+      ctx.lineTo(bx+fwd[0]*rad*s*0.26-fwd[1]*rad*1.3, by+fwd[1]*rad*s*0.26+fwd[0]*rad*1.3);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+
+  if(tr.endothermy>0.02) fFuzz(h,col);
+  if(tr.aquatic>0.03) fGills(h,fwd,col);
+  if(tr.venom>0.02) fSpines(h,RGB.venom);
+  if(tr.display>0.04) fCrest(h,fwd,RGB.display);
+  fEyes(q,h);
+  ctx.globalAlpha=1;
+}
+
+/* ============================================================
+   10. ECONOMY
+   ============================================================ */
+var UPS=[
+ {id:"cap", nm:"Tissue capacity", base:90,  g:2.5,
+  ef:function(){ return maxCells()+" cells → "+(maxCells()+capStep(S.lv.cap))+" · the step grows each time"; }},
+ {id:"div", nm:"Mitosis rate",    base:170, g:2.6,
+  ef:function(){ return (divMs()/1000).toFixed(1)+" s → "+(divMs()*0.88/1000).toFixed(1)+" s between divisions"; }},
+ {id:"life",nm:"Longevity",       base:260, g:2.7,
+  ef:function(){ return (lifeMs()/1000).toFixed(0)+" s → "+(lifeMs()*1.15/1000).toFixed(0)+" s lifespan"; }}
+];
+function upCost(u){ return Math.ceil(u.base*Math.pow(u.g,S.lv[u.id])); }
+function income(q){
+  var photoPow = traitOn("energy") ? q.by.photo*potency("energy") : 0;
+  var base=(1 + 0.8*photoPow + 0.15*q.n) * (1 + q.traits.cognition);
+  base *= (S.craft.shelter?1.5:1);
+  return base * (isOnLand(hull)?1.3:1);   /* sunlight is stronger above water */
+}
+function pump(now,q){
+  if(now<S.nextTick) return false;
+  var due=Math.floor((now-S.nextTick)/TICK_MS)+1;
+  if(due>OFFLINE_CAP) due=OFFLINE_CAP;
+  var g=income(q)*due; S.coins+=g; S.total+=g;
+  S.nextTick = now + TICK_MS - ((now-S.nextTick)%TICK_MS);
+  return true;
+}
+var SUF=["","K","M","B","T","Qa","Qi","Sx","Sp"];
+function fmt(n){
+  if(!isFinite(n)) return "∞";
+  if(n<0) return "0";
+  if(n<1000) return (n<10&&n%1!==0)?n.toFixed(1):String(Math.floor(n));
+  var e=Math.floor(Math.log10(n)/3);
+  if(e>=SUF.length) return n.toExponential(2).replace("e+","e");
+  var v=n/Math.pow(1000,e);
+  return (v<10?v.toFixed(2):v<100?v.toFixed(1):v.toFixed(0))+SUF[e];
+}
+
+/* ============================================================
+   11. PANELS
+   ============================================================ */
+var $=function(i){ return document.getElementById(i); };
+function resolvedTheme(){
+  var t=document.documentElement.getAttribute("data-theme");
+  if(t==="dark"||t==="light") return t;
+  return window.matchMedia&&window.matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";
+}
+function applyAccent(q){
+  var best=null,bn=0;
+  TYPES.forEach(function(t){
+    if(!t.trait||t.id==="eye") return;
+    if((q.by[t.id]||0)>bn){ bn=q.by[t.id]; best=t; }
+  });
+  var col=best?best.hex:(resolvedTheme()==="dark"?"#4FE0B8":"#0E8F72");
+  document.documentElement.style.setProperty("--era",col);
+  document.documentElement.style.setProperty("--era-soft",col+"2B");
+}
+function renderPanels(q){
+  var f=classify(q);
+  $("fname").textContent=f.name; $("fsub").textContent=f.sub; $("fdesc").textContent=f.desc;
+  $("hudPop").textContent=q.n+" / "+maxCells()+" cells";
+  $("rate").textContent="+"+fmt(income(q));
+  $("churn").innerHTML="<small>"+fmt(S.births)+" born · "+fmt(S.deaths)+" died · "+fmt(S.absorbed||0)+" eaten</small>";
+
+  var bars="";
+  TRAITS.forEach(function(t){
+    var v=q.traits[t.id]||0, bon=traitOn(t.id);
+    bars+='<div class="bar'+(bon?"":" off")+'"><span class="nm">'+t.nm+'</span>'+
+      '<span class="track"><span class="fill" style="width:'+(clamp(v*100*1.8,0,100)).toFixed(1)+
+      '%;background:'+t.hex+'"></span></span>'+
+      '<span class="pc">'+Math.round(v*100)+'%</span></div>';
+  });
+  $("bars").innerHTML=bars||'<p class="note" style="margin:0">Paint a cell to start a lineage.</p>';
+
+  var tal="";
+  TYPES.forEach(function(t){
+    if(t.hidden && !q.by[t.id]) return;
+    var lk=!t.hidden && !typeOn(t.id);
+    if(lk && !q.by[t.id]) return;
+    tal+='<div class="trow'+(lk?" locked":"")+'"><span class="sw" style="background:'+t.hex+
+      '"></span><span>'+t.nm+'</span><span class="ct">'+(q.by[t.id]||0)+'</span></div>';
+  });
+  $("tally").innerHTML=tal;
+  $("cbadge").hidden = !S.creative;
+  renderCraft(q);
+  $("hudHint").innerHTML = !mitosisBought()
+    ? "<b>Tap</b> the cell to feed it · <b>"+MITOSIS_COST+" coins</b> starts multiplication"
+    : !mitosisOn()
+      ? "<b>Multiplication paused</b> · nothing divides, nothing dies"
+    : isOnLand(hull)
+      ? "<b>On land</b> · photocytes +30%"
+    : !canCrossNow
+      ? "<b>Held under the surface</b> · needs 2 myocytes, 2 osteocytes, 2 pneumocytes"
+    : !canFlyNow
+      ? "<b>Can reach the beach</b> · 5 pterocytes to hold the air"
+      : "<b>Airborne</b> · <b>WASD/QE</b> drive · <b>Right-click</b> paint";
+  if(canCraft(q)) $("hudHint").innerHTML += " · <b>F</b> crafting";
+
+  var html="";
+  if(!mitosisBought()){
+    var mcan=S.coins>=MITOSIS_COST;
+    html+='<div class="up'+(mcan?" can":"")+'">'+
+      '<span class="sw" style="background:var(--era);width:15px;height:15px"></span>'+
+      '<span><span class="nm">Cell Multiplication</span><span class="ef">Start the cycle — divide every '+
+      (divMs()/1000).toFixed(0)+' s, die at '+(lifeMs()/1000).toFixed(0)+' s. Until then your cell is immortal.</span></span>'+
+      '<button class="buy" data-unlock="mitosis"'+(mcan?"":" disabled")+'>'+MITOSIS_COST+'</button></div>';
+  }
+  if(mitosisBought()){
+    var mon=mitosisOn();
+    html+='<div class="up'+(mon?"":" off")+'">'+
+      '<input type="checkbox" class="tgl" data-mito="1"'+(mon?" checked":"")+
+        ' aria-label="Cell multiplication">'+
+      '<span><span class="nm">Cell Multiplication</span><span class="ef">'+
+        (mon ? "running \u2014 divide every "+(divMs()/1000).toFixed(0)+" s, die at "+
+               (lifeMs()/1000).toFixed(0)+" s"
+             : "paused \u2014 nothing divides and nothing dies")+
+      '</span></span><span class="buy max">'+(mon?"on":"paused")+'</span></div>';
+  }
+  if(mitosisBought()){
+    TRAITS.forEach(function(t){
+      var on=traitOn(t.id), L=tlv(t.id), cst=tCost(t.id),
+          can=!S.creative && on && L<MAXTL && S.coins>=cst;
+      html+='<div class="up'+(can?" can":"")+(on?"":" off")+'">'+
+        '<input type="checkbox" class="tgl" data-en="'+t.id+'"'+(on?" checked":"")+
+          ' aria-label="Enable '+t.nm+'">'+
+        '<span><span class="nm"><span class="sw" style="background:'+t.hex+'"></span>'+t.nm+
+          ' <span class="lvl">Lv '+L+'</span></span><span class="ef">'+
+          (on ? "×"+potency(t.id).toFixed(2)+" — "+TDESC[t.id] : "switched off")+
+        '</span></span>'+
+        (S.creative || L>=MAXTL
+          ? '<span class="buy max">max</span>'
+          : '<button class="buy" data-tup="'+t.id+'"'+(can?"":" disabled")+'>'+fmt(cst)+'</button>')+
+        '</div>';
+    });
+    UPS.forEach(function(u){
+      var cst=upCost(u), can=!S.creative && S.coins>=cst;
+      html+='<div class="up'+(can?" can":"")+'">'+
+        '<span class="sw" style="background:var(--rule-strong);width:15px;height:15px"></span>'+
+        '<span><span class="nm">'+u.nm+' <span class="lvl">Lv '+lvOf(u.id)+'</span></span>'+
+        '<span class="ef">'+u.ef()+'</span></span>'+
+        (S.creative ? '<span class="buy max">max</span>'
+                    : '<button class="buy" data-lv="'+u.id+'"'+(can?"":" disabled")+'>'+fmt(cst)+'</button>')+
+        '</div>';
+    });
+  }
+  $("ups").innerHTML=html;
+  applyAccent(q);
+}
+$("ups").addEventListener("click",function(e){
+  var b=e.target.closest("button"); if(!b) return;
+  var u=b.getAttribute("data-unlock"), l=b.getAttribute("data-lv"), tu=b.getAttribute("data-tup");
+  if(u==="mitosis"){
+    if(!S.unlocked.mitosis && S.coins>=MITOSIS_COST){
+      S.coins-=MITOSIS_COST; S.unlocked.mitosis=true; S.mitoOn=true;
+      var t0=Date.now();
+      S.cells.forEach(function(c){ c.born=t0; c.life=jit(lifeMs(),0.2); c.nextDiv=t0+jit(divMs(),0.15); });
+      save(); dirty=true;
+    }
+    return;
+  }
+  if(tu){
+    if(!S.creative && tlv(tu)<MAXTL && S.coins>=tCost(tu)){
+      S.coins-=tCost(tu); S.tlv[tu]=(S.tlv[tu]|0)+1; save(); dirty=true;
+    }
+    return;
+  }
+  if(l && !S.creative){
+    var up=UPS.filter(function(x){ return x.id===l; })[0], cst=upCost(up);
+    if(S.coins>=cst){ S.coins-=cst; S.lv[l]++; save(); dirty=true; }
+  }
+});
+function renderCraft(q){
+  var el=$("craft");
+  if(!S.craftOpen){ el.hidden=true; return; }
+  el.hidden=false;
+  if(!canCraft(q)){
+    el.innerHTML='<div class="hd2"><span class="k">Crafting — locked</span>'+
+      '<button class="cx" id="craftx">close (F)</button></div>'+
+      '<p class="note" style="margin:0">Needs <b>8 ganglia</b> with the control trait switched on. '+
+      'You have '+ganglia(q)+'. Paint more, or press X to drop one.</p>';
+    return;
+  }
+  var h='<div class="hd2"><span class="k">Crafting</span>'+
+        '<button class="cx" id="craftx">close (F)</button></div><div class="rbar">'+
+        RES_KIND.map(function(k){ return '<span>'+k+' <b>'+(S.res[k]||0)+'</b></span>'; }).join('')+
+        (canHarvest(q) ? '<span>gathering · <b>on</b></span>'
+                       : '<span style="color:var(--warn)">needs 2 ambulocytes to gather</span>')+
+        '</div>';
+  RECIPES.forEach(function(r){
+    var ok=haveFor(r), made=S.craft[r.id]||0, cost=[];
+    for(var k in r.need) cost.push(r.need[k]+" "+k);
+    h+='<div class="rec'+(ok?" can":"")+'"><span><span class="rn">'+r.nm+
+       (made?' ×'+made:'')+'</span> <span class="rc">'+cost.join(" · ")+
+       (r.want?' · needs a '+r.want:'')+'</span>'+
+       '<span class="re">'+r.ef+'</span></span>'+
+       ((r.once&&made) ? '<span class="buy max">built</span>'
+                       : '<button class="buy" data-craft="'+r.id+'"'+(ok?"":" disabled")+'>craft</button>')+
+       '</div>';
+  });
+  el.innerHTML=h;
+}
+$("craft").addEventListener("click",function(e){
+  var b=e.target.closest("button"); if(!b) return;
+  if(b.id==="craftx"){ S.craftOpen=false; dirty=true; return; }
+  var id=b.getAttribute("data-craft");
+  if(id) craftIt(id);
+});
+$("ups").addEventListener("change",function(e){
+  var t=e.target;
+  if(t.hasAttribute && t.hasAttribute("data-mito")){
+    S.mitoOn=t.checked; save(); dirty=true; return;
+  }
+  var id=t.getAttribute && t.getAttribute("data-en");
+  if(!id) return;
+  S.enabled[id]=t.checked;
+  save(); dirty=true;
+});
+
+/* ============================================================
+   12. PAINT MENU — the black/eye reflex lives here
+   ============================================================ */
+var menu=$("menu"), menuCell=null;
+function resolveBlack(c){
+  if(c.t==="eye" && !c.autoEye) c.t="pigment";
+  else if(c.t==="pigment" && c.autoEye) c.t="eye";
+}
+function openMenu(c,cx,cy){
+  menuCell=c;
+  var sw="";
+  TYPES.forEach(function(t){
+    if(t.hidden) return;
+    var lk=!typeOn(t.id);
+    var sel=(c.t===t.id)||(t.id==="eye"&&c.t==="pigment");
+    sw+='<button class="swb'+(sel?" sel":"")+'" data-t="'+t.id+'" title="'+t.nm+
+        (lk?" (locked)":"")+'" style="background:'+t.hex+'"'+(lk?" disabled":"")+'></button>';
+  });
+  menu.innerHTML=
+    '<div class="hd"><span class="sw" style="background:'+T[c.t].hex+'"></span>'+
+      '<span class="nm">'+T[c.t].nm+'</span><span class="id">#'+c.id+'</span></div>'+
+    '<div class="swatches">'+sw+'</div>'+
+    (c.t==="brain" ? '<button class="mbtn" id="bindkey">Bind movement key'+
+        (c.key?' \u00b7 '+c.key.toUpperCase():'')+'</button>' : '')+
+    '<div class="row"><input type="checkbox" id="aeye"'+(c.autoEye?" checked":"")+'>'+
+      '<label for="aeye">Auto-eye when painted black</label></div>'+
+    '<button class="mbtn" id="aeyeAll">Apply this to every cell</button>'+
+    '<p class="note">Off means black stays pigment — colour without an eye.</p>'+
+    '<button class="mbtn danger" id="delc">Remove cell</button>';
+  placeMenu(cx,cy);
+}
+function placeMenu(cx,cy){
+  menu.hidden=false;
+  var r=menu.getBoundingClientRect();
+  menu.style.left=Math.min(cx,window.innerWidth-r.width-10)+"px";
+  menu.style.top=Math.min(cy,window.innerHeight-r.height-10)+"px";
+}
+function openKeyMenu(c,cx,cy){
+  menuCell=c;
+  var sw="";
+  ["w","a","s","d","q","e"].forEach(function(k){
+    sw+='<button class="swb key'+(c.key===k?" sel":"")+'" data-key="'+k+'">'+k.toUpperCase()+'</button>';
+  });
+  menu.innerHTML=
+    '<div class="hd"><span class="sw" style="background:'+T.brain.hex+'"></span>'+
+      '<span class="nm">Ganglion</span><span class="id">#'+c.id+'</span></div>'+
+    '<div class="swatches">'+sw+'</div>'+
+    '<button class="mbtn" data-key="">Unbind</button>'+
+    '<p class="note">Q and E turn the organism; W and S then drive forward and back along that heading, A and D left and right of it. More bound ganglia push harder.</p>';
+  placeMenu(cx,cy);
+}
+function closeMenu(){ menu.hidden=true; menuCell=null; }
+menu.addEventListener("click",function(e){
+  if(!menuCell) return;
+  var b=e.target.closest("button");
+  if(b && b.hasAttribute("data-key")){
+    menuCell.key = b.getAttribute("data-key") || null;
+    openKeyMenu(menuCell, parseFloat(menu.style.left), parseFloat(menu.style.top));
+    save(); dirty=true; return;
+  }
+  if(b && b.id==="bindkey"){
+    openKeyMenu(menuCell, parseFloat(menu.style.left), parseFloat(menu.style.top));
+    return;
+  }
+  if(b && b.hasAttribute("data-t")){
+    var id=b.getAttribute("data-t");
+    if(!typeOn(id)) return;
+    menuCell.t = (id==="eye") ? (menuCell.autoEye?"eye":"pigment") : id;
+    openMenu(menuCell, parseFloat(menu.style.left), parseFloat(menu.style.top));
+    save(); dirty=true; return;
+  }
+  if(b && b.id==="aeyeAll"){
+    var v=menuCell.autoEye; S.autoEyeDefault=v;
+    S.cells.forEach(function(c){ c.autoEye=v; resolveBlack(c); });
+    openMenu(menuCell, parseFloat(menu.style.left), parseFloat(menu.style.top));
+    save(); dirty=true; return;
+  }
+  if(b && b.id==="delc"){
+    if(S.cells.length>1){ var i=S.cells.indexOf(menuCell); if(i>=0) S.cells.splice(i,1); }
+    closeMenu(); save(); dirty=true; return;
+  }
+});
+menu.addEventListener("change",function(e){
+  if(!menuCell || e.target.id!=="aeye") return;
+  menuCell.autoEye=e.target.checked;
+  resolveBlack(menuCell);
+  openMenu(menuCell, parseFloat(menu.style.left), parseFloat(menu.style.top));
+  save(); dirty=true;
+});
+document.addEventListener("pointerdown",function(e){
+  if(!menu.hidden && !menu.contains(e.target)) closeMenu();
+},true);
+document.addEventListener("keydown",function(e){
+  if(e.key==="Escape"){ closeMenu(); return; }
+  var tg=e.target&&e.target.tagName;
+  if(tg==="INPUT"||tg==="TEXTAREA"||e.ctrlKey||e.metaKey||e.altKey) return;
+  var k=(e.key||"").toLowerCase();
+  if(k==="w"||k==="a"||k==="s"||k==="d"||k==="q"||k==="e"){ held[k]=true; return; }
+  if(k==="c"){ S.creative=!S.creative; closeMenu(); save(); dirty=true; return; }
+  if(k==="f"){ S.craftOpen=!S.craftOpen; save(); dirty=true; return; }
+  if(!overCanvas) return;
+  if(k==="z"){                                  /* delete the cell under the cursor */
+    var dc=cellAt(hoverX,hoverY);
+    if(dc && S.cells.length>1){
+      if(menuCell===dc) closeMenu();
+      S.cells.splice(S.cells.indexOf(dc),1);
+      save(); dirty=true;
+    }
+    return;
+  }
+  if(k==="x"){                                  /* drop a ganglion at the cursor */
+    if(S.cells.length>=maxCells()) return;      /* the cap is the only limit */
+    var sp=freeSpot(s2wx(hoverX),s2wy(hoverY));
+    if(!sp) return;
+    var nc=freshCell(sp[0],sp[1],"brain",Date.now());
+    nc.life=jit(lifeMs(),0.2); nc.autoEye=S.autoEyeDefault;
+    S.cells.push(nc); addToGrid(nc); save(); dirty=true;
+    return;
+  }
+});
+document.addEventListener("keyup",function(e){
+  var k=(e.key||"").toLowerCase();
+  if(k==="w"||k==="a"||k==="s"||k==="d"||k==="q"||k==="e") held[k]=false;
+});
+window.addEventListener("blur",function(){ held={}; });
+
+/* ============================================================
+   13. INPUT — drag a cell, pan the water, ctrl+scroll to zoom
+   ============================================================ */
+var panning=false, lastX=0, lastY=0, pressT=0, pressMoved=false, holdTimer=null;
+function cellAt(sx,sy){
+  var wx=s2wx(sx), wy=s2wy(sy), best=null, bd=CR*CR*2.2;
+  for(var i=S.cells.length-1;i>=0;i--){
+    var c=S.cells[i], dx=c.x-wx, dy=c.y-wy, d2=dx*dx+dy*dy;
+    if(d2<bd){ bd=d2; best=c; }
+  }
+  return best;
+}
+function zoomAt(sx,sy,f){
+  var wx=s2wx(sx), wy=s2wy(sy);
+  S.view.z=clamp(S.view.z*f,0.18,3);
+  S.view.x=wx-(sx-W/2)/S.view.z;
+  S.view.y=wy-(sy-H/2)/S.view.z;
+}
+cv.addEventListener("pointerdown",function(e){
+  closeMenu(); cv.setPointerCapture(e.pointerId);
+  var r=cv.getBoundingClientRect(), sx=e.clientX-r.left, sy=e.clientY-r.top;
+  lastX=e.clientX; lastY=e.clientY; pressT=Date.now(); pressMoved=false;
+  if(e.button===2) return;
+  var c=cellAt(sx,sy);
+  if(c){ dragCell=c; } else { panning=true; cv.classList.add("grab"); }
+  if(e.pointerType!=="mouse" && c){
+    holdTimer=setTimeout(function(){
+      if(!pressMoved){ dragCell=null; openMenu(c,e.clientX,e.clientY); }
+    },480);
+  }
+});
+var hoverX=0, hoverY=0, overCanvas=false;
+cv.addEventListener("pointerleave",function(){ overCanvas=false; });
+cv.addEventListener("pointermove",function(e){
+  var hr=cv.getBoundingClientRect();
+  hoverX=e.clientX-hr.left; hoverY=e.clientY-hr.top; overCanvas=true;
+  var dx=e.clientX-lastX, dy=e.clientY-lastY;
+  if(Math.abs(dx)>3||Math.abs(dy)>3) pressMoved=true;
+  lastX=e.clientX; lastY=e.clientY;
+  if(dragCell){ dragCell.x+=dx/S.view.z; dragCell.y+=dy/S.view.z; }   /* the only deformation */
+  else if(panning){ S.view.x-=dx/S.view.z; S.view.y-=dy/S.view.z; }
+});
+function endPtr(){ if(holdTimer){clearTimeout(holdTimer);holdTimer=null;}
+  if(dragCell||panning) save();
+  dragCell=null; panning=false; cv.classList.remove("grab"); }
+function feedCell(cx,cy){
+  var g=Math.max(1,income(census())*0.5);
+  S.coins+=g; S.total+=g; dirty=true;
+  var r=dish.getBoundingClientRect(), el=document.createElement("span");
+  el.className="pop"; el.textContent="+"+fmt(g);
+  el.style.left=(cx-r.left)+"px"; el.style.top=(cy-r.top)+"px";
+  dish.appendChild(el); setTimeout(function(){ el.remove(); },900);
+}
+cv.addEventListener("pointerup",function(e){
+  var tap = !pressMoved && (Date.now()-pressT)<340 && e.button!==2 && dragCell;
+  var c=dragCell; endPtr();
+  if(tap && c) feedCell(e.clientX,e.clientY);
+});
+cv.addEventListener("pointercancel",endPtr);
+cv.addEventListener("contextmenu",function(e){
+  e.preventDefault();
+  var r=cv.getBoundingClientRect(), c=cellAt(e.clientX-r.left,e.clientY-r.top);
+  if(!c){ closeMenu(); return; }
+  if((e.ctrlKey||e.metaKey) && c.t==="brain") openKeyMenu(c,e.clientX,e.clientY);
+  else openMenu(c,e.clientX,e.clientY);
+});
+cv.addEventListener("wheel",function(e){
+  var r=cv.getBoundingClientRect();
+  if(e.ctrlKey||e.metaKey){
+    e.preventDefault();
+    zoomAt(e.clientX-r.left,e.clientY-r.top, e.deltaY<0?1.12:1/1.12);
+  }else{
+    e.preventDefault();
+    S.view.y += e.deltaY/S.view.z*0.6; S.view.x += e.deltaX/S.view.z*0.6;
+  }
+},{passive:false});
+$("zin").addEventListener("click",function(){ zoomAt(W/2,H/2,1.25); });
+$("zout").addEventListener("click",function(){ zoomAt(W/2,H/2,1/1.25); });
+$("zctr").addEventListener("click",function(){
+  var h=getHull(Date.now());
+  if(h){ S.view.x=h.cx; S.view.y=h.cy; }
+  else if(S.cells.length){ S.view.x=S.cells[0].x; S.view.y=S.cells[0].y; }
+  save();
+});
+
+/* ============================================================
+   14. LOOP
+   ============================================================ */
+var last=performance.now(), uiAt=0, dirty=true;
+function frame(ts){
+  var dt=Math.min(0.05,(ts-last)/1000); last=ts;
+  TT += REDUCED? dt*0.4 : dt;
+  var now=Date.now();
+
+  lifecycle(now);
+  /* the census must run BEFORE relax: the clamps read canCrossNow/canFlyNow,
+     and on the very first frame those still held their initial false, so a
+     saved airborne body was slammed into the water before anything measured it */
+  var q=census();
+  canCrossNow=canCross(q); canFlyNow=canFly(q);
+  relax(dt);
+  updateWild(now,dt);
+  if(pump(now,q)) dirty=true;
+
+  var h0=getHull(now);
+  drive(q,h0,dt);
+  harvest(q,h0,now);
+  drawWorld(q,h0);
+  var orgA = q.n>=REVEAL_CELLS ? clamp((REVEAL_ZOOM-S.view.z)/(REVEAL_ZOOM*0.45),0,1) : 0;
+  drawOrganism(orgA,q,now);
+  drawWild(1-orgA*0.55);
+  drawCells(1-orgA*0.80,now);
+  drawHeading(q,h0);
+
+  var left=Math.max(0,S.nextTick-now);
+  $("arc").setAttribute("stroke-dashoffset",(138.23*(left/TICK_MS)).toFixed(2));
+  $("cd").textContent=(left/1000).toFixed(1);
+  $("coins").textContent=fmt(S.coins);
+  $("zlvl").textContent=S.view.z.toFixed(2)+"×";
+
+  var showReveal = q.n>=REVEAL_CELLS && S.view.z>REVEAL_ZOOM && !S.seenReveal;
+  $("reveal").hidden = !showReveal;
+  if(orgA>0.6 && !S.seenReveal){ S.seenReveal=true; save(); }
+
+  if(ts-uiAt>180 || dirty){ uiAt=ts; dirty=false; renderPanels(q); }
+  requestAnimationFrame(frame);
+}
+
+/* ============================================================
+   15. BOOT
+   ============================================================ */
+function boot(hot){
+  var d=(hot&&hot.cells)?hot:load();
+  if(!adopt(d)) S=freshState();
+  sizeCanvas(); renderPanels(census());
+  requestAnimationFrame(frame);
+}
+$("theme").addEventListener("click",function(){
+  var cur=document.documentElement.getAttribute("data-theme");
+  var nx = cur==="light"?"dark":cur==="dark"?null:"light";
+  if(nx) document.documentElement.setAttribute("data-theme",nx);
+  else document.documentElement.removeAttribute("data-theme");
+  this.textContent = nx ? nx.charAt(0).toUpperCase()+nx.slice(1) : "Theme";
+  dirty=true;
+});
+$("reset").addEventListener("click",function(){
+  if(!confirm("Start again from a single cell? The whole lineage is lost.")) return;
+  S=freshState(); hull=null; closeMenu(); save(); dirty=true;
+});
+window.addEventListener("resize",sizeCanvas);
+window.addEventListener("beforeunload",save);
+document.addEventListener("visibilitychange",function(){ if(document.hidden) save(); });
+setInterval(save,8000);
+
+if(window.claude&&window.claude.hot&&window.claude.hot.snapshot){
+  window.claude.hot.snapshot(function(){
+    return {cells:S.cells.map(function(c){return {x:c.x,y:c.y,t:c.t,a:c.autoEye?1:0,k:c.key||"",r:0.2};}),
+            coins:S.coins,total:S.total,view:S.view,unlocked:S.unlocked,lv:S.lv,
+            enabled:S.enabled,tlv:S.tlv,creative:!!S.creative,mitoOn:S.mitoOn!==false,
+            heading:S.heading||0,res:S.res,taken:S.taken,craft:S.craft,launched:!!S.launched,
+            born:S.born,births:S.births,deaths:S.deaths,seenReveal:S.seenReveal};
+  });
+}
+if(window.claude&&window.claude.hot&&window.claude.hot.ready) window.claude.hot.ready(boot);
+else boot((window.claude&&window.claude.hot&&window.claude.hot.data)||{});
+})();
+</script>
