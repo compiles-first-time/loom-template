@@ -209,7 +209,7 @@ button{font:inherit;color:inherit}
 <div class="wrap">
   <header class="hdr">
     <h1 class="mark">Cell to <em>Cosmos</em></h1>
-    <span class="vtag">v0.10 &middot; mobility</span>
+    <span class="vtag">v0.11 &middot; mobility</span>
     <span class="cbadge" id="cbadge" hidden>Creative</span>
     <span class="sp"></span>
     <button class="ghost" id="theme" type="button">Theme</button>
@@ -276,7 +276,7 @@ button{font:inherit;color:inherit}
     <strong>Drag</strong> a cell to move it, drag the water to pan &middot;
     <code>Ctrl</code> + <strong>scroll</strong> to zoom &middot;
     <strong>Right-click</strong> a cell to paint it (long-press on touch).<br>
-    Once <strong>Cell Multiplication</strong> is unlocked, cells divide about every 7 s and die at about 30 s — each leaves four behind, so the colony grows quickly. Before that your cell is immortal. Daughters are always blank white — every colour on your body is one you painted. Cells never pull on each other — they only push apart when they overlap — so they stay exactly where you put them and any shape you sculpt holds. Unattached cells drift past keeping their own colour; steer into one to absorb it. Traits are free to switch on and off — only levelling them costs. Cell multiplication can be switched off at any time — paused, nothing divides and nothing dies. Zoom out far enough to find the sea/air barrier and the beach east of it — crossing it needs at least 2 myocytes, 2 osteocytes and 2 pneumocytes. Paint a <strong>Ganglion</strong> and ctrl+right-click it to bind W, A, S or D; it drives the whole organism, and more bound ganglia push harder. <code>Z</code> deletes the cell under the cursor and <code>X</code> drops a ganglion there — both work in any mode, up to the tissue cap. Press <code>C</code> for creative mode: every trait on and fully levelled, and cells pull on each other very slightly.
+    Once <strong>Cell Multiplication</strong> is unlocked, cells divide about every 7 s and die at about 30 s — each leaves four behind, so the colony grows quickly. Before that your cell is immortal. Daughters are always blank white — every colour on your body is one you painted. Cells never pull on each other — they only push apart when they overlap — so they stay exactly where you put them and any shape you sculpt holds. Unattached cells drift past keeping their own colour; steer into one to absorb it. Traits are free to switch on and off — only levelling them costs. Cell multiplication can be switched off at any time — paused, nothing divides and nothing dies. Zoom out far enough to find the sea/air barrier and the beach east of it — crossing it needs at least 2 myocytes, 2 osteocytes and 2 pneumocytes. Paint a <strong>Ganglion</strong> and ctrl+right-click it to bind W, A, S or D; Q and E turn the organism and W A S D drive it relative to that heading — the cyan arrow shows which way is forward. More bound ganglia push harder. <code>Z</code> deletes the cell under the cursor and <code>X</code> drops a ganglion there — both work in any mode, up to the tissue cap. Press <code>C</code> for creative mode: every trait on and fully levelled, and cells pull on each other very slightly.
   </p>
 </div>
 
@@ -381,7 +381,7 @@ function freshState(){
   return {
     coins:0, total:0, cells:[freshCell(0,0,"stem",now)],
     view:{x:0,y:0,z:1}, unlocked:{}, lv:{cap:0,life:0,div:0},
-    enabled:{}, tlv:{}, creative:false, mitoOn:true,
+    enabled:{}, tlv:{}, creative:false, mitoOn:true, heading:0,
     autoEyeDefault:true, nextTick:now+TICK_MS, born:now, absorbed:0,
     births:0, deaths:0, seenReveal:false
   };
@@ -415,6 +415,7 @@ function save(){
     localStorage.setItem(KEY, JSON.stringify({
       coins:S.coins,total:S.total,view:S.view,unlocked:S.unlocked,lv:S.lv,
       enabled:S.enabled,tlv:S.tlv,creative:!!S.creative,mitoOn:S.mitoOn!==false,
+      heading:S.heading||0,
       autoEyeDefault:S.autoEyeDefault,born:S.born,births:S.births,deaths:S.deaths,
       seenReveal:S.seenReveal,nextTick:S.nextTick,absorbed:S.absorbed||0,
       cells:S.cells.map(function(c){
@@ -448,6 +449,7 @@ function adopt(d){
   if(d.tlv && typeof d.tlv==="object") S.tlv=d.tlv;
   S.creative=!!d.creative;
   S.mitoOn = d.mitoOn!==false;
+  if(typeof d.heading==="number" && isFinite(d.heading)) S.heading=d.heading;
   if(typeof d.autoEyeDefault==="boolean") S.autoEyeDefault=d.autoEyeDefault;
   if(typeof d.seenReveal==="boolean") S.seenReveal=d.seenReveal;
   if(typeof d.born==="number") S.born=d.born;
@@ -1062,24 +1064,55 @@ function fEyes(q,h){
   }
 }
 
-/* ---- ganglia drive the body. Every bound ganglion contributes its own
-   direction; the sum is normalised and applied to EVERY cell, so the whole
-   organism translates together.
+/* ---- ganglia drive the body.
 
-   Moving only the cells beyond the ganglion (as v0.8 did) made S unusable:
-   W shoved that segment away from the body and moved, while S shoved it
-   straight back into the rest of the body, where overlap repulsion simply
-   cancelled it. Translating everything removes the thing S was pushing
-   against. ---- */
-var KEYDIR={w:[1,0], s:[-1,0], a:[0,-1], d:[0,1]}, held={};
-function drive(q,h){
+   The organism carries its own heading. Q and E turn it — rotating every
+   cell rigidly about the centroid, so the body visibly swings round — and
+   W/S/A/D then move along that heading: W and S forward and back, A and D
+   left and right of wherever it is pointing.
+
+   Movement deliberately does NOT read the facing off the eyes. That was
+   implicit and unsteerable; a heading the player turns is the thing the
+   keys are relative to. ---- */
+var KEYDIR={w:[1,0], s:[-1,0], a:[0,-1], d:[0,1]};
+var ROTKEY={q:-1, e:1};
+var ROT_SPEED=1.7, held={};
+function rotateBody(da,h){
+  var cs=Math.cos(da), sn=Math.sin(da);
+  for(var i=0;i<S.cells.length;i++){
+    var c=S.cells[i];
+    if(c===dragCell) continue;
+    var rx=c.x-h.cx, ry=c.y-h.cy;
+    c.x=h.cx + rx*cs - ry*sn;
+    c.y=h.cy + rx*sn + ry*cs;
+    var vx=c.vx, vy=c.vy;
+    c.vx=vx*cs - vy*sn; c.vy=vx*sn + vy*cs;
+  }
+}
+function drive(q,h,dt){
   if(!h||!traitOn("control")) return;
-  if(!(held.w||held.a||held.s||held.d)) return;
-  var fwd=headDir(q,h), px=-fwd[1], py=fwd[0];
-  var dx=0, dy=0, n=0, i;
+  var i, b;
+
+  /* turn first, so this frame's movement uses the new heading */
+  var rot=0, rn=0;
   for(i=0;i<S.cells.length;i++){
-    var b=S.cells[i];
-    if(b.t!=="brain"||!b.key||!held[b.key]) continue;
+    b=S.cells[i];
+    if(b.t!=="brain"||!b.key||!ROTKEY[b.key]||!held[b.key]) continue;
+    rot+=ROTKEY[b.key]; rn++;
+  }
+  if(rn && Math.abs(rot)>0.001){
+    var da=(rot>0?1:-1)*ROT_SPEED*dt*Math.min(3,Math.sqrt(rn));
+    rotateBody(da,h);
+    S.heading=(S.heading||0)+da;
+  }
+
+  if(!(held.w||held.a||held.s||held.d)) return;
+  var fwd=[Math.cos(S.heading||0), Math.sin(S.heading||0)];
+  var px=-fwd[1], py=fwd[0];
+  var dx=0, dy=0, n=0;
+  for(i=0;i<S.cells.length;i++){
+    b=S.cells[i];
+    if(b.t!=="brain"||!b.key||!KEYDIR[b.key]||!held[b.key]) continue;
     var kd=KEYDIR[b.key];
     dx+=fwd[0]*kd[0]+px*kd[1];
     dy+=fwd[1]*kd[0]+py*kd[1];
@@ -1093,6 +1126,20 @@ function drive(q,h){
   for(i=0;i<S.cells.length;i++){
     S.cells[i].vx+=dx*sp; S.cells[i].vy+=dy*sp;
   }
+}
+/* an arrow showing which way is forward, once there is anything to steer */
+function drawHeading(q,h){
+  if(!h||!q.by.brain||!traitOn("control")) return;
+  var Z=S.view.z, r=Math.max(24,h.maxR*Z*1.1);
+  ctx.save();
+  ctx.translate(w2sx(h.cx),w2sy(h.cy));
+  ctx.rotate(S.heading||0);
+  ctx.strokeStyle="rgba(123,224,255,.75)"; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(r*0.5,0); ctx.lineTo(r,0); ctx.stroke();
+  ctx.fillStyle="rgba(123,224,255,.9)";
+  ctx.beginPath(); ctx.moveTo(r+10,0); ctx.lineTo(r-3,-7); ctx.lineTo(r-3,7);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
 }
 
 /* ---------------- assemble the animal ---------------- */
@@ -1228,7 +1275,7 @@ function renderPanels(q){
       ? "<b>On land</b> · photocytes +30%"
     : !canCrossNow
       ? "<b>Held under the surface</b> · needs 2 myocytes, 2 osteocytes, 2 pneumocytes"
-      : "<b>WASD</b> drives bound ganglia · <b>Ctrl+scroll</b> zoom · <b>Right-click</b> paint";
+      : "<b>WASD/QE</b> drive bound ganglia · <b>Ctrl+scroll</b> zoom · <b>Right-click</b> paint";
 
   var html="";
   if(!mitosisBought()){
@@ -1354,7 +1401,7 @@ function placeMenu(cx,cy){
 function openKeyMenu(c,cx,cy){
   menuCell=c;
   var sw="";
-  ["w","a","s","d"].forEach(function(k){
+  ["w","a","s","d","q","e"].forEach(function(k){
     sw+='<button class="swb key'+(c.key===k?" sel":"")+'" data-key="'+k+'">'+k.toUpperCase()+'</button>';
   });
   menu.innerHTML=
@@ -1362,7 +1409,7 @@ function openKeyMenu(c,cx,cy){
       '<span class="nm">Ganglion</span><span class="id">#'+c.id+'</span></div>'+
     '<div class="swatches">'+sw+'</div>'+
     '<button class="mbtn" data-key="">Unbind</button>'+
-    '<p class="note">W and S drive forward and back, A and D strafe. The whole organism moves; more bound ganglia push harder.</p>';
+    '<p class="note">Q and E turn the organism; W and S then drive forward and back along that heading, A and D left and right of it. More bound ganglia push harder.</p>';
   placeMenu(cx,cy);
 }
 function closeMenu(){ menu.hidden=true; menuCell=null; }
@@ -1411,7 +1458,7 @@ document.addEventListener("keydown",function(e){
   var tg=e.target&&e.target.tagName;
   if(tg==="INPUT"||tg==="TEXTAREA"||e.ctrlKey||e.metaKey||e.altKey) return;
   var k=(e.key||"").toLowerCase();
-  if(k==="w"||k==="a"||k==="s"||k==="d"){ held[k]=true; return; }
+  if(k==="w"||k==="a"||k==="s"||k==="d"||k==="q"||k==="e"){ held[k]=true; return; }
   if(k==="c"){ S.creative=!S.creative; closeMenu(); save(); dirty=true; return; }
   if(!overCanvas) return;
   if(k==="z"){                                  /* delete the cell under the cursor */
@@ -1433,7 +1480,7 @@ document.addEventListener("keydown",function(e){
 });
 document.addEventListener("keyup",function(e){
   var k=(e.key||"").toLowerCase();
-  if(k==="w"||k==="a"||k==="s"||k==="d") held[k]=false;
+  if(k==="w"||k==="a"||k==="s"||k==="d"||k==="q"||k==="e") held[k]=false;
 });
 window.addEventListener("blur",function(){ held={}; });
 
@@ -1539,12 +1586,13 @@ function frame(ts){
   if(pump(now,q)) dirty=true;
 
   var h0=getHull(now);
-  drive(q,h0);
+  drive(q,h0,dt);
   drawWorld(q,h0);
   var orgA = q.n>=REVEAL_CELLS ? clamp((REVEAL_ZOOM-S.view.z)/(REVEAL_ZOOM*0.45),0,1) : 0;
   drawOrganism(orgA,q,now);
   drawWild(1-orgA*0.55);
   drawCells(1-orgA*0.80,now);
+  drawHeading(q,h0);
 
   var left=Math.max(0,S.nextTick-now);
   $("arc").setAttribute("stroke-dashoffset",(138.23*(left/TICK_MS)).toFixed(2));
@@ -1591,6 +1639,7 @@ if(window.claude&&window.claude.hot&&window.claude.hot.snapshot){
     return {cells:S.cells.map(function(c){return {x:c.x,y:c.y,t:c.t,a:c.autoEye?1:0,k:c.key||"",r:0.2};}),
             coins:S.coins,total:S.total,view:S.view,unlocked:S.unlocked,lv:S.lv,
             enabled:S.enabled,tlv:S.tlv,creative:!!S.creative,mitoOn:S.mitoOn!==false,
+            heading:S.heading||0,
             born:S.born,births:S.births,deaths:S.deaths,seenReveal:S.seenReveal};
   });
 }
