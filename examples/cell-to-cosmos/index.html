@@ -209,7 +209,7 @@ button{font:inherit;color:inherit}
 <div class="wrap">
   <header class="hdr">
     <h1 class="mark">Cell to <em>Cosmos</em></h1>
-    <span class="vtag">v0.11 &middot; mobility</span>
+    <span class="vtag">v0.12 &middot; mobility</span>
     <span class="cbadge" id="cbadge" hidden>Creative</span>
     <span class="sp"></span>
     <button class="ghost" id="theme" type="button">Theme</button>
@@ -276,7 +276,7 @@ button{font:inherit;color:inherit}
     <strong>Drag</strong> a cell to move it, drag the water to pan &middot;
     <code>Ctrl</code> + <strong>scroll</strong> to zoom &middot;
     <strong>Right-click</strong> a cell to paint it (long-press on touch).<br>
-    Once <strong>Cell Multiplication</strong> is unlocked, cells divide about every 7 s and die at about 30 s — each leaves four behind, so the colony grows quickly. Before that your cell is immortal. Daughters are always blank white — every colour on your body is one you painted. Cells never pull on each other — they only push apart when they overlap — so they stay exactly where you put them and any shape you sculpt holds. Unattached cells drift past keeping their own colour; steer into one to absorb it. Traits are free to switch on and off — only levelling them costs. Cell multiplication can be switched off at any time — paused, nothing divides and nothing dies. Zoom out far enough to find the sea/air barrier and the beach east of it — crossing it needs at least 2 myocytes, 2 osteocytes and 2 pneumocytes. Paint a <strong>Ganglion</strong> and ctrl+right-click it to bind W, A, S or D; Q and E turn the organism and W A S D drive it relative to that heading — the cyan arrow shows which way is forward. More bound ganglia push harder. <code>Z</code> deletes the cell under the cursor and <code>X</code> drops a ganglion there — both work in any mode, up to the tissue cap. Press <code>C</code> for creative mode: every trait on and fully levelled, and cells pull on each other very slightly.
+    Once <strong>Cell Multiplication</strong> is unlocked, cells divide about every 7 s and die at about 30 s — each leaves four behind, so the colony grows quickly. Before that your cell is immortal. Daughters are always blank white — every colour on your body is one you painted. Cells never pull on each other — they only push apart when they overlap — so they stay exactly where you put them and any shape you sculpt holds. Unattached cells drift past keeping their own colour; steer into one to absorb it. Traits are free to switch on and off — only levelling them costs. Cell multiplication can be switched off at any time — paused, nothing divides and nothing dies. Zoom out far enough to find the sea/air barrier and the beach east of it — crossing it needs at least 2 myocytes, 2 osteocytes and 2 pneumocytes, which gets you onto the beach — staying up in open air needs 5 pterocytes, or you simply fall. Paint a <strong>Ganglion</strong> and ctrl+right-click it to bind W, A, S or D; Q and E turn the organism and W A S D drive it relative to that heading — the cyan arrow shows which way is forward. More bound ganglia push harder. <code>Z</code> deletes the cell under the cursor and <code>X</code> drops a ganglion there — both work in any mode, up to the tissue cap. Press <code>C</code> for creative mode: every trait on and fully levelled, and cells pull on each other very slightly.
   </p>
 </div>
 
@@ -508,7 +508,7 @@ function bud(p,now){
    Nothing attracts anything — no bond spring, no pull toward a centre.
    A cell stays exactly where it is put; a pile expands to contact spacing
    and then stops, because damping removes the leftover motion. ---- */
-var GRID={}, BIN=CR*2.7, canCrossNow=false;
+var GRID={}, BIN=CR*2.7, canCrossNow=false, canFlyNow=false;
 function relax(dt){
   var n=S.cells.length,i,c;
   if(!n) return;
@@ -550,6 +550,10 @@ function relax(dt){
   var damp=Math.pow(0.86, dt*60), lid=SURFACE_Y+CR*0.9;
   for(i=0;i<n;i++){
     c=S.cells[i];
+    /* Out of the water, nothing holds a wingless body up. It falls until the
+       ground catches it, or until it is back under the surface — so the kit
+       gets you onto the beach, and only wings keep you in open air. */
+    if(canCrossNow && !canFlyNow && c.y<SURFACE_Y) c.vy += 0.35;
     if(c===dragCell){ c.vx=c.vy=0; }
     else { c.x+=c.vx; c.y+=c.vy; c.vx*=damp; c.vy*=damp; }
     var g=landSurfaceY(c.x)-CR*0.9;            /* the ground is solid */
@@ -728,8 +732,14 @@ var WATER_EDGE_X=(function(){
   for(var i=0;i<40;i++){ var m=(lo+hi)/2; if(landSurfaceY(m)>SURFACE_Y) lo=m; else hi=m; }
   return lo;
 })();
-/* leaving the water takes a body built for it */
-function canCross(q){ return q.by.muscle>=2 && q.by.bone>=2 && q.by.lung>=2; }
+/* Leaving the water and staying up in the air are different problems.
+   Cells of a switched-off trait are inert, so they do not count. */
+function canCross(q){
+  return traitOn("motility")  && q.by.muscle>=2
+      && traitOn("structure") && q.by.bone>=2
+      && traitOn("air")       && q.by.lung>=2;
+}
+function canFly(q){ return traitOn("flight") && q.by.wing>=5; }
 function isOnLand(h){
   if(!h) return false;
   /* in the air AND over ground that is itself above the waterline — floating
@@ -1275,7 +1285,9 @@ function renderPanels(q){
       ? "<b>On land</b> · photocytes +30%"
     : !canCrossNow
       ? "<b>Held under the surface</b> · needs 2 myocytes, 2 osteocytes, 2 pneumocytes"
-      : "<b>WASD/QE</b> drive bound ganglia · <b>Ctrl+scroll</b> zoom · <b>Right-click</b> paint";
+    : !canFlyNow
+      ? "<b>Can reach the beach</b> · 5 pterocytes to hold the air"
+      : "<b>Airborne</b> · <b>WASD/QE</b> drive · <b>Ctrl+scroll</b> zoom · <b>Right-click</b> paint";
 
   var html="";
   if(!mitosisBought()){
@@ -1579,10 +1591,13 @@ function frame(ts){
   var now=Date.now();
 
   lifecycle(now);
+  /* the census must run BEFORE relax: the clamps read canCrossNow/canFlyNow,
+     and on the very first frame those still held their initial false, so a
+     saved airborne body was slammed into the water before anything measured it */
+  var q=census();
+  canCrossNow=canCross(q); canFlyNow=canFly(q);
   relax(dt);
   updateWild(now,dt);
-  var q=census();
-  canCrossNow=canCross(q);
   if(pump(now,q)) dirty=true;
 
   var h0=getHull(now);
