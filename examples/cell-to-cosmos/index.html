@@ -209,7 +209,7 @@ button{font:inherit;color:inherit}
 <div class="wrap">
   <header class="hdr">
     <h1 class="mark">Cell to <em>Cosmos</em></h1>
-    <span class="vtag">v0.8 &middot; mobility</span>
+    <span class="vtag">v0.9 &middot; mobility</span>
     <span class="cbadge" id="cbadge" hidden>Creative</span>
     <span class="sp"></span>
     <button class="ghost" id="theme" type="button">Theme</button>
@@ -276,7 +276,7 @@ button{font:inherit;color:inherit}
     <strong>Drag</strong> a cell to move it, drag the water to pan &middot;
     <code>Ctrl</code> + <strong>scroll</strong> to zoom &middot;
     <strong>Right-click</strong> a cell to paint it (long-press on touch).<br>
-    Once <strong>Cell Multiplication</strong> is unlocked, cells divide about every 7 s and die at about 30 s — each leaves four behind, so the colony grows quickly. Before that your cell is immortal. Daughters are always blank white — every colour on your body is one you painted. Cells never pull on each other — they only push apart when they overlap — so they stay exactly where you put them and any shape you sculpt holds. Unattached cells drift past keeping their own colour; steer into one to absorb it. Traits are free to switch on and off — only levelling them costs. Cell multiplication can be switched off at any time — paused, nothing divides and nothing dies. Zoom out far enough to find the sea/air barrier and the beach east of it — crossing it needs at least 2 myocytes, 2 osteocytes and 2 pneumocytes. Paint a <strong>Ganglion</strong> and ctrl+right-click it to bind W, A, S or D; it drives only the cells beyond itself. <code>Z</code> deletes the cell under the cursor, <code>X</code> drops a ganglion in creative. Press <code>C</code> for creative mode: every trait on and fully levelled, and cells pull on each other very slightly.
+    Once <strong>Cell Multiplication</strong> is unlocked, cells divide about every 7 s and die at about 30 s — each leaves four behind, so the colony grows quickly. Before that your cell is immortal. Daughters are always blank white — every colour on your body is one you painted. Cells never pull on each other — they only push apart when they overlap — so they stay exactly where you put them and any shape you sculpt holds. Unattached cells drift past keeping their own colour; steer into one to absorb it. Traits are free to switch on and off — only levelling them costs. Cell multiplication can be switched off at any time — paused, nothing divides and nothing dies. Zoom out far enough to find the sea/air barrier and the beach east of it — crossing it needs at least 2 myocytes, 2 osteocytes and 2 pneumocytes. Paint a <strong>Ganglion</strong> and ctrl+right-click it to bind W, A, S or D; it drives only the cells beyond itself. <code>Z</code> deletes the cell under the cursor and <code>X</code> drops a ganglion there — both work in any mode, up to the tissue cap. Press <code>C</code> for creative mode: every trait on and fully levelled, and cells pull on each other very slightly.
   </p>
 </div>
 
@@ -1413,8 +1413,8 @@ document.addEventListener("keydown",function(e){
     }
     return;
   }
-  if(k==="x"){                                  /* creative only: drop a ganglion */
-    if(!S.creative || S.cells.length>=maxCells()) return;
+  if(k==="x"){                                  /* drop a ganglion at the cursor */
+    if(S.cells.length>=maxCells()) return;      /* the cap is the only limit */
     var nc=freshCell(s2wx(hoverX),s2wy(hoverY),"brain",Date.now());
     nc.life=jit(lifeMs(),0.2); nc.autoEye=S.autoEyeDefault;
     S.cells.push(nc); save(); dirty=true;
