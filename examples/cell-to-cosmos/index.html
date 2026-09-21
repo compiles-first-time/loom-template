@@ -209,7 +209,7 @@ button{font:inherit;color:inherit}
 <div class="wrap">
   <header class="hdr">
     <h1 class="mark">Cell to <em>Cosmos</em></h1>
-    <span class="vtag">v0.9 &middot; mobility</span>
+    <span class="vtag">v0.10 &middot; mobility</span>
     <span class="cbadge" id="cbadge" hidden>Creative</span>
     <span class="sp"></span>
     <button class="ghost" id="theme" type="button">Theme</button>
@@ -276,7 +276,7 @@ button{font:inherit;color:inherit}
     <strong>Drag</strong> a cell to move it, drag the water to pan &middot;
     <code>Ctrl</code> + <strong>scroll</strong> to zoom &middot;
     <strong>Right-click</strong> a cell to paint it (long-press on touch).<br>
-    Once <strong>Cell Multiplication</strong> is unlocked, cells divide about every 7 s and die at about 30 s — each leaves four behind, so the colony grows quickly. Before that your cell is immortal. Daughters are always blank white — every colour on your body is one you painted. Cells never pull on each other — they only push apart when they overlap — so they stay exactly where you put them and any shape you sculpt holds. Unattached cells drift past keeping their own colour; steer into one to absorb it. Traits are free to switch on and off — only levelling them costs. Cell multiplication can be switched off at any time — paused, nothing divides and nothing dies. Zoom out far enough to find the sea/air barrier and the beach east of it — crossing it needs at least 2 myocytes, 2 osteocytes and 2 pneumocytes. Paint a <strong>Ganglion</strong> and ctrl+right-click it to bind W, A, S or D; it drives only the cells beyond itself. <code>Z</code> deletes the cell under the cursor and <code>X</code> drops a ganglion there — both work in any mode, up to the tissue cap. Press <code>C</code> for creative mode: every trait on and fully levelled, and cells pull on each other very slightly.
+    Once <strong>Cell Multiplication</strong> is unlocked, cells divide about every 7 s and die at about 30 s — each leaves four behind, so the colony grows quickly. Before that your cell is immortal. Daughters are always blank white — every colour on your body is one you painted. Cells never pull on each other — they only push apart when they overlap — so they stay exactly where you put them and any shape you sculpt holds. Unattached cells drift past keeping their own colour; steer into one to absorb it. Traits are free to switch on and off — only levelling them costs. Cell multiplication can be switched off at any time — paused, nothing divides and nothing dies. Zoom out far enough to find the sea/air barrier and the beach east of it — crossing it needs at least 2 myocytes, 2 osteocytes and 2 pneumocytes. Paint a <strong>Ganglion</strong> and ctrl+right-click it to bind W, A, S or D; it drives the whole organism, and more bound ganglia push harder. <code>Z</code> deletes the cell under the cursor and <code>X</code> drops a ganglion there — both work in any mode, up to the tissue cap. Press <code>C</code> for creative mode: every trait on and fully levelled, and cells pull on each other very slightly.
   </p>
 </div>
 
@@ -1062,26 +1062,36 @@ function fEyes(q,h){
   }
 }
 
-/* ---- ganglia drive the body. Each bound ganglion moves only the cells at
-   or beyond it, measured outward from the body's centre, so it articulates
-   like a joint rather than shoving the whole organism. ---- */
+/* ---- ganglia drive the body. Every bound ganglion contributes its own
+   direction; the sum is normalised and applied to EVERY cell, so the whole
+   organism translates together.
+
+   Moving only the cells beyond the ganglion (as v0.8 did) made S unusable:
+   W shoved that segment away from the body and moved, while S shoved it
+   straight back into the rest of the body, where overlap repulsion simply
+   cancelled it. Translating everything removes the thing S was pushing
+   against. ---- */
 var KEYDIR={w:[1,0], s:[-1,0], a:[0,-1], d:[0,1]}, held={};
 function drive(q,h){
   if(!h||!traitOn("control")) return;
   if(!(held.w||held.a||held.s||held.d)) return;
-  var fwd=headDir(q,h), px=-fwd[1], py=fwd[0], i, j;
+  var fwd=headDir(q,h), px=-fwd[1], py=fwd[0];
+  var dx=0, dy=0, n=0, i;
   for(i=0;i<S.cells.length;i++){
     var b=S.cells[i];
     if(b.t!=="brain"||!b.key||!held[b.key]) continue;
     var kd=KEYDIR[b.key];
-    var dx=fwd[0]*kd[0]+px*kd[1], dy=fwd[1]*kd[0]+py*kd[1];
-    var ax=b.x-h.cx, ay=b.y-h.cy, am=Math.sqrt(ax*ax+ay*ay);
-    if(am<CR){ ax=fwd[0]; ay=fwd[1]; } else { ax/=am; ay/=am; }
-    for(j=0;j<S.cells.length;j++){
-      var c=S.cells[j];
-      if((c.x-b.x)*ax+(c.y-b.y)*ay < -CR) continue;
-      c.vx+=dx*0.5; c.vy+=dy*0.5;
-    }
+    dx+=fwd[0]*kd[0]+px*kd[1];
+    dy+=fwd[1]*kd[0]+py*kd[1];
+    n++;
+  }
+  if(!n) return;
+  var m=Math.sqrt(dx*dx+dy*dy);
+  if(m<0.001) return;                       /* opposed ganglia cancel out */
+  dx/=m; dy/=m;
+  var sp=0.45*Math.min(3,Math.sqrt(n));     /* more ganglia push harder */
+  for(i=0;i<S.cells.length;i++){
+    S.cells[i].vx+=dx*sp; S.cells[i].vy+=dy*sp;
   }
 }
 
@@ -1352,7 +1362,7 @@ function openKeyMenu(c,cx,cy){
       '<span class="nm">Ganglion</span><span class="id">#'+c.id+'</span></div>'+
     '<div class="swatches">'+sw+'</div>'+
     '<button class="mbtn" data-key="">Unbind</button>'+
-    '<p class="note">W and S drive forward and back, A and D strafe. Only the cells beyond this ganglion move, so it acts as a joint.</p>';
+    '<p class="note">W and S drive forward and back, A and D strafe. The whole organism moves; more bound ganglia push harder.</p>';
   placeMenu(cx,cy);
 }
 function closeMenu(){ menu.hidden=true; menuCell=null; }
