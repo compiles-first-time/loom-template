@@ -489,6 +489,9 @@ function bestWound(x,y){
 }
 /* Fill a wound if one is clear, otherwise break new ground.
 
+   Used by the player's hand (painting adds a slot and fills it) and by the
+   loader. Cell multiplication no longer calls this — see `heal` below.
+
    Position is never negotiable — a repair goes back exactly where the cell
    was. Type is, but only one way: blank stem is undifferentiated tissue, so
    adaptation may draft it into whatever rung is unmet. Anything specialised
@@ -684,7 +687,8 @@ function adopt(d){
       (b) ageing suspends entirely below three cells,
       (c) lifespans are jittered, so cohorts never die in lockstep.
       A fourth keeps it from losing its shape: every death leaves its slot
-      standing, and divisions refill those before they grow anywhere new.
+      standing, and divisions only ever refill those — the shape is the
+      player's to extend, never the division's.
    ============================================================ */
 function lifecycle(now){
   var i,c,died=false;
@@ -713,12 +717,23 @@ function lifecycle(now){
     bud(c,now);
   }
 }
-/* Heal first, grow second. A daughter that lands in a wound inherits the slot
-   whole — colour, bound key and all — which is how the pattern survives its
-   own cells. Only when there is nothing to mend does the body extend, and
-   then what it extends into is the next thing it needs. */
+/* Heal, don't extend. A daughter inherits the wound she lands in whole —
+   colour, bound key and all — which is how the pattern survives its own
+   cells. If there is nothing to mend, nothing is created: cell
+   multiplication maintains the shape, it never grows past it. The plan
+   grows only when the player paints a new cell. */
+function heal(x,y,now){
+  var sl=bestWound(x,y); if(!sl) return null;
+  var drafted=(sl.t==="stem");
+  if(drafted) sl.t=adaptType();
+  var c=freshCell(sl.x,sl.y,sl.t,now); c.life=jit(lifeMs(),0.2);
+  bindSlot(c,sl);
+  if(drafted) autoBind(c);
+  S.cells.push(c); addToGrid(c); S.regrown++;
+  return c;
+}
 function bud(p,now){
-  if(occupy(p.x,p.y,adaptType(),p.autoEye,now)) S.births++;
+  if(heal(p.x,p.y,now)) S.births++;
 }
 
 /* ---- The organism is a RIGID body.
