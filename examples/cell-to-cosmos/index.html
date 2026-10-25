@@ -689,6 +689,10 @@ function adopt(d){
       A fourth keeps it from losing its shape: every death leaves its slot
       standing, and divisions only ever refill those — the shape is the
       player's to extend, never the division's.
+      One cell type is exempt from ageing entirely: the eye. An ocellus
+      (and its vision-off twin, pigment) is costly to earn and precious
+      to orient by, so it keeps looking until the player removes it or
+      retypes it to something that does age.
    ============================================================ */
 function lifecycle(now){
   var i,c,died=false;
@@ -696,6 +700,7 @@ function lifecycle(now){
     for(i=S.cells.length-1;i>=0;i--){
       if(S.cells.length<=1) break;                 /* (a) */
       c=S.cells[i];
+      if(c.t==="eye"||c.t==="pigment") continue; /* the eyes don't age */
       if(now-c.born < c.life) continue;
       if(c.sl) c.sl.c=null;                        /* the slot stays: a wound */
       if(dragCell===c) dragCell=null;
